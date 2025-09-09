@@ -1,5 +1,5 @@
 {
-  "domain": "wp-qube"
+  "domain": "wp-qube",
   "name": "Qube Heat Pump",
   "dependencies": "modbus",
   "documentation": "https://github.com/MattieGit/wp-qube/blob/main/README.md",
