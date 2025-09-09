@@ -1,7 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Root contains configuration: `conf_modbus.yaml` is the primary artifact.
+- Root contains JSON file for HACS integration for Home Assistant
+- custom_components/ contains the files for the HACS integration
 - Place reusable code in `src/` (e.g., parsers, validators); command-line helpers in `scripts/`.
 - Add tests in `tests/` mirroring `src/` structure (e.g., `tests/test_validate_config.py`).
 - Keep sample fixtures in `tests/fixtures/` and any non-code assets in `assets/`.
