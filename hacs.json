@@ -1,8 +1,12 @@
 {
-  "name": "WP Qube Heatpump",
-  "content_in_root": false,
-  "render_readme": true,
-  "domains": ["wp_qube"],
-  "country": []
+  "domain": "wp-qube"
+  "name": "Qube Heat Pump",
+  "dependencies": "modbus",
+  "documentation": "https://github.com/MattieGit/wp-qube/blob/main/README.md",
+  "code_owners": "@MattieGit",
+  "integration_type": "hub",
+  "issue_tracker": "https://github.com/MattieGit/wp-qube/issues",
+  "loggers": ["qube"],
+  "iot_class": "local_polling"
 }
 
