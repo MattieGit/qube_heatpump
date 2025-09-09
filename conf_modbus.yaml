@@ -1,0 +1,691 @@
+- name: "Qube Heatpump"
+  type: tcp
+  host: 192.168.5.208
+  port: 502
+  
+  binary_sensors:
+
+  - name: "WP-Qube Voeding Bron pomp"
+    address: 0
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Voeding User pomp"
+    address: 1
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Sturing Vierwegafsluiter"
+    address: 2
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Uitgang Koeling Actief"
+    address: 3
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Uitgang driewegafsluiter CV-Tapwater"
+    address: 4
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Uitgang Bufferpomp"
+    address: 5
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Uitgang Heater 1"
+    address: 6
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Uitgang Heater 2"
+    address: 7
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Uitgang Heater 3"
+    address: 8
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Status warmtepomp bediening"
+    address: 9
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm Max Tijd Legionella overschreden"
+    address: 10
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm Max Tijd Tapwater overschreden"
+    address: 11
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm dauwpunt (ingang) geactiveerd"
+    address: 12
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm aanvoer te warm CV"
+    address: 13
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm Flow CV"
+    address: 15
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm verzamelalarm CV"
+    address: 16
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm verzamelalarm koelbedrijf"
+    address: 17
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm verzamelalarm CV-bedrijf"
+    address: 18
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm Bedrijfsuren"
+    address: 19
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm Verzamelalarm Bron"
+    address: 20
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Globaal Alarm"
+    address: 21
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Alarm verzamelalarm compressor"
+    address: 22
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Ruimteopnemer geactiveerd"
+    address: 23
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Vraag Plant sensor"
+    address: 25
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Tapwater regelaar vrijgegeven"
+    address: 26
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Plantopnemer is geactiveerd"
+    address: 27
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Bufferopnemer is geactiveerd"
+    address: 28
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Vraag op digitale ingang"
+    address: 29
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Digitale ingang zomerbedrijf geactiveerd"
+    address: 30
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Digitale ingang dauwpunt geactiveerd"
+    address: 31
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Digitale ingang booster geactiveerd"
+    address: 32
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Digitale ingang flow bronzijde geactiveerd"
+    address: 34
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Status dag/nacht modus"
+    address: 37
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Vraag van thermostaat intern"
+    address: 38
+    input_type: discrete_input
+    scan_interval: 10
+
+  - name: "WP-Qube Antilegionella is vrijgegeven"
+    address: 39
+    input_type: discrete_input
+    scan_interval: 10
+
+  sensors:
+  - name: "WP-Qube Setpoint ruimte CV dag"
+    address: 27
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_setpoint_ruimte_CV_dag
+
+  - name: "WP-Qube Setpoint ruimte CV nacht"
+    address: 29
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_setpoint_ruimte_CV_nacht
+
+  - name: "WP-Qube Setpoint ruimte Koel dag"
+    address: 31
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_setpoint_ruimte_koel_dag
+
+  - name: "WP-Qube Setpoint ruimte Koel nacht"
+    address: 33
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_setpoint_ruimte_koel_nacht
+
+  - name: "WP-Qube dT aanvoertemperatuur tapwater"
+    address: 43
+    input_type: holding
+    data_type: int16
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_dt_aanvoertemperatuur_tapwater
+
+  - name: "WP-Qube Minimumtemperatuur tapwater"
+    address: 44
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_minimumtemperatuur_tapwater
+
+  - name: "WP-Qube Temperatuur tapwater bij actief tijdprogramma"
+    address: 46
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp-qube_temperatuur_tapwater_bij_actief_tijdprogramma
+
+  - name: "WP-Qube Minimum setpoint bufferregeling"
+    address: 99
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp-qube_minimum_setpoint_bufferregeling
+
+  - name: "WP-Qube Heat setpoint (zonder stooklijn)"
+    address: 101
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp-qube_heat_setpoint_zonder_stooklijn
+
+  - name: "WP-Qube Koel setpoint (zonder stooklijn)"
+    address: 103
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_koel_setpoint_zonder_stooklijn
+
+  - name: "WP-Qube Maximaalwaarde buffer setpoint (koelbedrijf)"
+    address: 169
+    input_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_maximaalwaarde_buffer_setpoint_koelbedrijf
+
+  - name: "WP-Qube Percentage sturing User (CV) pomp"
+    address: 4
+    input_type: input
+    data_type: float32
+    offset: 100
+    scale: -1
+    precision: 0
+    scan_interval: 10
+    unit_of_measurement: "%"
+    state_class: measurement
+    unique_id: wp_qube_percentage_sturing_user_CV_pomp
+
+  - name: "WP-Qube Percentage sturing bron pomp"
+    address: 6
+    input_type: input
+    data_type: float32
+    offset: 100
+    scale: -1
+    precision: 0
+    scan_interval: 10
+    unit_of_measurement: "%"
+    state_class: measurement
+    unique_id: wp_qube_percentage>sturing_bron_pomp
+
+  - name: "WP-Qube Percentage sturing bron afsluiter"
+    address: 8
+    input_type: input
+    data_type: float32
+    precision: 0
+    scan_interval: 10
+    unit_of_measurement: "%"
+    state_class: measurement
+    unique_id: wp_qube_percentage_sturing_brong_afsluiter
+
+  - name: "WP-Qube Stuurvraag regeling tapwater"
+    address: 14
+    input_type: input
+    data_type: float32
+    unit_of_measurement: "%"
+    precision: 0
+    scan_interval: 10
+    unique_id: wp_qube_stuurvraag_regeling_tapwater
+
+  - name: "WP-Qube Stuurvraag compressor"
+    address: 16
+    input_type: input
+    data_type: float32
+    unit_of_measurement: "%"
+    precision: 0
+    scan_interval: 10
+    unique_id: wp_qube_stuurvraag_compressor
+
+  - name: "WP-Qube Gemeten Flow"
+    address: 19
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: volume_flow_rate
+    unit_of_measurement: "L/min"
+    unique_id: wp_qube_gemeten_flow
+
+  - name: "WP-Qube Aanvoertemperatuur CV"
+    address: 20
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_aanvoertemperatuur_cv
+
+  - name: "WP-Qube Retourtemperatuur CV"
+    address: 22
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_retourtemperatuur_cv
+
+  - name: "WP-Qube Temperatuur bron vanaf dak"
+    address: 24
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_temperatuur_bron_vanaf_dak
+
+  - name: "WP-Qube Temperatuur bron naar dak"
+    address: 26
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_temperatuur_bron_naar_dak
+
+  - name: "WP-Qube Ruimtetemperatuur"
+    address: 28
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_ruimtetemperatuur
+
+  - name: "WP-Qube Tapwatertemperatuur"
+    address: 30
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_tapwatertemperatuur
+
+  - name: "WP-Qube Buitentemperatuur"
+    address: 32
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_buitentemperatuur
+
+  - name: "WP-Qube COP (berekend)"
+    address: 34
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    state_class: measurement
+    unique_id: wp_qube_cop_berekend
+
+  - name: "WP-Qube Actueel Vermogen"
+    address: 36
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 0
+    device_class: power
+    unit_of_measurement: "W"
+    state_class: measurement
+    unique_id: wp_qube_actueel_vermogen
+
+  - name: "WP-Qube Status warmtepomp"
+    state_class: measurement
+    scan_interval: 60
+    device_class: enum
+    slave: 1
+    address: 38
+    input_type: input
+    data_type: uint16
+    precision: 0
+    unique_id: wp_qube_warmtepomp_unit_status
+
+  - name: "WP-Qube Berekend setpoint warmtepomp"
+    address: 39
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_berekend_setpoint_warmtepomp
+
+  - name: "WP-Qube Koel Setpoint"
+    address: 41
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_koel_setpoint
+
+  - name: "WP-Qube Heat Setpoint"
+    address: 43
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_heat_setpoint
+
+  - name: "WP-Qube Actuele snelheid compressor"
+    address: 45
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 0
+    unit_of_measurement: "rpm"
+    state_class: measurement
+    unique_id: wp_qube_actuele_snelheid_compressor
+
+  - name: "WP-Qube Setpoint berekend tapwater"
+    address: 47
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_setpoint_berekend_tapwater
+
+  - name: "WP-Qube Bedrijfsuren tapwaterbedrijf"
+    address: 50
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: duration
+    unit_of_measurement: "h"
+    state_class: measurement
+    unique_id: wp_qube_bedrijfsuren_tapwaterbedrijf
+
+  - name: "WP-Qube Bedrijfsuren CV-bedrijf"
+    address: 52
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: duration
+    unit_of_measurement: "h"
+    state_class: measurement
+    unique_id: wp_qube_bedrijfsuren_cv_bedrijf
+
+  - name: "WP-Qube Bedrijfsuren koelbedrijf"
+    address: 54
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: duration
+    unit_of_measurement: "h"
+    state_class: measurement
+    unique_id: wp_qube_bedrijfsuren_koelbedrijf
+
+  - name: "WP-Qube Bedrijfsuren Heater 1"
+    address: 56
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: duration
+    unit_of_measurement: "h"
+    state_class: measurement
+    unique_id: wp_qube_bedrijfsuren_heater_1
+
+  - name: "WP-Qube Bedrijfsuren Heater 2"
+    address: 58
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: duration
+    unit_of_measurement: "h"
+    state_class: measurement
+    unique_id: wp_qube_bedrijfsuren_heater_2
+
+  - name: "WP-Qube Bedrijfsuren Heater 3"
+    address: 60
+    input_type: input
+    data_type: int16
+    scan_interval: 10
+    precision: 0
+    device_class: duration
+    unit_of_measurement: "h"
+    state_class: measurement
+    unique_id: wp_qube_bedrijfsuren_heater_3
+
+  - name: "WP-Qube Actueel elektrisch verbruik (berekend)"
+    address: 61
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 0
+    device_class: power
+    unit_of_measurement: "W"
+    state_class: measurement
+    unique_id: wp_qube_actueel_elektrisch_verbruik_berekend
+
+  - name: "WP-Qube Totaal thermisch verbruik (berekend)"
+    address: 63
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 0
+    device_class: energy
+    unit_of_measurement: "kWh"
+    state_class: measurement
+    unique_id: wp_qube_totaal_thermisch_verbruik_berekend
+
+  - name: "WP-Qube Setpoint plantregeling"
+    address: 65
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 0
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: wp_qube_setpoint_plantregeling
+
+  switches:
+
+  - name: "WP-Qube Activeer warmtevraag"
+    address: 19
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube Schakel zomerbedrijf in (koeling)"
+    address: 22
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube Start Tapwater verwarmen"
+    address: 23
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube Start Antilegionella"
+    address: 45
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube Stooklijn vrijgeven"
+    address: 62
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube Omdraaien logica warmte-koelvraag"
+    address: 63
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "Surplus PV" #Verhoogt ruimte setpoint Linq met 1K
+    address: 64
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube SG Ready A" #SG Ready sturing
+    address: 65
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+
+  - name: "WP-Qube SG Ready B" #SG Ready sturing
+    address: 66
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10

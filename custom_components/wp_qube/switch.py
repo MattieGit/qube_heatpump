@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN
+from .hub import EntityDef
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
+    data = hass.data[DOMAIN][entry.entry_id]
+    hub = data["hub"]
+    coordinator = data["coordinator"]
+
+    entities: list[SwitchEntity] = []
+    for ent in hub.entities:
+        if ent.platform != "switch":
+            continue
+        entities.append(WPQubeSwitch(coordinator, hub, ent))
+
+    async_add_entities(entities)
+
+
+class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
+    _attr_should_poll = False
+
+    def __init__(self, coordinator, hub, ent: EntityDef) -> None:
+        super().__init__(coordinator)
+        self._ent = ent
+        self._hub = hub
+        self._attr_name = ent.name
+        self._attr_unique_id = ent.unique_id or f"wp_qube_switch_{ent.write_type}_{ent.address}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._hub.host)},
+            name="Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        key = self._ent.unique_id or f"switch_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
+        val = self.coordinator.data.get(key)
+        return None if val is None else bool(val)
+
+    async def async_turn_on(self, **kwargs):
+        await self._hub.async_connect()
+        await self._hub.async_write_switch(self._ent, True)
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_off(self, **kwargs):
+        await self._hub.async_connect()
+        await self._hub.async_write_switch(self._ent, False)
+        await self.coordinator.async_request_refresh()

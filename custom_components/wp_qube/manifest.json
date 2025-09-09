@@ -1,0 +1,17 @@
+{
+  "domain": "wp_qube",
+  "name": "WP Qube Heatpump",
+  "version": "0.1.0",
+  "documentation": "https://github.com/example/wp-qube",
+  "issue_tracker": "https://github.com/example/wp-qube/issues",
+  "dependencies": [],
+  "codeowners": ["@your-github"],
+  "requirements": [
+    "pymodbus==3.6.6",
+    "PyYAML>=6.0"
+  ],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "integration_type": "hub"
+}
+

@@ -1,0 +1,8 @@
+{
+  "name": "WP Qube Heatpump",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["wp_qube"],
+  "country": []
+}
+

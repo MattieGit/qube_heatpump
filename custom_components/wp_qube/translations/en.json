@@ -1,0 +1,15 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WP Qube Heatpump",
+        "description": "Enter the heat pump IP and port.",
+        "data": {
+          "host": "Host/IP",
+          "port": "Port"
+        }
+      }
+    }
+  }
+}
+
