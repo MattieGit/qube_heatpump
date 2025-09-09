@@ -3,7 +3,7 @@
   "name": "Qube Heat Pump",
   "dependencies": ["modbus"],
   "documentation": "https://github.com/MattieGit/wp-qube/blob/main/README.md",
-  "code_owners": ["@MattieGit"],
+  "codeowners": ["@MattieGit"],
   "integration_type": "hub",
   "issue_tracker": "https://github.com/MattieGit/wp-qube/issues",
   "loggers": ["qube"],
