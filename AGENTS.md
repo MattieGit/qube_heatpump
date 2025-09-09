@@ -20,7 +20,7 @@
 
 ## Testing Guidelines
 - Prefer `pytest`; name tests `test_*.py` and functions `test_*`.
-- Add schema-based tests for `conf_modbus.yaml` (e.g., using `jsonschema`/`pykwalify`).
+- Add schema-based tests (e.g., using `jsonschema`/`pykwalify`).
 - Include representative fixtures under `tests/fixtures/` and validate both happy-path and edge cases.
 
 ## Commit & Pull Request Guidelines
