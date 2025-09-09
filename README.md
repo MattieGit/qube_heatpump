@@ -11,4 +11,7 @@ The integration will setup up sensors, binary sensors (alarms) and switches.
 
 The switches enable SG Ready implementations as well as automations to run the anti-legionella program, for example when surplus solar energy is available.
 
+Important: if you already have an existing modbus integration for your Qube heatpump, this integration might lead to duplicate entities.
+You will have to remove these entities manually after installing this integration. You can do that by filtering on the entity name and status "Unavailable".
+
 This is an initial version of the integration and might still have issues. Please report any issues.
