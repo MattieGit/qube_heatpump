@@ -1,6 +1,6 @@
 # WP Qube Heatpump (Custom Integration)
 
-This custom integration reads Modbus TCP registers of a Qube heat pump, creating sensors, binary sensors (alarms), and switches defined in `conf_modbus.yaml`.
+This custom integration will read the Modbus registers of the Qube heatpump, creating sensors, binary sensors (alarms), and switches as defined in the Qube modbus documentation.
 
 ## Installation
 - Via HACS: add this repo as a custom repository (category: Integration), then install "WP Qube Heatpump".
@@ -9,7 +9,6 @@ This custom integration reads Modbus TCP registers of a Qube heat pump, creating
 ## Configuration
 - Add via UI: Settings → Devices & Services → Integrations → "Add Integration" → "WP Qube Heatpump".
 - Enter the local IP (and optional port) of the heat pump.
-- The integration overrides the `host` value from `conf_modbus.yaml` with your IP.
 
 ## Notes
 - Polling interval defaults to 10s.
