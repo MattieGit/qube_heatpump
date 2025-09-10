@@ -15,3 +15,5 @@ Important: if you already have an existing modbus integration for your Qube heat
 You will have to remove these entities manually after installing this integration. You can do that by filtering on the entity name and status "Unavailable".
 
 This is an initial version of the integration and might still have issues. Please report any issues.
+
+Thanks!
