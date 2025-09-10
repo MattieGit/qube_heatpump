@@ -6,5 +6,3 @@ CONF_PORT = "port"
 DEFAULT_PORT = 502
 DEFAULT_SCAN_INTERVAL = 10
 
-CONF_FILE_NAME = "conf_modbus.yaml"
-
