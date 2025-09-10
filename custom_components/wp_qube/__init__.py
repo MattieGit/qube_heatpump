@@ -12,7 +12,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN, PLATFORMS, CONF_HOST, CONF_PORT, DEFAULT_SCAN_INTERVAL
+from .const import (
+    DOMAIN,
+    PLATFORMS,
+    CONF_HOST,
+    CONF_PORT,
+    DEFAULT_SCAN_INTERVAL,
+    CONF_FILE_NAME,
+)
 from .hub import WPQubeHub, EntityDef
 
 

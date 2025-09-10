@@ -1,6 +1,7 @@
 {
-  "domain": "wp-qube",
+  "domain": "wp_qube",
   "name": "Qube Heat Pump",
+  "config_flow": true,
   "dependencies": ["modbus"],
   "documentation": "https://github.com/MattieGit/wp-qube/blob/main/README.md",
   "codeowners": ["@MattieGit"],
@@ -8,5 +9,5 @@
   "issue_tracker": "https://github.com/MattieGit/wp-qube/issues",
   "loggers": ["qube"],
   "iot_class": "local_polling",
-  "version": "2025.9.0"
+  "version": "2025.9.1"
 }

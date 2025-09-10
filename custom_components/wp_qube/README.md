@@ -14,4 +14,4 @@ This custom integration will read the Modbus registers of the Qube heatpump, cre
 - Polling interval defaults to 10s.
 - Float decoding assumes Big Endian word/byte order.
 - Switch states are read from coils; writes use coil writes.
-
+- The bundled `modbus.yaml` defines the sensors/binary_sensors/switches. The IP/host in that file is ignored at runtime and replaced by the value you enter in the config flow.
