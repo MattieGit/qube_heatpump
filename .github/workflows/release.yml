@@ -13,5 +13,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # Optional: custom configuration
-          skip_patterns: "[skip release],[no-release]"
-          generate_release_notes: true  # Add GitHub's automatic release notes
+          # skip_patterns: "[skip release],[no-release]"
+          # generate_release_notes: true  # Add GitHub's automatic release notes
