@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.2 — 2025-09-12
+- updated domain from wp_qube to qube_heatpump to align with Home Assistant brand
+
 ## 2025.9.1 — 2025-09-10
 - feat: Load entities from `modbus.yaml` and override host/port from the config flow (no hardcoded IP).
 - fix: Align integration domain to `wp_qube` to match directory and code constant.

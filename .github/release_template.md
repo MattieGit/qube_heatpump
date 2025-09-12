@@ -24,7 +24,7 @@ Date: ${DATE}
   - Add or reconfigure the integration via `Settings → Devices & Services → Add Integration → WP Qube Heatpump`.
 
 - Manual install:
-  - Copy the `custom_components/wp_qube/` folder into `<config>/custom_components/wp_qube/`.
+  - Copy the `custom_components/qube_heatpump/` folder into `<config>/custom_components/qube_heatpump/`.
   - Restart Home Assistant.
   - Add the integration from the UI as above.
 
@@ -35,7 +35,7 @@ Date: ${DATE}
 ## Validation Steps
 - Confirm a device appears with ~35 binary sensors, ~41 sensors, and 9 switches.
 - Toggle a switch and verify state refresh.
-- Check logs for errors from `wp_qube` or `modbus`.
+- Check logs for errors from `qube_heatpump` or `modbus`.
 
 ## Known Issues
 - List known issues or limitations.

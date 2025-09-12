@@ -1,4 +1,4 @@
-DOMAIN = "wp_qube"
+DOMAIN = "qube_heatpump"
 PLATFORMS = ["sensor", "binary_sensor", "switch"]
 
 CONF_HOST = "host"

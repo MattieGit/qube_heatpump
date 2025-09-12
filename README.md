@@ -15,7 +15,7 @@ Notes:
 5) Add the integration via `Settings → Devices & Services → Add Integration → WP Qube Heatpump`.
 
 ## Manual install
-1) Copy the `custom_components/wp_qube/` folder to `<config>/custom_components/wp_qube/`.
+1) Copy the `custom_components/qube_heatpump/` folder to `<config>/custom_components/qube_heatpump/`.
 2) Restart Home Assistant.
 3) Add the integration from the UI as above.
 
