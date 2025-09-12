@@ -11,7 +11,7 @@ jobs:
       - uses: basnijholt/calver-auto-release@v1
         id: release
         with:
-          github_token: ${{ secrets.ACCESS_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           # Optional: custom configuration
           # skip_patterns: "[skip release],[no-release]"
           # generate_release_notes: true  # Add GitHub's automatic release notes
