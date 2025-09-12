@@ -3,11 +3,11 @@
 This custom integration will read the Modbus registers of the Qube heatpump, creating sensors, binary sensors (alarms), and switches as defined in the Qube modbus documentation.
 
 ## Installation
-- Via HACS: add this repo as a custom repository (category: Integration), then install "WP Qube Heatpump".
+- Via HACS: search for "Qube" (category: Integration), then download "Qube Heat Pump".
 - Restart Home Assistant.
 
 ## Configuration
-- Add via UI: Settings → Devices & Services → Integrations → "Add Integration" → "WP Qube Heatpump".
+- Add via UI: Settings → Devices & Services → Integrations → "Add Integration" → "Qube Heat Pump".
 - Enter the local IP (and optional port) of the heat pump.
 
 ## Notes
