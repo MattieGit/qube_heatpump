@@ -1,4 +1,4 @@
-# WP Qube Heatpump (Custom Integration)
+# Qube Heat Pump (Custom Integration)
 
 This custom integration will read the Modbus registers of the Qube heatpump, creating sensors, binary sensors (alarms), and switches as defined in the Qube modbus documentation.
 
