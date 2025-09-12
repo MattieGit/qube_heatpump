@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.3 — 2025-09-12
+- fix: Address config flow error by lazy‑importing the hub in `__init__.py` so the flow loads before optional deps are installed.
+- chore: Add `pymodbus==3.6.6` to `manifest.json` requirements.
+
 ## 2025.9.2 — 2025-09-12
 - updated domain from wp_qube to qube_heatpump to align with Home Assistant brand
 

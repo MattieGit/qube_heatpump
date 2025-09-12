@@ -20,10 +20,12 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     CONF_FILE_NAME,
 )
-from .hub import WPQubeHub, EntityDef
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    # Lazy import so the config_flow can load even if requirements
+    # (e.g., pymodbus) aren't installed yet.
+    from .hub import WPQubeHub, EntityDef
     host = entry.data[CONF_HOST]
     port = entry.data[CONF_PORT]
 

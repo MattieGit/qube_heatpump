@@ -1,7 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Root contains JSON file for HACS integration for Home Assistant
+- Root contains JSON file for HACS integration for Home Assistant with name "qube_heatpump".
+- Documentation for publishing a HACS integration can be found via this link: https://www.hacs.xyz/docs/publish/integration/
 - custom_components/ contains the files for the HACS integration
 - Place reusable code in `src/` (e.g., parsers, validators); command-line helpers in `scripts/`.
 - Add tests in `tests/` mirroring `src/` structure (e.g., `tests/test_validate_config.py`).
@@ -12,6 +13,7 @@
 - Run linters/hooks (if configured): `pre-commit run --all-files`.
 - Python tests (when present): `pytest -q` from repo root.
 - Validate config (example): `python scripts/validate_config.py conf_modbus.yaml` to check schema and references.
+- Current configuration has been fully validated and is working as expected. Don't make any breaking changes.
 
 ## Coding Style & Naming Conventions
 - YAML: two-space indent, lowercase keys in `snake_case`, comments with `#` above the field they describe.
