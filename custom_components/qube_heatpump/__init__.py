@@ -6,8 +6,6 @@ from pathlib import Path
 import logging
 from typing import Any
 
-import yaml
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -26,6 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Lazy import so the config_flow can load even if requirements
     # (e.g., pymodbus) aren't installed yet.
     from .hub import WPQubeHub, EntityDef
+    import yaml
     host = entry.data[CONF_HOST]
     port = entry.data[CONF_PORT]
 
