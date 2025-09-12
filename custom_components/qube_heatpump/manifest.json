@@ -1,5 +1,5 @@
 {
-  "domain": "wp_qube",
+  "domain": "qube_heatpump",
   "name": "Qube Heat Pump",
   "codeowners": ["@MattieGit"],
   "config_flow": true,
