@@ -1,4 +1,4 @@
-# WP Qube Heatpump (Home Assistant)
+# Qube heat pump (Home Assistant)
 
 This custom integration integrates the Qube heat pump (sold by HR‑Energy) into Home Assistant via Modbus/TCP. It creates sensors, binary sensors (alarms), and switches as defined in the bundled Modbus specification.
 
