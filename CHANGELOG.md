@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.14 — 2025-09-14
+- chore: Bump version to calendar date for config flow simplification and connectivity validation.
+
 ## 2025.9.3 — 2025-09-12
 - fix: Address config flow error by lazy‑importing the hub in `__init__.py` so the flow loads before optional deps are installed.
 - chore: Add `pymodbus==3.6.6` to `manifest.json` requirements.

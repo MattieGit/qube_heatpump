@@ -26,7 +26,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .hub import WPQubeHub, EntityDef
     import yaml
     host = entry.data[CONF_HOST]
-    port = entry.data[CONF_PORT]
+    from .const import DEFAULT_PORT
+    port = entry.data.get(CONF_PORT, DEFAULT_PORT)
 
     hub = WPQubeHub(hass, host, port)
 

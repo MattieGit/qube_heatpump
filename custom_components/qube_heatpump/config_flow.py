@@ -19,7 +19,7 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             host = user_input[CONF_HOST]
-            port = user_input.get(CONF_PORT, DEFAULT_PORT)
+            port = DEFAULT_PORT
 
             # Validate connectivity to the device to provide immediate feedback
             try:
@@ -39,10 +39,5 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={CONF_HOST: host, CONF_PORT: port},
                 )
 
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_HOST): str,
-                vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-            }
-        )
+        schema = vol.Schema({vol.Required(CONF_HOST): str})
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
