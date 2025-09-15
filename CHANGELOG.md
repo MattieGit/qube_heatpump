@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.18 — 2025-09-15
+- fix: Restore working config flow by relaxing dependency to `pymodbus>=3.9.0,<4` (compatible with Python 3.13) so HA can install requirements during flow.
+
 ## 2025.9.17 — 2025-09-15
 - fix: Correct pymodbus calls to use `slave=` kwarg for reads/writes; add `isError()` checks and logging to diagnose read failures.
 - chore: Restore `pymodbus==3.6.6` manifest requirement to ensure dependency availability in HA.
