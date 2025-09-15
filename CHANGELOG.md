@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.16 — 2025-09-15
+- fix: Sensors no longer show Unknown by passing correct Modbus `unit_id` on all reads/writes (default 1; configurable via YAML).
+- refactor: Strip leading "WP-Qube"/"WP Qube" prefix from entity names for clarity.
+
 ## 2025.9.15 — 2025-09-15
 - fix: Resolve setup error by avoiding `pymodbus.payload` import and manually decoding Modbus registers (big‑endian). Prevents `ModuleNotFoundError` on certain pymodbus versions.
 
