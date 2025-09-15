@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, List, Optional
 import struct
+import logging
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.exceptions import ModbusException
@@ -56,12 +57,16 @@ class WPQubeHub:
 
         if ent.platform == "binary_sensor":
             # Expect discrete inputs
-            rr = await self._client.read_discrete_inputs(ent.address, 1, unit=self._unit)
+            rr = await self._client.read_discrete_inputs(address=ent.address, count=1, slave=self._unit)
+            if hasattr(rr, "isError") and rr.isError():
+                raise ModbusException(f"Error reading discrete_inputs @ {ent.address}")
             return bool(getattr(rr, "bits", [False])[0])
 
         if ent.platform == "switch":
             # Read coil state to reflect actual device state
-            rr = await self._client.read_coils(ent.address, 1, unit=self._unit)
+            rr = await self._client.read_coils(address=ent.address, count=1, slave=self._unit)
+            if hasattr(rr, "isError") and rr.isError():
+                raise ModbusException(f"Error reading coils @ {ent.address}")
             return bool(getattr(rr, "bits", [False])[0])
 
         # sensor
@@ -70,11 +75,13 @@ class WPQubeHub:
             count = 2
 
         if ent.input_type == "input":
-            rr = await self._client.read_input_registers(ent.address, count, unit=self._unit)
+            rr = await self._client.read_input_registers(address=ent.address, count=count, slave=self._unit)
         else:
             # default to holding
-            rr = await self._client.read_holding_registers(ent.address, count, unit=self._unit)
+            rr = await self._client.read_holding_registers(address=ent.address, count=count, slave=self._unit)
 
+        if hasattr(rr, "isError") and rr.isError():
+            raise ModbusException(f"Error reading registers @ {ent.address}")
         regs = getattr(rr, "registers", None)
         if regs is None:
             raise ModbusException("No registers returned")
@@ -121,4 +128,6 @@ class WPQubeHub:
         if self._client is None:
             raise ModbusException("Client not connected")
         # Only coil writes are defined in the YAML
-        await self._client.write_coil(ent.address, 1 if on else 0, unit=self._unit)
+        rr = await self._client.write_coil(address=ent.address, value=1 if on else 0, slave=self._unit)
+        if hasattr(rr, "isError") and rr.isError():
+            raise ModbusException(f"Error writing coil @ {ent.address}")

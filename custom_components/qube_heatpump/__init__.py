@@ -86,11 +86,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hub.async_connect()
         results: dict[str, Any] = {}
         for ent in hub.entities:
-            # Only sensors and binary sensors are part of polling. Switches read coil state as well.
             try:
                 val = await hub.async_read_value(ent)
-            except Exception:
-                # On failure, leave the last value untouched by not setting it
+            except Exception as err:
+                logging.getLogger(__name__).warning(
+                    "Failed reading %s @ %s: %s", ent.platform, ent.address, err
+                )
                 continue
             key = _entity_key(ent)
             results[key] = val
