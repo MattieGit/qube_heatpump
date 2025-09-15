@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.17 — 2025-09-15
+- fix: Correct pymodbus calls to use `slave=` kwarg for reads/writes; add `isError()` checks and logging to diagnose read failures.
+- chore: Restore `pymodbus==3.6.6` manifest requirement to ensure dependency availability in HA.
+
 ## 2025.9.16 — 2025-09-15
 - fix: Sensors no longer show Unknown by passing correct Modbus `unit_id` on all reads/writes (default 1; configurable via YAML).
 - refactor: Strip leading "WP-Qube"/"WP Qube" prefix from entity names for clarity.
