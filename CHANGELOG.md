@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.19 — 2025-09-15
+- fix: Support both `slave` and `unit` kwargs across `pymodbus` versions via runtime signature detection.
+- fix: Improve connection checks and error logging for easier diagnostics.
+- feat: Add 1-based addressing fallback (retry `address-1`) when a register read fails.
+
 ## 2025.9.18 — 2025-09-15
 - fix: Restore working config flow by relaxing dependency to `pymodbus>=3.9.0,<4` (compatible with Python 3.13) so HA can install requirements during flow.
 
