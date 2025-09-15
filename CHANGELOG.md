@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.15 — 2025-09-15
+- fix: Resolve setup error by avoiding `pymodbus.payload` import and manually decoding Modbus registers (big‑endian). Prevents `ModuleNotFoundError` on certain pymodbus versions.
+
 ## 2025.9.14 — 2025-09-14
 - chore: Bump version to calendar date for config flow simplification and connectivity validation.
 
