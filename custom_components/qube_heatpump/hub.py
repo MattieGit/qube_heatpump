@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, List, Optional
 import struct
 import logging
+import inspect
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.exceptions import ModbusException
@@ -44,8 +45,34 @@ class WPQubeHub:
     async def async_connect(self) -> None:
         if self._client is None:
             self._client = AsyncModbusTcpClient(self._host, port=self._port)
-        if not self._client.connected:
-            await self._client.connect()
+        try:
+            connected = getattr(self._client, "connected", False)
+        except Exception:
+            connected = False
+        if not connected:
+            ok = await self._client.connect()
+            if ok is False:
+                raise ModbusException("Failed to connect to Modbus TCP server")
+
+    async def _call(self, method: str, **kwargs):
+        if self._client is None:
+            raise ModbusException("Client not connected")
+        func = getattr(self._client, method)
+        sig = None
+        try:
+            sig = inspect.signature(func)
+        except Exception:
+            sig = None
+        # Inject unit/slave kwarg depending on signature
+        if sig and "slave" in sig.parameters:
+            kwargs.setdefault("slave", self._unit)
+        else:
+            kwargs.setdefault("unit", self._unit)
+        resp = await func(**kwargs)
+        # Normalize error checking
+        if hasattr(resp, "isError") and resp.isError():
+            raise ModbusException(f"Modbus error on {method} with {kwargs}")
+        return resp
 
     async def async_close(self) -> None:
         if self._client is not None:
@@ -57,16 +84,12 @@ class WPQubeHub:
 
         if ent.platform == "binary_sensor":
             # Expect discrete inputs
-            rr = await self._client.read_discrete_inputs(address=ent.address, count=1, slave=self._unit)
-            if hasattr(rr, "isError") and rr.isError():
-                raise ModbusException(f"Error reading discrete_inputs @ {ent.address}")
+            rr = await self._call("read_discrete_inputs", address=ent.address, count=1)
             return bool(getattr(rr, "bits", [False])[0])
 
         if ent.platform == "switch":
             # Read coil state to reflect actual device state
-            rr = await self._client.read_coils(address=ent.address, count=1, slave=self._unit)
-            if hasattr(rr, "isError") and rr.isError():
-                raise ModbusException(f"Error reading coils @ {ent.address}")
+            rr = await self._call("read_coils", address=ent.address, count=1)
             return bool(getattr(rr, "bits", [False])[0])
 
         # sensor
@@ -74,14 +97,25 @@ class WPQubeHub:
         if ent.data_type in ("float32", "uint32", "int32"):
             count = 2
 
-        if ent.input_type == "input":
-            rr = await self._client.read_input_registers(address=ent.address, count=count, slave=self._unit)
-        else:
-            # default to holding
-            rr = await self._client.read_holding_registers(address=ent.address, count=count, slave=self._unit)
+        try:
+            if ent.input_type == "input":
+                rr = await self._call("read_input_registers", address=ent.address, count=count)
+            else:
+                # default to holding
+                rr = await self._call("read_holding_registers", address=ent.address, count=count)
+        except ModbusException:
+            # Some devices/YAMLs use 1-based addresses; try address-1 as fallback
+            fallback_addr = ent.address - 1
+            if fallback_addr < 0:
+                raise
+            logging.getLogger(__name__).info(
+                "Modbus read failed @ %s, retrying @ %s (fallback)", ent.address, fallback_addr
+            )
+            if ent.input_type == "input":
+                rr = await self._call("read_input_registers", address=fallback_addr, count=count)
+            else:
+                rr = await self._call("read_holding_registers", address=fallback_addr, count=count)
 
-        if hasattr(rr, "isError") and rr.isError():
-            raise ModbusException(f"Error reading registers @ {ent.address}")
         regs = getattr(rr, "registers", None)
         if regs is None:
             raise ModbusException("No registers returned")
@@ -128,6 +162,4 @@ class WPQubeHub:
         if self._client is None:
             raise ModbusException("Client not connected")
         # Only coil writes are defined in the YAML
-        rr = await self._client.write_coil(address=ent.address, value=1 if on else 0, slave=self._unit)
-        if hasattr(rr, "isError") and rr.isError():
-            raise ModbusException(f"Error writing coil @ {ent.address}")
+        await self._call("write_coil", address=ent.address, value=1 if on else 0)
