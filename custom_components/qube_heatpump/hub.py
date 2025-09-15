@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
+import struct
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.exceptions import ModbusException
-from pymodbus.payload import BinaryPayloadDecoder
-from pymodbus.constants import Endian
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import UNDEFINED
 
 
 @dataclass
@@ -80,34 +78,23 @@ class WPQubeHub:
         if regs is None:
             raise ModbusException("No registers returned")
 
+        # All decoding assumes big-endian word and byte order.
         if ent.data_type == "float32":
-            decoder = BinaryPayloadDecoder.fromRegisters(
-                regs, byteorder=Endian.Big, wordorder=Endian.Big
-            )
-            val = decoder.decode_32bit_float()
+            raw = struct.pack(">HH", int(regs[0]) & 0xFFFF, int(regs[1]) & 0xFFFF)
+            val = struct.unpack(">f", raw)[0]
         elif ent.data_type == "int16":
-            decoder = BinaryPayloadDecoder.fromRegisters(
-                regs, byteorder=Endian.Big, wordorder=Endian.Big
-            )
-            val = decoder.decode_16bit_int()
+            v = int(regs[0]) & 0xFFFF
+            val = v - 0x10000 if v & 0x8000 else v
         elif ent.data_type == "uint16":
-            decoder = BinaryPayloadDecoder.fromRegisters(
-                regs, byteorder=Endian.Big, wordorder=Endian.Big
-            )
-            val = decoder.decode_16bit_uint()
+            val = int(regs[0]) & 0xFFFF
         elif ent.data_type == "uint32":
-            decoder = BinaryPayloadDecoder.fromRegisters(
-                regs, byteorder=Endian.Big, wordorder=Endian.Big
-            )
-            val = decoder.decode_32bit_uint()
+            val = ((int(regs[0]) & 0xFFFF) << 16) | (int(regs[1]) & 0xFFFF)
         elif ent.data_type == "int32":
-            decoder = BinaryPayloadDecoder.fromRegisters(
-                regs, byteorder=Endian.Big, wordorder=Endian.Big
-            )
-            val = decoder.decode_32bit_int()
+            u = ((int(regs[0]) & 0xFFFF) << 16) | (int(regs[1]) & 0xFFFF)
+            val = u - 0x1_0000_0000 if u & 0x8000_0000 else u
         else:
-            # Fallback to first register
-            val = int(regs[0])
+            # Fallback to first register as unsigned 16-bit
+            val = int(regs[0]) & 0xFFFF
 
         # Apply scale/offset as value = value * scale + offset
         if ent.scale is not None:
@@ -134,4 +121,3 @@ class WPQubeHub:
             raise ModbusException("Client not connected")
         # Only coil writes are defined in the YAML
         await self._client.write_coil(ent.address, 1 if on else 0)
-
