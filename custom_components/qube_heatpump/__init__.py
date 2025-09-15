@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 import logging
 from typing import Any
+import re
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -29,8 +30,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .const import DEFAULT_PORT
     port = entry.data.get(CONF_PORT, DEFAULT_PORT)
 
-    hub = WPQubeHub(hass, host, port)
-
     # Load YAML spec bundled with the integration
     # Prefer bundled YAML; fall back to repo root if not found
     yaml_path = Path(__file__).parent / CONF_FILE_NAME
@@ -44,14 +43,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Override host/port from config entry
     spec["host"] = host
     spec["port"] = port
+    unit_id = int(spec.get("unit_id", 1))
+
+    hub = WPQubeHub(hass, host, port, unit_id)
+
+    def _strip_prefix(name: str) -> str:
+        # Remove leading "WP-Qube"/"WP Qube" prefix from names
+        n = name.strip()
+        if n.lower().startswith("wp-qube"):
+            # remove the prefix and any following separators/spaces
+            return re.sub(r"^\s*wp[-\s]?qube\s*", "", n, flags=re.IGNORECASE) or n
+        return n
 
     def _to_entity_defs(platform: str, items: list[dict[str, Any]] | None) -> list[EntityDef]:
         res: list[EntityDef] = []
         for it in items or []:
+            raw_name = it.get("name", f"{platform} {it.get('address')}")
             res.append(
                 EntityDef(
                     platform=platform,
-                    name=it.get("name", f"{platform} {it.get('address')}").strip(),
+                    name=_strip_prefix(raw_name),
                     address=int(it["address"]),
                     input_type=it.get("input_type"),
                     write_type=it.get("write_type"),

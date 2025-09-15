@@ -28,10 +28,11 @@ class EntityDef:
 
 
 class WPQubeHub:
-    def __init__(self, hass: HomeAssistant, host: str, port: int) -> None:
+    def __init__(self, hass: HomeAssistant, host: str, port: int, unit_id: int = 1) -> None:
         self._hass = hass
         self._host = host
         self._port = port
+        self._unit = unit_id
         self._client: Optional[AsyncModbusTcpClient] = None
         self.entities: List[EntityDef] = []
 
@@ -55,12 +56,12 @@ class WPQubeHub:
 
         if ent.platform == "binary_sensor":
             # Expect discrete inputs
-            rr = await self._client.read_discrete_inputs(ent.address, 1)
+            rr = await self._client.read_discrete_inputs(ent.address, 1, unit=self._unit)
             return bool(getattr(rr, "bits", [False])[0])
 
         if ent.platform == "switch":
             # Read coil state to reflect actual device state
-            rr = await self._client.read_coils(ent.address, 1)
+            rr = await self._client.read_coils(ent.address, 1, unit=self._unit)
             return bool(getattr(rr, "bits", [False])[0])
 
         # sensor
@@ -69,10 +70,10 @@ class WPQubeHub:
             count = 2
 
         if ent.input_type == "input":
-            rr = await self._client.read_input_registers(ent.address, count)
+            rr = await self._client.read_input_registers(ent.address, count, unit=self._unit)
         else:
             # default to holding
-            rr = await self._client.read_holding_registers(ent.address, count)
+            rr = await self._client.read_holding_registers(ent.address, count, unit=self._unit)
 
         regs = getattr(rr, "registers", None)
         if regs is None:
@@ -120,4 +121,4 @@ class WPQubeHub:
         if self._client is None:
             raise ModbusException("Client not connected")
         # Only coil writes are defined in the YAML
-        await self._client.write_coil(ent.address, 1 if on else 0)
+        await self._client.write_coil(ent.address, 1 if on else 0, unit=self._unit)
