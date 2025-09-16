@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.27 — 2025-09-16
+- revert: Remove vendor/original name attribute exposure and extra metadata on entities, restoring the prior entity model.
+
 ## 2025.9.26 — 2025-09-16
 - feat: Preserve vendor/original names alongside friendly names; expose `vendor_name` and addressing metadata as entity attributes for sensors, binary_sensors and switches.
 
