@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.23 — 2025-09-16
+- feat: Expose Options Flow in `__init__` so Configure/Options appears in UI.
+- chore: Move `modbus_probe.py` into integration directory for visibility.
+- docs: Update README with probe usage and tips.
+
 ## 2025.9.22 — 2025-09-16
 - feat: Add Options Flow to set Modbus Unit/Slave ID with restart-less apply; includes translations and live coordinator refresh.
 
