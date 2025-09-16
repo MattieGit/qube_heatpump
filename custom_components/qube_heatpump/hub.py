@@ -58,17 +58,14 @@ class WPQubeHub:
         if self._client is None:
             raise ModbusException("Client not connected")
         func = getattr(self._client, method)
-        sig = None
+        # Try with 'slave' then 'unit', finally without either
         try:
-            sig = inspect.signature(func)
-        except Exception:
-            sig = None
-        # Inject unit/slave kwarg depending on signature
-        if sig and "slave" in sig.parameters:
-            kwargs.setdefault("slave", self._unit)
-        else:
-            kwargs.setdefault("unit", self._unit)
-        resp = await func(**kwargs)
+            resp = await func(**{**kwargs, "slave": self._unit})
+        except TypeError:
+            try:
+                resp = await func(**{**kwargs, "unit": self._unit})
+            except TypeError:
+                resp = await func(**kwargs)
         # Normalize error checking
         if hasattr(resp, "isError") and resp.isError():
             raise ModbusException(f"Modbus error on {method} with {kwargs}")
