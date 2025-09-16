@@ -49,3 +49,13 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         key = self._ent.unique_id or f"binary_sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         val = self.coordinator.data.get(key)
         return None if val is None else bool(val)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        attrs: dict[str, str | int] = {}
+        if getattr(self._ent, "vendor_name", None):
+            attrs["vendor_name"] = self._ent.vendor_name
+        attrs["modbus_address"] = self._ent.address
+        if self._ent.input_type:
+            attrs["input_type"] = self._ent.input_type
+        return attrs

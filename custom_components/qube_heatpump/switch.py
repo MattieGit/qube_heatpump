@@ -58,3 +58,13 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         await self._hub.async_connect()
         await self._hub.async_write_switch(self._ent, False)
         await self.coordinator.async_request_refresh()
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        attrs: dict[str, str | int] = {}
+        if getattr(self._ent, "vendor_name", None):
+            attrs["vendor_name"] = self._ent.vendor_name
+        attrs["modbus_address"] = self._ent.address
+        if self._ent.write_type:
+            attrs["write_type"] = self._ent.write_type
+        return attrs

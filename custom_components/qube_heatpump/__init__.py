@@ -65,6 +65,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 EntityDef(
                     platform=platform,
                     name=_strip_prefix(raw_name),
+                    vendor_name=str(raw_name).strip() if raw_name is not None else None,
                     address=int(it["address"]),
                     input_type=it.get("input_type"),
                     write_type=it.get("write_type"),
