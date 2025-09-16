@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.28 — 2025-09-16
+- fix: Avoid sensor collisions across multiple hubs by namespacing YAML-defined sensor unique_ids with `<host>_<unit>`.
+  - Note: sensors may re-register with new unique_ids; clean up old registry entries if duplicates appear.
+
 ## 2025.9.27 — 2025-09-16
 - revert: Remove vendor/original name attribute exposure and extra metadata on entities, restoring the prior entity model.
 
