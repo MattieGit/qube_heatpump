@@ -61,6 +61,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         res: list[EntityDef] = []
         for it in items or []:
             raw_name = it.get("name", f"{platform} {it.get('address')}")
+            uid = it.get("unique_id")
+            if uid:
+                # Ensure uniqueness across multiple hubs by namespacing with host+unit
+                uid = f"{uid}_{host}_{unit_id}"
             res.append(
                 EntityDef(
                     platform=platform,
@@ -73,7 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     device_class=it.get("device_class"),
                     state_class=it.get("state_class"),
                     precision=it.get("precision"),
-                    unique_id=it.get("unique_id"),
+                    unique_id=uid,
                     offset=it.get("offset"),
                     scale=it.get("scale"),
                 )
