@@ -98,19 +98,6 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         key = self._ent.unique_id or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         return self.coordinator.data.get(key)
 
-    @property
-    def extra_state_attributes(self) -> dict:
-        attrs: dict[str, Any] = {}
-        if getattr(self._ent, "vendor_name", None):
-            attrs["vendor_name"] = self._ent.vendor_name
-        # Always include addressing metadata for troubleshooting
-        attrs["modbus_address"] = self._ent.address
-        if self._ent.input_type:
-            attrs["input_type"] = self._ent.input_type
-        if self._ent.data_type:
-            attrs["data_type"] = self._ent.data_type
-        return attrs
-
 
 def _entity_key(ent: EntityDef) -> str:
     return ent.unique_id or f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
@@ -188,12 +175,3 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         except Exception:
             return None
         return None
-
-    @property
-    def extra_state_attributes(self) -> dict:
-        # Surface the source entity info for transparency
-        return {
-            "source_platform": self._source.platform,
-            "source_address": self._source.address,
-            "source_unique": self._source.unique_id,
-        }
