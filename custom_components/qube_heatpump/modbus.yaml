@@ -355,9 +355,9 @@
     unique_id: wp_qube_stuurvraag_compressor
 
   - name: "WP-Qube Gemeten Flow"
-    address: 19
+    address: 18
     input_type: input
-    data_type: int16
+    data_type: int32
     scan_interval: 10
     precision: 0
     device_class: volume_flow_rate
