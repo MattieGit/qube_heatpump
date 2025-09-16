@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import struct
 from typing import Any
+import inspect
 
 try:
     # pymodbus 3.x async client
@@ -68,12 +69,18 @@ async def _read_async(
 
         def _inject_kw(method, **kwargs):
             # Support both 'slave' and 'unit' across pymodbus 3.x
-            sig = getattr(method, "__signature__", None)
-            params = set(sig.parameters) if sig else set()
+            try:
+                sig = inspect.signature(method)
+                params = set(sig.parameters)
+            except Exception:
+                params = set()
             if "slave" in params:
                 kwargs.setdefault("slave", slave)
-            else:
+            elif "unit" in params:
                 kwargs.setdefault("unit", slave)
+            else:
+                # default to 'slave'
+                kwargs.setdefault("slave", slave)
             return kwargs
 
         if kind == "discrete":
@@ -159,4 +166,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
