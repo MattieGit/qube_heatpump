@@ -67,45 +67,32 @@ async def _read_async(
         if ok is False:
             raise RuntimeError("Failed to connect")
 
-        def _inject_kw(method, **kwargs):
-            # Support both 'slave' and 'unit' across pymodbus 3.x
+        async def _call(method, **kwargs):
+            # Try with slave first, then unit, finally without either
             try:
-                sig = inspect.signature(method)
-                params = set(sig.parameters)
-            except Exception:
-                params = set()
-            if "slave" in params:
-                kwargs.setdefault("slave", slave)
-            elif "unit" in params:
-                kwargs.setdefault("unit", slave)
-            else:
-                # default to 'slave'
-                kwargs.setdefault("slave", slave)
-            return kwargs
+                return await method(**{**kwargs, "slave": slave})
+            except TypeError as e1:
+                try:
+                    return await method(**{**kwargs, "unit": slave})
+                except TypeError as e2:
+                    # as a last resort, call without unit/slave
+                    return await method(**kwargs)
 
         if kind == "discrete":
-            rr = await client.read_discrete_inputs(
-                **_inject_kw(client.read_discrete_inputs, address=address, count=1)
-            )
+            rr = await _call(client.read_discrete_inputs, address=address, count=1)
             print("Raw bits:", getattr(rr, "bits", None))
             return
 
         if kind == "coil":
-            rr = await client.read_coils(
-                **_inject_kw(client.read_coils, address=address, count=1)
-            )
+            rr = await _call(client.read_coils, address=address, count=1)
             print("Raw bits:", getattr(rr, "bits", None))
             return
 
         count = 2 if data_type in {"float32", "uint32", "int32"} else 1
         if kind == "input":
-            rr = await client.read_input_registers(
-                **_inject_kw(client.read_input_registers, address=address, count=count)
-            )
+            rr = await _call(client.read_input_registers, address=address, count=count)
         else:
-            rr = await client.read_holding_registers(
-                **_inject_kw(client.read_holding_registers, address=address, count=count)
-            )
+            rr = await _call(client.read_holding_registers, address=address, count=count)
         regs = getattr(rr, "registers", None)
         print("Raw regs:", regs)
         if regs:
