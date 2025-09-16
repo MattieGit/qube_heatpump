@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.25 — 2025-09-16
+- fix: Support multiple hubs/devices in parallel by including host+unit in entity unique_ids and device identifiers to prevent collisions.
+  - Note: existing entities may re-register with new unique_ids; if duplicates appear in the registry, remove the older entries once verified.
+
 ## 2025.9.24 — 2025-09-16
 - feat: Add computed/template sensors (status, driewegklep DHW/CV, vierwegklep heat/cool) with automatic source detection independent of entity_id suffixes.
 - docs/chore: Relocate `modbus_probe.py` into integration directory and update README usage.
