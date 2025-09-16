@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.21 — 2025-09-16
+- fix: Align hub Modbus calls with the probe script by trying `slave` then `unit` kwargs (and fallback) for maximum pymodbus 3.x compatibility.
+
 ## 2025.9.20 — 2025-09-16
 - chore: Add `scripts/modbus_probe.py` to test Modbus/TCP reads from the HA terminal (helps diagnose addressing/endianness and connectivity).
 
