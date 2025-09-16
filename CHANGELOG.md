@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.24 — 2025-09-16
+- feat: Add computed/template sensors (status, driewegklep DHW/CV, vierwegklep heat/cool) with automatic source detection independent of entity_id suffixes.
+- docs/chore: Relocate `modbus_probe.py` into integration directory and update README usage.
+- fix: Ensure Options/Configure is visible by exposing options flow in `__init__`.
+
 ## 2025.9.23 — 2025-09-16
 - feat: Expose Options Flow in `__init__` so Configure/Options appears in UI.
 - chore: Move `modbus_probe.py` into integration directory for visibility.
