@@ -17,8 +17,8 @@ This custom integration will read the Modbus registers of the Qube heatpump, cre
 - The bundled `modbus.yaml` defines the sensors/binary_sensors/switches. The IP/host in that file is ignored at runtime and replaced by the value you enter in the config flow.
 
 ## Contributions
-- Feel free to contribute to this repository
-- In case you'd like to share some support, feel free to buy me a coffee at https://buymeacoffee.com/mattiegit
+- Feel free to contribute to this repository.
+- In case you'd like to share some support, feel free to buy me a coffee at https://buymeacoffee.com/mattiegit .
 
 **Diagnostics**
 - Quick probe: run `modbus_probe.py` inside the Home Assistant container to verify raw Modbus values without the integration.
