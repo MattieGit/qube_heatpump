@@ -75,6 +75,9 @@ class WPQubeHub:
         if self._client is not None:
             await self._client.close()
 
+    def set_unit_id(self, unit_id: int) -> None:
+        self._unit = int(unit_id)
+
     async def async_read_value(self, ent: EntityDef) -> Any:
         if self._client is None:
             raise ModbusException("Client not connected")

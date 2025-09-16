@@ -16,4 +16,16 @@
       }
     }
   }
+  ,
+  "options": {
+    "step": {
+      "init": {
+        "title": "Qube Heat Pump Options",
+        "description": "Set the Modbus Unit/Slave ID for the device behind your Modbus/TCP gateway. If you have multiple devices behind one gateway, create one integration entry per unit ID.",
+        "data": {
+          "unit_id": "Unit/Slave ID"
+        }
+      }
+    }
+  }
 }

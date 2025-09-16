@@ -18,6 +18,7 @@ from .const import (
     CONF_PORT,
     DEFAULT_SCAN_INTERVAL,
     CONF_FILE_NAME,
+    CONF_UNIT_ID,
 )
 
 
@@ -43,7 +44,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Override host/port from config entry
     spec["host"] = host
     spec["port"] = port
-    unit_id = int(spec.get("unit_id", 1))
+    # Options override: allow user to set Modbus unit/slave id via Options Flow
+    unit_id = int(entry.options.get(CONF_UNIT_ID, spec.get("unit_id", 1)))
 
     hub = WPQubeHub(hass, host, port, unit_id)
 
@@ -109,6 +111,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "hub": hub,
         "coordinator": coordinator,
     }
+
+    # Listen for options updates to apply unit/slave id without HA restart
+    async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
+        if updated_entry.entry_id != entry.entry_id:
+            return
+        data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+        if not data:
+            return
+        hub: WPQubeHub = data["hub"]
+        coord: DataUpdateCoordinator = data["coordinator"]
+        new_unit = int(updated_entry.options.get(CONF_UNIT_ID, 1))
+        hub.set_unit_id(new_unit)
+        await coord.async_request_refresh()
+
+    entry.async_on_unload(entry.add_update_listener(_options_updated))
 
     # Initial refresh
     await coordinator.async_config_entry_first_refresh()
