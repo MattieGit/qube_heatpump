@@ -147,3 +147,11 @@ def _entity_key(ent: EntityDef) -> str:
     if ent.unique_id:
         return ent.unique_id
     return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
+
+
+# Expose options flow handler for HA to discover Configure/Options in UI
+async def async_get_options_flow(config_entry: ConfigEntry):
+    # Lazy import to avoid loading config flow until needed
+    from .config_flow import OptionsFlowHandler  # type: ignore
+
+    return OptionsFlowHandler(config_entry)
