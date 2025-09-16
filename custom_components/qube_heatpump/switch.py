@@ -32,12 +32,12 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         self._ent = ent
         self._hub = hub
         self._attr_name = ent.name
-        self._attr_unique_id = ent.unique_id or f"wp_qube_switch_{ent.write_type}_{ent.address}"
+        self._attr_unique_id = ent.unique_id or f"wp_qube_switch_{self._hub.host}_{self._hub.unit}_{ent.write_type}_{ent.address}"
 
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._hub.host)},
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name="Qube Heatpump",
             manufacturer="Qube",
             model="Heatpump",

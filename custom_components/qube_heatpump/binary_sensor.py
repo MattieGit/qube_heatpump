@@ -19,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for ent in hub.entities:
         if ent.platform != "binary_sensor":
             continue
-        entities.append(WPQubeBinarySensor(coordinator, hub.host, ent))
+        entities.append(WPQubeBinarySensor(coordinator, hub.host, hub.unit, ent))
 
     async_add_entities(entities)
 
@@ -27,17 +27,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, ent: EntityDef) -> None:
+    def __init__(self, coordinator, host: str, unit: int, ent: EntityDef) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._host = host
+        self._unit = unit
         self._attr_name = ent.name
-        self._attr_unique_id = ent.unique_id or f"wp_qube_binary_{ent.input_type}_{ent.address}"
+        self._attr_unique_id = ent.unique_id or f"wp_qube_binary_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
 
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._host)},
+            identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
             name="Qube Heatpump",
             manufacturer="Qube",
             model="Heatpump",

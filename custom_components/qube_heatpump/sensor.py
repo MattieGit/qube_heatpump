@@ -21,7 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
-        entities.append(WPQubeSensor(coordinator, hub.host, ent))
+        entities.append(WPQubeSensor(coordinator, hub.host, hub.unit, ent))
 
     # Add computed/template-like sensors equivalent to template_sensors.yaml
     # 1) Qube status full (maps numeric status to human-readable string)
@@ -72,12 +72,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, ent: EntityDef) -> None:
+    def __init__(self, coordinator, host: str, unit: int, ent: EntityDef) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._host = host
+        self._unit = unit
         self._attr_name = ent.name
-        self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{ent.input_type}_{ent.address}"
+        self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
         self._attr_device_class = ent.device_class
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
         if ent.state_class:
@@ -86,7 +87,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._host)},
+            identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
             name="Qube Heatpump",
             manufacturer="Qube",
             model="Heatpump",
@@ -136,12 +137,12 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._source = source
         self._attr_name = name
         # Make unique per host to support multiple entries
-        self._attr_unique_id = f"wp_qube_{unique_suffix}_{hub.host}"
+        self._attr_unique_id = f"wp_qube_{unique_suffix}_{hub.host}_{hub.unit}"
 
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._hub.host)},
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name="Qube Heatpump",
             manufacturer="Qube",
             model="Heatpump",

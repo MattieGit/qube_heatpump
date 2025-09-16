@@ -42,6 +42,10 @@ class WPQubeHub:
     def host(self) -> str:
         return self._host
 
+    @property
+    def unit(self) -> int:
+        return self._unit
+
     async def async_connect(self) -> None:
         if self._client is None:
             self._client = AsyncModbusTcpClient(self._host, port=self._port)
