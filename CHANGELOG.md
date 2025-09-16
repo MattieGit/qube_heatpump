@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.22 — 2025-09-16
+- feat: Add Options Flow to set Modbus Unit/Slave ID with restart-less apply; includes translations and live coordinator refresh.
+
 ## 2025.9.21 — 2025-09-16
 - fix: Align hub Modbus calls with the probe script by trying `slave` then `unit` kwargs (and fallback) for maximum pymodbus 3.x compatibility.
 
