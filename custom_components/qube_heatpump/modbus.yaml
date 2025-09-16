@@ -357,7 +357,7 @@
   - name: "WP-Qube Gemeten Flow"
     address: 18
     input_type: input
-    data_type: int32
+    data_type: float32
     scan_interval: 10
     precision: 0
     device_class: volume_flow_rate
