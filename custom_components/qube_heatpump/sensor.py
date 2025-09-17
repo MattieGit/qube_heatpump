@@ -80,13 +80,19 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         self._unit = unit
         self._attr_name = ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
-        # Suggest an entity_id based on vendor_id, prefixed for multi-hub uniqueness
+        # Suggest vendor-only entity_id; conflict fallback handled in async_added_to_hass
         if getattr(ent, "vendor_id", None):
-            self._attr_suggested_object_id = f"{ent.vendor_id}_{self._host}_{self._unit}"
+            self._attr_suggested_object_id = _slugify(ent.vendor_id)
         self._attr_device_class = ent.device_class
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
         if ent.state_class:
             self._attr_state_class = ent.state_class
+        # Hint UI display precision to avoid decimals for precision 0 (e.g., kWh totals)
+        if getattr(ent, "precision", None) is not None:
+            try:
+                self._attr_suggested_display_precision = int(ent.precision)  # type: ignore[attr-defined]
+            except Exception:
+                pass
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

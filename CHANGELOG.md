@@ -106,3 +106,7 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.37 — 2025-09-16
 - fix: Build entity unique_ids from vendor IDs without host+unit by default; add host+unit only when a conflict exists in the registry. Avoids unnecessary suffixes for single‑hub setups and reduces duplicate‑UID errors.
+
+## 2025.9.38 — 2025-09-16
+- fix: Suggest vendor-only entity_ids (no IP/unit) on first create; keep conflict fallback logic.
+- feat: Set `suggested_display_precision` from YAML `precision` so kWh totals (precision 0) render without decimals.
