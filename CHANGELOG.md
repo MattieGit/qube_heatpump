@@ -97,3 +97,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.34 — 2025-09-16
 - feat: Actively align entity_id with vendor unique_id by updating the registry on first add (uses `<vendor_id>_<host>_<unit>`). Display names remain from YAML/translations.
+
+## 2025.9.35 — 2025-09-16
+- feat: Make host+unit prefix optional for entity_ids — try vendor-only first, fall back to `<vendor>_<host>_<unit>` only if there’s a conflict.

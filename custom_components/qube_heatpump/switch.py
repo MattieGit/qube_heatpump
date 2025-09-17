@@ -65,15 +65,25 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         if getattr(self._ent, "vendor_id", None):
-            desired_obj_id = _slugify(f"{self._ent.vendor_id}_{self._hub.host}_{self._hub.unit}")
-            if desired_obj_id:
-                registry = er.async_get(self.hass)
-                current = registry.async_get(self.entity_id)
-                if current and current.entity_id != f"switch.{desired_obj_id}":
-                    try:
-                        registry.async_update_entity(self.entity_id, new_entity_id=f"switch.{desired_obj_id}")
-                    except Exception:
-                        pass
+            registry = er.async_get(self.hass)
+            current = registry.async_get(self.entity_id)
+            if not current:
+                return
+            base_obj = _slugify(self._ent.vendor_id)
+            preferred_eid = f"switch.{base_obj}"
+            if current.entity_id != preferred_eid and registry.async_get(preferred_eid) is None:
+                try:
+                    registry.async_update_entity(self.entity_id, new_entity_id=preferred_eid)
+                    return
+                except Exception:
+                    pass
+            fallback_obj = _slugify(f"{self._ent.vendor_id}_{self._hub.host}_{self._hub.unit}")
+            fallback_eid = f"switch.{fallback_obj}"
+            if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
+                try:
+                    registry.async_update_entity(self.entity_id, new_entity_id=fallback_eid)
+                except Exception:
+                    pass
 
 
 def _slugify(text: str) -> str:

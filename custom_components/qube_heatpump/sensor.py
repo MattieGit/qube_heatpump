@@ -90,20 +90,28 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        # Prefer vendor-based entity_id if available
+        # Prefer vendor-based entity_id; add host+unit suffix only if needed
         if getattr(self._ent, "vendor_id", None):
-            desired_obj_id = _slugify(f"{self._ent.vendor_id}_{self._host}_{self._unit}")
-            if desired_obj_id:
-                registry = er.async_get(self.hass)
-                current = registry.async_get(self.entity_id)
-                if current and current.entity_id != f"sensor.{desired_obj_id}":
-                    # Only update if target is free or already ours
-                    if not registry.async_get_entity_id("sensor", DOMAIN, current.unique_id) or True:
-                        try:
-                            registry.async_update_entity(self.entity_id, new_entity_id=f"sensor.{desired_obj_id}")
-                        except Exception:
-                            # Best-effort; keep current entity_id on failure
-                            pass
+            registry = er.async_get(self.hass)
+            current = registry.async_get(self.entity_id)
+            if not current:
+                return
+            base_obj = _slugify(self._ent.vendor_id)
+            preferred_eid = f"sensor.{base_obj}"
+            if current.entity_id != preferred_eid and registry.async_get(preferred_eid) is None:
+                try:
+                    registry.async_update_entity(self.entity_id, new_entity_id=preferred_eid)
+                    return
+                except Exception:
+                    pass
+            # Fallback with prefix to avoid conflicts
+            fallback_obj = _slugify(f"{self._ent.vendor_id}_{self._host}_{self._unit}")
+            fallback_eid = f"sensor.{fallback_obj}"
+            if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
+                try:
+                    registry.async_update_entity(self.entity_id, new_entity_id=fallback_eid)
+                except Exception:
+                    pass
 
     @property
     def device_info(self) -> DeviceInfo:
