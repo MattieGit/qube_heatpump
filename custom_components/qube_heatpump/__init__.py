@@ -82,6 +82,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return re.sub(r"^\s*wp[-\s]?qube\s*", "", n, flags=re.IGNORECASE) or n
         return n
 
+    # Track vendor IDs we have already used per platform to avoid duplicate
+    # unique_id collisions within a single hub load, before the registry
+    # is updated.
+    _seen_vendor_ids: dict[str, set[str]] = {"sensor": set(), "binary_sensor": set(), "switch": set()}
+
     def _to_entity_defs(platform: str, items: list[dict[str, Any]] | None) -> list[EntityDef]:
         res: list[EntityDef] = []
         for it in items or []:
@@ -90,18 +95,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             vendor_id = None
             if uid:
                 vendor_id = str(uid).lower()
-                # Decide per-platform whether to suffix with host+unit (only on conflict)
+                # Prefer base vendor_id; suffix with host+unit if (a) we already used this
+                # vendor_id for this platform in this hub load, or (b) the registry reports
+                # an existing entity with that unique_id.
                 platform_domain = {
                     "sensor": "sensor",
                     "binary_sensor": "binary_sensor",
                     "switch": "switch",
                 }.get(platform, "sensor")
                 base_uid = vendor_id
-                existing = ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid)
-                if existing is not None:
-                    uid = f"{vendor_id}_{host}_{unit_id}"
-                else:
-                    uid = base_uid
+                conflict = False
+                if vendor_id in _seen_vendor_ids.get(platform, set()):
+                    conflict = True
+                if ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid) is not None:
+                    conflict = True
+                uid = f"{vendor_id}_{host}_{unit_id}" if conflict else base_uid
+                _seen_vendor_ids.setdefault(platform, set()).add(base_uid)
             # Prefer translated display name if available
             display_name = _strip_prefix(raw_name)
             if vendor_id and vendor_id in name_map:

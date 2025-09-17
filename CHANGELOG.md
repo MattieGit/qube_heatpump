@@ -110,3 +110,6 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.38 — 2025-09-16
 - fix: Suggest vendor-only entity_ids (no IP/unit) on first create; keep conflict fallback logic.
 - feat: Set `suggested_display_precision` from YAML `precision` so kWh totals (precision 0) render without decimals.
+
+## 2025.9.39 — 2025-09-16
+- fix: Prevent duplicate unique_id collisions within a single hub by de-duplicating vendor IDs per platform during load (suffix with `<host>_<unit>` only when needed). This avoids the platform ignoring entities when two entries share the same vendor ID in YAML (e.g., addresses 44 and 46).
