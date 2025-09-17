@@ -668,9 +668,9 @@
     data_type: float32
     scan_interval: 10
     precision: 0
-    device_class: temperature
-    unit_of_measurement: "°C"
-    state_class: measurement
+    device_class: energy
+    unit_of_measurement: "kWh"
+    state_class: total_increasing
     unique_id: GeneralMng_AcumulatedPwr
 
   - name: "Totaal Thermische opbrengst in kWh"
@@ -679,9 +679,9 @@
     data_type: float32
     scan_interval: 10
     precision: 0
-    device_class: temperature
-    unit_of_measurement: "°C"
-    state_class: measurement
+    device_class: energy
+    unit_of_measurement: "kWh"
+    state_class: total_increasing
     unique_id: GeneralMng_AcumulatedThermic
 
   switches:
