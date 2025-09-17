@@ -88,3 +88,6 @@ All notable changes to this project are documented in this file. This project us
 - docs: Initial documentation.
 ## 2025.9.31 — 2025-09-16
 - fix(yaml): update energy total sensors (addresses 69 and 71) to `state_class: total_increasing` with `device_class: energy` and `unit_of_measurement: kWh`.
+
+## 2025.9.32 — 2025-09-16
+- feat: Suggest entity_ids based on vendor unique_id (lowercased) with host+unit prefix via `suggested_object_id`; display names remain from YAML or translations.
