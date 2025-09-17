@@ -103,3 +103,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.36 — 2025-09-16
 - fix: When `precision: 0`, return integer values (not floats) after rounding so kWh totals render without decimals in the UI.
+
+## 2025.9.37 — 2025-09-16
+- fix: Build entity unique_ids from vendor IDs without host+unit by default; add host+unit only when a conflict exists in the registry. Avoids unnecessary suffixes for single‑hub setups and reduces duplicate‑UID errors.

@@ -70,6 +70,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     name_map = _load_name_map()
     use_vendor_names = bool(entry.options.get(CONF_USE_VENDOR_NAMES, False))
+    # Entity registry for conflict detection when building unique_ids
+    from homeassistant.helpers import entity_registry as er
+    ent_reg = er.async_get(hass)
 
     def _strip_prefix(name: str) -> str:
         # Remove leading "WP-Qube"/"WP Qube" prefix from names
@@ -86,9 +89,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             uid = it.get("unique_id")
             vendor_id = None
             if uid:
-                # Ensure uniqueness across multiple hubs by namespacing with host+unit
                 vendor_id = str(uid).lower()
-                uid = f"{vendor_id}_{host}_{unit_id}"
+                # Decide per-platform whether to suffix with host+unit (only on conflict)
+                platform_domain = {
+                    "sensor": "sensor",
+                    "binary_sensor": "binary_sensor",
+                    "switch": "switch",
+                }.get(platform, "sensor")
+                base_uid = vendor_id
+                existing = ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid)
+                if existing is not None:
+                    uid = f"{vendor_id}_{host}_{unit_id}"
+                else:
+                    uid = base_uid
             # Prefer translated display name if available
             display_name = _strip_prefix(raw_name)
             if vendor_id and vendor_id in name_map:
