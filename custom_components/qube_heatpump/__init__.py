@@ -84,12 +84,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for it in items or []:
             raw_name = it.get("name", f"{platform} {it.get('address')}")
             uid = it.get("unique_id")
+            vendor_id = None
             if uid:
                 # Ensure uniqueness across multiple hubs by namespacing with host+unit
                 vendor_id = str(uid).lower()
                 uid = f"{vendor_id}_{host}_{unit_id}"
-            else:
-                vendor_id = None
             # Prefer translated display name if available
             display_name = _strip_prefix(raw_name)
             if vendor_id and vendor_id in name_map:
@@ -100,6 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 EntityDef(
                     platform=platform,
                     name=str(display_name).strip(),
+                    vendor_id=vendor_id,
                     address=int(it["address"]),
                     input_type=it.get("input_type"),
                     write_type=it.get("write_type"),

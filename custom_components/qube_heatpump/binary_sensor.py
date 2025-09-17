@@ -34,6 +34,8 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._unit = unit
         self._attr_name = ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_binary_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
+        if getattr(ent, "vendor_id", None):
+            self._attr_suggested_object_id = f"{ent.vendor_id}_{self._host}_{self._unit}"
 
     @property
     def device_info(self) -> DeviceInfo:

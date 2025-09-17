@@ -33,6 +33,8 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         self._hub = hub
         self._attr_name = ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_switch_{self._hub.host}_{self._hub.unit}_{ent.write_type}_{ent.address}"
+        if getattr(ent, "vendor_id", None):
+            self._attr_suggested_object_id = f"{ent.vendor_id}_{self._hub.host}_{self._hub.unit}"
 
     @property
     def device_info(self) -> DeviceInfo:
