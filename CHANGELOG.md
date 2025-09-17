@@ -123,3 +123,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.42 — 2025-09-16
 - fix(yaml): update sensor at address 61 (`GeneralMng_EletricPwr`) to `device_class: power`, `unit_of_measurement: W`, and `state_class: measurement`.
+
+## 2025.9.43 — 2025-09-16
+- fix(yaml): revert `GeneralMng_EletricPwr` (addr 61) to energy semantics: `device_class: energy`, `unit_of_measurement: kWh`, `state_class: total` per user validation.

@@ -635,9 +635,9 @@
     data_type: float32
     scan_interval: 10
     precision: 0
-    device_class: power
-    unit_of_measurement: "W"
-    state_class: measurement
+    device_class: energy
+    unit_of_measurement: "kWh"
+    state_class: total
     unique_id: GeneralMng_EletricPwr
 
   - name: "Totaal thermisch verbruik (berekend)"
