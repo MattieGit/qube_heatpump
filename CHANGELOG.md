@@ -86,3 +86,5 @@ All notable changes to this project are documented in this file. This project us
 - feat: Initial public version of the WP Qube Heatpump integration.
 - feat: Basic Modbus/TCP hub, sensors, binary_sensors, and switches.
 - docs: Initial documentation.
+## 2025.9.31 — 2025-09-16
+- fix(yaml): update energy total sensors (addresses 69 and 71) to `state_class: total_increasing` with `device_class: energy` and `unit_of_measurement: kWh`.
