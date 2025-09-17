@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.30 — 2025-09-16
+- feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
+- feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.
+- feat(i18n): Add entity name translations (en/nl) resolved by vendor ID; defaults to English.
+- fix: Automatically lowercase vendor `unique_id` values from YAML on load (no manual edits required).
+
 ## 2025.9.29 — 2025-09-16
 - feat: Add per-entity `min_value` clamp in hub; configured `Gemeten Flow` with `min_value: 0` to report 0 instead of slight negative values when idle.
 
