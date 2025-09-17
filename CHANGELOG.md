@@ -117,3 +117,6 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.40 — 2025-09-16
 - feat: Adopt legacy suffixed unique_ids from the registry when present to avoid creating duplicates; prefer vendor-only otherwise.
 - feat: Add a maintenance service `qube_heatpump.migrate_registry` with `dry_run` and `prefer_vendor_only` to rename entity_ids and update unique_ids where safe.
+
+## 2025.9.41 — 2025-09-16
+- chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.

@@ -246,7 +246,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "Registry migration (%s): %s", "dry_run" if dry_run else "applied", changes
             )
 
-    hass.services.async_register(DOMAIN, "migrate_registry", _async_migrate_registry)
+    # Register service with schema for validation (also described in services.yaml)
+    import voluptuous as vol
+    from homeassistant.helpers import config_validation as cv
+    svc_schema = vol.Schema(
+        {
+            vol.Optional("dry_run", default=True): cv.boolean,
+            vol.Optional("prefer_vendor_only", default=True): cv.boolean,
+        }
+    )
+    hass.services.async_register(DOMAIN, "migrate_registry", _async_migrate_registry, schema=svc_schema)
 
     # Initial refresh
     await coordinator.async_config_entry_first_refresh()

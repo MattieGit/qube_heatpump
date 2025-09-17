@@ -1,0 +1,22 @@
+migrate_registry:
+  name: Migrate entity registry
+  description: |
+    Inspect and optionally migrate entity_ids and unique_ids for this integration's entities.
+    When dry_run is true (default), no changes are applied and proposed updates are logged.
+    When prefer_vendor_only is true (default), try to use vendor-only IDs; otherwise keep legacy suffixed IDs.
+  fields:
+    dry_run:
+      name: Dry run
+      description: Only log proposed changes; do not modify the registry
+      example: true
+      required: false
+      selector:
+        boolean: {}
+    prefer_vendor_only:
+      name: Prefer vendor-only IDs
+      description: Prefer vendor-only unique_ids/entity_ids where safe
+      example: true
+      required: false
+      selector:
+        boolean: {}
+
