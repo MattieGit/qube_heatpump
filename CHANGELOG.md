@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.29 — 2025-09-16
+- feat: Add per-entity `min_value` clamp in hub; configured `Gemeten Flow` with `min_value: 0` to report 0 instead of slight negative values when idle.
+
 ## 2025.9.28 — 2025-09-16
 - fix: Avoid sensor collisions across multiple hubs by namespacing YAML-defined sensor unique_ids with `<host>_<unit>`.
   - Note: sensors may re-register with new unique_ids; clean up old registry entries if duplicates appear.
