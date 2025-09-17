@@ -113,3 +113,7 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.39 — 2025-09-16
 - fix: Prevent duplicate unique_id collisions within a single hub by de-duplicating vendor IDs per platform during load (suffix with `<host>_<unit>` only when needed). This avoids the platform ignoring entities when two entries share the same vendor ID in YAML (e.g., addresses 44 and 46).
+
+## 2025.9.40 — 2025-09-16
+- feat: Adopt legacy suffixed unique_ids from the registry when present to avoid creating duplicates; prefer vendor-only otherwise.
+- feat: Add a maintenance service `qube_heatpump.migrate_registry` with `dry_run` and `prefer_vendor_only` to rename entity_ids and update unique_ids where safe.

@@ -70,7 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     name_map = _load_name_map()
     use_vendor_names = bool(entry.options.get(CONF_USE_VENDOR_NAMES, False))
-    # Entity registry for conflict detection when building unique_ids
+    # Entity registry for conflict detection/adoption when building unique_ids
     from homeassistant.helpers import entity_registry as er
     ent_reg = er.async_get(hass)
 
@@ -95,21 +95,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             vendor_id = None
             if uid:
                 vendor_id = str(uid).lower()
-                # Prefer base vendor_id; suffix with host+unit if (a) we already used this
-                # vendor_id for this platform in this hub load, or (b) the registry reports
-                # an existing entity with that unique_id.
+                # Determine best unique_id to adopt: prefer base vendor_id, but if an
+                # existing entity already uses the legacy namespaced UID, adopt that to
+                # avoid duplicates; otherwise suffix only on conflict.
                 platform_domain = {
                     "sensor": "sensor",
                     "binary_sensor": "binary_sensor",
                     "switch": "switch",
                 }.get(platform, "sensor")
                 base_uid = vendor_id
-                conflict = False
-                if vendor_id in _seen_vendor_ids.get(platform, set()):
-                    conflict = True
+                legacy_uid = f"{vendor_id}_{host}_{unit_id}"
+                adopted_uid = base_uid
+                # If base UID exists, adopt it
                 if ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid) is not None:
-                    conflict = True
-                uid = f"{vendor_id}_{host}_{unit_id}" if conflict else base_uid
+                    adopted_uid = base_uid
+                # Else if legacy UID exists, adopt legacy to attach to existing entity
+                elif ent_reg.async_get_entity_id(platform_domain, DOMAIN, legacy_uid) is not None:
+                    adopted_uid = legacy_uid
+                else:
+                    # No prior entries: only suffix if a duplicate vendor ID appears within this load
+                    if vendor_id in _seen_vendor_ids.get(platform, set()):
+                        adopted_uid = legacy_uid
+                uid = adopted_uid
                 _seen_vendor_ids.setdefault(platform, set()).add(base_uid)
             # Prefer translated display name if available
             display_name = _strip_prefix(raw_name)
@@ -178,6 +185,68 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.config_entries.async_reload(entry.entry_id)
 
     entry.async_on_unload(entry.add_update_listener(_options_updated))
+
+    # Register a maintenance service to migrate entity registry entries
+    async def _async_migrate_registry(call):
+        from homeassistant.helpers import entity_registry as er
+        ent_reg = er.async_get(hass)
+        prefer_vendor_only = bool(call.data.get("prefer_vendor_only", True))
+        dry_run = bool(call.data.get("dry_run", True))
+        changes = []
+        for e in list(ent_reg.entities.values()):
+            if e.config_entry_id != entry.entry_id:
+                continue
+            domain = e.domain  # sensor/binary_sensor/switch
+            # Extract vendor_id and legacy suffix if present
+            uid = e.unique_id
+            if not isinstance(uid, str):
+                continue
+            parts = uid.split("_")
+            # Heuristic: legacy uid ends with _<host>_<unit>
+            base_uid = uid
+            if len(parts) > 2 and parts[-1].isdigit():
+                # Likely legacy form
+                base_uid = "_".join(parts[:-2])
+            # Determine desired unique_id
+            desired_uid = base_uid if prefer_vendor_only else uid
+            # Determine desired entity_id object id
+            def _slugify(text: str) -> str:
+                return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
+
+            desired_obj = _slugify(base_uid)
+            desired_eid = f"{domain}.{desired_obj}"
+            # Skip if this entry already uses desired unique_id
+            if e.unique_id == desired_uid and e.entity_id == desired_eid:
+                continue
+            # Check conflicts
+            target_conflict = ent_reg.async_get_entity_id(domain, DOMAIN, desired_uid)
+            eid_conflict = ent_reg.async_get(desired_eid)
+            if target_conflict and target_conflict != e.entity_id:
+                # Can't switch unique_id because target exists
+                continue
+            if eid_conflict and eid_conflict.entity_id != e.entity_id:
+                # Can't rename entity_id because target exists
+                continue
+            changes.append((e.entity_id, desired_eid, e.unique_id, desired_uid))
+            if not dry_run:
+                # Try to update entity_id first
+                try:
+                    if e.entity_id != desired_eid:
+                        ent_reg.async_update_entity(e.entity_id, new_entity_id=desired_eid)
+                except Exception:
+                    pass
+                # Try to update unique_id if HA supports it
+                try:
+                    if e.unique_id != desired_uid:
+                        ent_reg.async_update_entity(desired_eid, new_unique_id=desired_uid)  # type: ignore[arg-type]
+                except Exception:
+                    pass
+        if changes:
+            logging.getLogger(__name__).info(
+                "Registry migration (%s): %s", "dry_run" if dry_run else "applied", changes
+            )
+
+    hass.services.async_register(DOMAIN, "migrate_registry", _async_migrate_registry)
 
     # Initial refresh
     await coordinator.async_config_entry_first_refresh()
