@@ -118,6 +118,12 @@ All notable changes to this project are documented in this file. This project us
 - feat: Adopt legacy suffixed unique_ids from the registry when present to avoid creating duplicates; prefer vendor-only otherwise.
 - feat: Add a maintenance service `qube_heatpump.migrate_registry` with `dry_run` and `prefer_vendor_only` to rename entity_ids and update unique_ids where safe.
 
+## 2025.9.43 — 2025-09-16
+- fix(yaml): revert `GeneralMng_EletricPwr` (addr 61) to energy/kWh/total per validation.
+
+## 2025.9.44 — 2025-09-16
+- chore(yaml): set a distinct vendor unique_id for sensor at address 46 (`TapW_TimeProgram_DHWS_prog`) to avoid collisions with address 44.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 
