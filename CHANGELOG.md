@@ -91,3 +91,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.32 — 2025-09-16
 - feat: Suggest entity_ids based on vendor unique_id (lowercased) with host+unit prefix via `suggested_object_id`; display names remain from YAML or translations.
+
+## 2025.9.33 — 2025-09-16
+- fix: Dataclass field order in `EntityDef` (place non-default fields before default). Resolves setup error on Python 3.13.

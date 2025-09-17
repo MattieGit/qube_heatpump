@@ -16,8 +16,8 @@ from homeassistant.core import HomeAssistant
 class EntityDef:
     platform: str
     name: str
-    vendor_id: str | None = None
     address: int
+    vendor_id: str | None = None
     input_type: str | None = None
     write_type: str | None = None
     data_type: str | None = None
