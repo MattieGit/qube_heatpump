@@ -100,3 +100,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.35 — 2025-09-16
 - feat: Make host+unit prefix optional for entity_ids — try vendor-only first, fall back to `<vendor>_<host>_<unit>` only if there’s a conflict.
+
+## 2025.9.36 — 2025-09-16
+- fix: When `precision: 0`, return integer values (not floats) after rounding so kWh totals render without decimals in the UI.

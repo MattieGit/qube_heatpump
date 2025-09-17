@@ -166,7 +166,12 @@ class WPQubeHub:
 
         if ent.precision is not None:
             try:
-                val = round(float(val), int(ent.precision))
+                p = int(ent.precision)
+                f = float(val)
+                if p == 0:
+                    val = int(round(f))
+                else:
+                    val = round(f, p)
             except Exception:
                 pass
 
