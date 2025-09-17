@@ -120,3 +120,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
+
+## 2025.9.42 — 2025-09-16
+- fix(yaml): update sensor at address 61 (`GeneralMng_EletricPwr`) to `device_class: power`, `unit_of_measurement: W`, and `state_class: measurement`.
