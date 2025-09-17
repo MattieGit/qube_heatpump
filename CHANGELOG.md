@@ -94,3 +94,6 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.9.33 — 2025-09-16
 - fix: Dataclass field order in `EntityDef` (place non-default fields before default). Resolves setup error on Python 3.13.
+
+## 2025.9.34 — 2025-09-16
+- feat: Actively align entity_id with vendor unique_id by updating the registry on first add (uses `<vendor_id>_<host>_<unit>`). Display names remain from YAML/translations.

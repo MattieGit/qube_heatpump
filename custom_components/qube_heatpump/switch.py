@@ -4,6 +4,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -60,3 +61,20 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         await self._hub.async_connect()
         await self._hub.async_write_switch(self._ent, False)
         await self.coordinator.async_request_refresh()
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if getattr(self._ent, "vendor_id", None):
+            desired_obj_id = _slugify(f"{self._ent.vendor_id}_{self._hub.host}_{self._hub.unit}")
+            if desired_obj_id:
+                registry = er.async_get(self.hass)
+                current = registry.async_get(self.entity_id)
+                if current and current.entity_id != f"switch.{desired_obj_id}":
+                    try:
+                        registry.async_update_entity(self.entity_id, new_entity_id=f"switch.{desired_obj_id}")
+                    except Exception:
+                        pass
+
+
+def _slugify(text: str) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()

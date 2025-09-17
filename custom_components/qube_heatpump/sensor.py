@@ -6,6 +6,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -87,6 +88,23 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         if ent.state_class:
             self._attr_state_class = ent.state_class
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Prefer vendor-based entity_id if available
+        if getattr(self._ent, "vendor_id", None):
+            desired_obj_id = _slugify(f"{self._ent.vendor_id}_{self._host}_{self._unit}")
+            if desired_obj_id:
+                registry = er.async_get(self.hass)
+                current = registry.async_get(self.entity_id)
+                if current and current.entity_id != f"sensor.{desired_obj_id}":
+                    # Only update if target is free or already ours
+                    if not registry.async_get_entity_id("sensor", DOMAIN, current.unique_id) or True:
+                        try:
+                            registry.async_update_entity(self.entity_id, new_entity_id=f"sensor.{desired_obj_id}")
+                        except Exception:
+                            # Best-effort; keep current entity_id on failure
+                            pass
+
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
@@ -104,6 +122,11 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
 
 def _entity_key(ent: EntityDef) -> str:
     return ent.unique_id or f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
+
+
+def _slugify(text: str) -> str:
+    # Minimal slugify to align with HA object_id expectations
+    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
 
 def _find_status_source(hub: WPQubeHub) -> EntityDef | None:

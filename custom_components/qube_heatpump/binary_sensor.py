@@ -4,6 +4,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -51,3 +52,20 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         key = self._ent.unique_id or f"binary_sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         val = self.coordinator.data.get(key)
         return None if val is None else bool(val)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if getattr(self._ent, "vendor_id", None):
+            desired_obj_id = _slugify(f"{self._ent.vendor_id}_{self._host}_{self._unit}")
+            if desired_obj_id:
+                registry = er.async_get(self.hass)
+                current = registry.async_get(self.entity_id)
+                if current and current.entity_id != f"binary_sensor.{desired_obj_id}":
+                    try:
+                        registry.async_update_entity(self.entity_id, new_entity_id=f"binary_sensor.{desired_obj_id}")
+                    except Exception:
+                        pass
+
+
+def _slugify(text: str) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
