@@ -8,7 +8,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 
-from .const import DOMAIN, CONF_HOST, CONF_PORT, DEFAULT_PORT, CONF_UNIT_ID
+from .const import DOMAIN, CONF_HOST, CONF_PORT, DEFAULT_PORT, CONF_UNIT_ID, CONF_USE_VENDOR_NAMES
 
 
 class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -54,7 +54,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Defaults from existing options or sensible defaults
         unit_id = self._entry.options.get(CONF_UNIT_ID, 1)
-        schema = vol.Schema({vol.Required(CONF_UNIT_ID, default=unit_id): vol.Coerce(int)})
+        use_vendor = self._entry.options.get(CONF_USE_VENDOR_NAMES, False)
+        schema = vol.Schema({
+            vol.Required(CONF_UNIT_ID, default=unit_id): vol.Coerce(int),
+            vol.Required(CONF_USE_VENDOR_NAMES, default=use_vendor): bool,
+        })
         # Description provided via translations
         return self.async_show_form(step_id="init", data_schema=schema)
 

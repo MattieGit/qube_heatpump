@@ -19,6 +19,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     CONF_FILE_NAME,
     CONF_UNIT_ID,
+    CONF_USE_VENDOR_NAMES,
 )
 
 
@@ -49,6 +50,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hub = WPQubeHub(hass, host, port, unit_id)
 
+    # Optional translations for entity display names based on vendor unique_id
+    def _load_name_map() -> dict[str, str]:
+        lang = getattr(hass.config, "language", None) or "en"
+        lang = str(lang).lower().split("-")[0]
+        base = Path(__file__).parent / "translations"
+        candidates = [
+            base / f"entity_names.{lang}.json",
+            base / "entity_names.en.json",
+        ]
+        for path in candidates:
+            try:
+                if path.exists():
+                    import json
+                    return {k.lower(): v for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
+            except Exception:
+                continue
+        return {}
+
+    name_map = _load_name_map()
+    use_vendor_names = bool(entry.options.get(CONF_USE_VENDOR_NAMES, False))
+
     def _strip_prefix(name: str) -> str:
         # Remove leading "WP-Qube"/"WP Qube" prefix from names
         n = name.strip()
@@ -64,11 +86,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             uid = it.get("unique_id")
             if uid:
                 # Ensure uniqueness across multiple hubs by namespacing with host+unit
-                uid = f"{uid}_{host}_{unit_id}"
+                vendor_id = str(uid).lower()
+                uid = f"{vendor_id}_{host}_{unit_id}"
+            else:
+                vendor_id = None
+            # Prefer translated display name if available
+            display_name = _strip_prefix(raw_name)
+            if vendor_id and vendor_id in name_map:
+                display_name = name_map[vendor_id]
+            if use_vendor_names and vendor_id:
+                display_name = vendor_id
             res.append(
                 EntityDef(
                     platform=platform,
-                    name=_strip_prefix(raw_name),
+                    name=str(display_name).strip(),
                     address=int(it["address"]),
                     input_type=it.get("input_type"),
                     write_type=it.get("write_type"),
@@ -121,14 +152,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         if updated_entry.entry_id != entry.entry_id:
             return
-        data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
-        if not data:
-            return
-        hub: WPQubeHub = data["hub"]
-        coord: DataUpdateCoordinator = data["coordinator"]
-        new_unit = int(updated_entry.options.get(CONF_UNIT_ID, 1))
-        hub.set_unit_id(new_unit)
-        await coord.async_request_refresh()
+        # Reload entry so that display names and settings apply consistently
+        await hass.config_entries.async_reload(entry.entry_id)
 
     entry.async_on_unload(entry.add_update_listener(_options_updated))
 

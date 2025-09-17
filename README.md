@@ -15,10 +15,11 @@ This custom integration will read the Modbus registers of the Qube heatpump, cre
 - Float decoding assumes Big Endian word/byte order.
 - Switch states are read from coils; writes use coil writes.
 - The bundled `modbus.yaml` defines the sensors/binary_sensors/switches. The IP/host in that file is ignored at runtime and replaced by the value you enter in the config flow.
+- In some cases an update might result in duplicate entities for the Qube integration. In that case, you can go to the "Entities" overview in Home Assistant Settings. There you can filter on "Integration: qube" and "Status: unavailable". Tick the little selection box above the entities overview. After that you can batch delete those entities.
 
 ## Contributions
 - Feel free to contribute to this repository.
-- In case you'd like to share some support, feel free to buy me a coffee at https://buymeacoffee.com/mattiegit .
+- In case you'd like to share some support, feel free to [buy me a coffee](https://buymeacoffee.com/mattiegit).
 
 **Diagnostics**
 - Quick probe: run `modbus_probe.py` inside the Home Assistant container to verify raw Modbus values without the integration.
