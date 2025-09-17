@@ -360,6 +360,7 @@
     data_type: float32
     scan_interval: 10
     precision: 0
+    min_value: 0
     device_class: volume_flow_rate
     unit_of_measurement: "L/min"
     unique_id: wp_qube_gemeten_flow

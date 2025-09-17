@@ -80,6 +80,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     unique_id=uid,
                     offset=it.get("offset"),
                     scale=it.get("scale"),
+                    min_value=it.get("min_value"),
                 )
             )
         return res

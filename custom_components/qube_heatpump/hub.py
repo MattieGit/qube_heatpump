@@ -27,6 +27,7 @@ class EntityDef:
     unique_id: str | None = None
     offset: float | None = None
     scale: float | None = None
+    min_value: float | None = None
 
 
 class WPQubeHub:
@@ -151,6 +152,14 @@ class WPQubeHub:
         if ent.offset is not None:
             try:
                 val = float(val) + float(ent.offset)
+            except Exception:
+                pass
+
+        # Clamp to minimum value if configured
+        if ent.min_value is not None:
+            try:
+                if float(val) < float(ent.min_value):
+                    val = float(ent.min_value)
             except Exception:
                 pass
 
