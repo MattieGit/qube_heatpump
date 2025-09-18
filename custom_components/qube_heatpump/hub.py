@@ -101,7 +101,15 @@ class WPQubeHub:
 
     async def async_close(self) -> None:
         if self._client is not None:
-            await self._client.close()
+            try:
+                res = self._client.close()
+                if asyncio.iscoroutine(res):
+                    await res
+            except Exception:
+                # Swallow close errors
+                pass
+            finally:
+                self._client = None
 
     def set_unit_id(self, unit_id: int) -> None:
         self._unit = int(unit_id)
