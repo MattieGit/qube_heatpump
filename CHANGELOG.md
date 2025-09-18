@@ -124,6 +124,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.44 — 2025-09-16
 - chore(yaml): set a distinct vendor unique_id for sensor at address 46 (`TapW_TimeProgram_DHWS_prog`) to avoid collisions with address 44.
 
+## 2025.9.45 — 2025-09-16
+- fix(yaml): set address 61 (`GeneralMng_EletricPwr`) to `device_class: power`, `unit_of_measurement: W`, and `state_class: measurement`; address 63 (`GeneralMng_TotalThermic_computed`) is already set to power/W/measurement.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 

@@ -629,25 +629,25 @@
     state_class: measurement
     unique_id: WorkingHours_Heater3_Hrs
 
-  - name: "Actueel elektrisch verbruik (berekend)"
+  - name: "Totaal elektrisch vermogen (berekend)"
     address: 61
     input_type: input
     data_type: float32
     scan_interval: 10
     precision: 0
-    device_class: energy
-    unit_of_measurement: "kWh"
-    state_class: total
+    device_class: power
+    unit_of_measurement: "W"
+    state_class: measurement
     unique_id: GeneralMng_EletricPwr
 
-  - name: "Totaal thermisch verbruik (berekend)"
+  - name: "Totaal thermisch vermogen (berekend)"
     address: 63
     input_type: input
     data_type: float32
     scan_interval: 10
     precision: 0
-    device_class: energy
-    unit_of_measurement: "kWh"
+    device_class: power
+    unit_of_measurement: "W"
     state_class: measurement
     unique_id: GeneralMng_TotalThermic_computed
 
