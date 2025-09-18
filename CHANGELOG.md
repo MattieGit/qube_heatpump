@@ -132,6 +132,12 @@ All notable changes to this project are documented in this file. This project us
 - feat: Entity_id conflict fallback uses short label instead of IP/unit for readability.
 - fix: Unique_id adoption checks that base UID belongs to this entry; otherwise prefers legacy UID to avoid cross‑entry collisions.
 
+## 2025.9.47 — 2025-09-16
+- feat: Add connection backoff and per‑read timeouts; throttle repeated read warnings per cycle.
+- feat: Options Flow applies `unit_id` live; reload only when display mode changes.
+- feat: Add diagnostics endpoint exporting redacted hub metadata and entity sample.
+- docs: Document diagnostics, multi‑hub labels, naming behavior, and error handling.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 

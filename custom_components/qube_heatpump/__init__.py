@@ -163,18 +163,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hub.entities.extend(_to_entity_defs("switch", spec.get("switches")))
 
     async def _async_update_data() -> dict[str, Any]:
+        # Connect once per cycle; if it fails, bubble up so Coordinator marks unavailable
         await hub.async_connect()
         results: dict[str, Any] = {}
+        warn_count = 0
+        max_warn = 5
         for ent in hub.entities:
             try:
                 val = await hub.async_read_value(ent)
             except Exception as err:
-                logging.getLogger(__name__).warning(
-                    "Failed reading %s @ %s: %s", ent.platform, ent.address, err
-                )
+                if warn_count < max_warn:
+                    logging.getLogger(__name__).warning(
+                        "Read failed (%s %s@%s): %s", ent.platform, ent.input_type or ent.write_type, ent.address, err
+                    )
+                    warn_count += 1
                 continue
             key = _entity_key(ent)
             results[key] = val
+        if warn_count > max_warn:
+            logging.getLogger(__name__).debug("Additional read failures suppressed in this cycle")
         return results
 
     coordinator = DataUpdateCoordinator(
@@ -195,8 +202,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         if updated_entry.entry_id != entry.entry_id:
             return
-        # Reload entry so that display names and settings apply consistently
-        await hass.config_entries.async_reload(entry.entry_id)
+        data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+        if not data:
+            return
+        hub: WPQubeHub = data["hub"]
+        coord: DataUpdateCoordinator = data["coordinator"]
+        # Track current options to decide reload vs live update
+        current_opts = {
+            "unit_id": hub.unit,
+            "use_vendor_names": bool(updated_entry.options.get(CONF_USE_VENDOR_NAMES, False)),
+        }
+        new_unit = int(updated_entry.options.get(CONF_UNIT_ID, hub.unit))
+        new_use_vendor = bool(updated_entry.options.get(CONF_USE_VENDOR_NAMES, False))
+        if new_unit != hub.unit and new_use_vendor == current_opts["use_vendor_names"]:
+            # Apply unit change live
+            hub.set_unit_id(new_unit)
+            await coord.async_request_refresh()
+        else:
+            # Names/display mode changed or both changed: reload to apply consistently
+            await hass.config_entries.async_reload(entry.entry_id)
 
     entry.async_on_unload(entry.add_update_listener(_options_updated))
 

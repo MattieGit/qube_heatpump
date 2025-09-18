@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 import struct
 import logging
 import inspect
+import asyncio
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.exceptions import ModbusException
@@ -40,6 +41,11 @@ class WPQubeHub:
         self._label = label or "qube1"
         self._client: Optional[AsyncModbusTcpClient] = None
         self.entities: List[EntityDef] = []
+        # Backoff/timeout controls
+        self._connect_backoff_s: float = 0.0
+        self._connect_backoff_max_s: float = 60.0
+        self._next_connect_ok_at: float = 0.0
+        self._io_timeout_s: float = 3.0
 
     @property
     def host(self) -> str:
@@ -54,16 +60,27 @@ class WPQubeHub:
         return self._label
 
     async def async_connect(self) -> None:
+        now = asyncio.get_running_loop().time()
+        if now < self._next_connect_ok_at:
+            raise ModbusException("Backoff active; skipping connect attempt")
         if self._client is None:
             self._client = AsyncModbusTcpClient(self._host, port=self._port)
-        try:
-            connected = getattr(self._client, "connected", False)
-        except Exception:
-            connected = False
+        connected = bool(getattr(self._client, "connected", False))
         if not connected:
-            ok = await self._client.connect()
+            try:
+                ok = await asyncio.wait_for(self._client.connect(), timeout=self._io_timeout_s)
+            except Exception as exc:
+                # Increase backoff
+                self._connect_backoff_s = min(self._connect_backoff_max_s, (self._connect_backoff_s or 1.0) * 2)
+                self._next_connect_ok_at = now + self._connect_backoff_s
+                raise ModbusException(f"Failed to connect: {exc}")
             if ok is False:
+                self._connect_backoff_s = min(self._connect_backoff_max_s, (self._connect_backoff_s or 1.0) * 2)
+                self._next_connect_ok_at = now + self._connect_backoff_s
                 raise ModbusException("Failed to connect to Modbus TCP server")
+            # Reset backoff after success
+            self._connect_backoff_s = 0.0
+            self._next_connect_ok_at = 0.0
 
     async def _call(self, method: str, **kwargs):
         if self._client is None:
@@ -71,12 +88,12 @@ class WPQubeHub:
         func = getattr(self._client, method)
         # Try with 'slave' then 'unit', finally without either
         try:
-            resp = await func(**{**kwargs, "slave": self._unit})
+            resp = await asyncio.wait_for(func(**{**kwargs, "slave": self._unit}), timeout=self._io_timeout_s)
         except TypeError:
             try:
-                resp = await func(**{**kwargs, "unit": self._unit})
+                resp = await asyncio.wait_for(func(**{**kwargs, "unit": self._unit}), timeout=self._io_timeout_s)
             except TypeError:
-                resp = await func(**kwargs)
+                resp = await asyncio.wait_for(func(**kwargs), timeout=self._io_timeout_s)
         # Normalize error checking
         if hasattr(resp, "isError") and resp.isError():
             raise ModbusException(f"Modbus error on {method} with {kwargs}")

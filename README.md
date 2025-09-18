@@ -27,5 +27,14 @@ This custom integration will read the Modbus registers of the Qube heatpump, cre
   - If decoding looks off, try `--word-order little` and/or `--byte-order little` for 32‑bit values.
   - If a read fails, try `--address` one lower to check for 1‑based addressing in device docs.
   - If `pymodbus` is missing in the container Python, install temporarily for testing: `python3 -m pip install 'pymodbus>=3.9.0,<4'`.
+ - Built‑in diagnostics: Settings → Integrations → Qube Heat Pump → Menu → Diagnostics exports a redacted snapshot (host, unit, entity counts) useful for troubleshooting.
+
+**Multi‑hub behavior**
+- If you add more than one heat pump, hubs are labelled `qube1`, `qube2`, … and device names reflect the label.
+- Entity IDs use vendor-only forms by default (e.g., `sensor.<vendor_id>`). On conflict across hubs, a short label suffix is used (e.g., `sensor.<vendor_id>_qube2`).
+
+**Error handling & recovery**
+- The integration uses connection backoff and per‑read timeouts to avoid log flooding and to recover automatically when the device returns online.
+- When the hub is unreachable, entities are marked unavailable by the coordinator until a successful update.
  
   
