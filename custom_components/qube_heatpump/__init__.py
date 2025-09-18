@@ -367,12 +367,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except Exception as exc:
             logging.getLogger(__name__).error("open_options failed: %s", exc)
 
-    from homeassistant.helpers import config_validation as cv
+    # Register with a simple schema (no entity/device selector required)
+    import voluptuous as vol
     hass.services.async_register(
         DOMAIN,
         "open_options",
         _async_open_options,
-        schema=cv.make_entity_service_schema({}),
+        schema=vol.Schema({vol.Optional("entry_id"): vol.Coerce(str)}),
     )
 
     # Initial refresh
