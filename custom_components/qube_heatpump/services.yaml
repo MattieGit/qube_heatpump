@@ -19,4 +19,10 @@ migrate_registry:
       required: false
       selector:
         boolean: {}
-
+    enforce_label_suffix:
+      name: Enforce label suffix for entity_id
+      description: Always rename entity_ids to include the hub label suffix (e.g., _qube2) where safe
+      example: true
+      required: false
+      selector:
+        boolean: {}

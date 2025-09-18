@@ -20,6 +20,7 @@ from .const import (
     CONF_FILE_NAME,
     CONF_UNIT_ID,
     CONF_USE_VENDOR_NAMES,
+    CONF_LABEL,
 )
 
 
@@ -49,11 +50,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unit_id = int(entry.options.get(CONF_UNIT_ID, spec.get("unit_id", 1)))
 
     # Determine a short label for this hub across all entries (qube1, qube2, ...)
-    existing = [e for e in hass.config_entries.async_entries(DOMAIN)]
-    # Sort for deterministic ordering
-    existing_sorted = sorted(existing, key=lambda e: e.entry_id)
-    index = existing_sorted.index(entry) if entry in existing_sorted else len(existing_sorted)
-    label = f"qube{index + 1}"
+    label = entry.options.get(CONF_LABEL)
+    if not label:
+        # Assign next free qubeN label
+        existing = [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
+        used = {e.options.get(CONF_LABEL) for e in existing if e.options.get(CONF_LABEL)}
+        n = 1
+        while f"qube{n}" in used:
+            n += 1
+        label = f"qube{n}"
+        # Persist label into options
+        new_opts = dict(entry.options)
+        new_opts[CONF_LABEL] = label
+        await hass.config_entries.async_update_entry(entry, options=new_opts)
 
     hub = WPQubeHub(hass, host, port, unit_id, label)
 
@@ -253,6 +262,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ent_reg = er.async_get(hass)
         prefer_vendor_only = bool(call.data.get("prefer_vendor_only", True))
         dry_run = bool(call.data.get("dry_run", True))
+        enforce_label = bool(call.data.get("enforce_label_suffix", False))
         changes = []
         for e in list(ent_reg.entities.values()):
             if e.config_entry_id != entry.entry_id:
@@ -274,7 +284,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            desired_obj = _slugify(base_uid)
+            suffix = data.get("label") if enforce_label else None
+            desired_obj = _slugify(f"{base_uid}_{suffix}") if suffix else _slugify(base_uid)
             desired_eid = f"{domain}.{desired_obj}"
             # Skip if this entry already uses desired unique_id
             if e.unique_id == desired_uid and e.entity_id == desired_eid:

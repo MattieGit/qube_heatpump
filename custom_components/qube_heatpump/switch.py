@@ -32,10 +32,10 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         super().__init__(coordinator)
         self._ent = ent
         self._hub = hub
-        self._attr_name = ent.name
+        self._attr_name = f"{ent.name} ({self._hub.label})"
         self._attr_unique_id = ent.unique_id or f"wp_qube_switch_{self._hub.host}_{self._hub.unit}_{ent.write_type}_{ent.address}"
         if getattr(ent, "vendor_id", None):
-            self._attr_suggested_object_id = _slugify(ent.vendor_id)
+            self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._hub.label}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -69,21 +69,11 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
             current = registry.async_get(self.entity_id)
             if not current:
                 return
-            base_obj = _slugify(self._ent.vendor_id)
-            preferred_eid = f"switch.{base_obj}"
-            if current.entity_id != preferred_eid and registry.async_get(preferred_eid) is None:
+            desired_obj = _slugify(f"{self._ent.vendor_id}_{self._hub.label}")
+            desired_eid = f"switch.{desired_obj}"
+            if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
                 try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=preferred_eid)
-                    return
-                except Exception:
-                    pass
-            label = getattr(self._hub, "label", None)
-            fallback_suffix = label or f"{self._hub.host}_{self._hub.unit}"
-            fallback_obj = _slugify(f"{self._ent.vendor_id}_{fallback_suffix}")
-            fallback_eid = f"switch.{fallback_obj}"
-            if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
-                try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=fallback_eid)
+                    registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
                 except Exception:
                     pass
 

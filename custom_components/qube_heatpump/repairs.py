@@ -23,6 +23,7 @@ class RegistryMigrationFlow(RepairsFlow):
             {
                 vol.Optional("dry_run", default=True): cv.boolean,
                 vol.Optional("prefer_vendor_only", default=True): cv.boolean,
+                vol.Optional("enforce_label_suffix", default=True): cv.boolean,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
@@ -30,4 +31,3 @@ class RegistryMigrationFlow(RepairsFlow):
 
 async def async_create_fix_flow(hass: HomeAssistant, issue_id: str, data: dict | None):
     return RegistryMigrationFlow(hass)
-

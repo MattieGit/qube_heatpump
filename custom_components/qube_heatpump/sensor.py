@@ -79,11 +79,11 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         self._host = host
         self._unit = unit
         self._label = label
-        self._attr_name = ent.name
+        self._attr_name = f"{ent.name} ({self._label})"
         self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
         # Suggest vendor-only entity_id; conflict fallback handled in async_added_to_hass
         if getattr(ent, "vendor_id", None):
-            self._attr_suggested_object_id = _slugify(ent.vendor_id)
+            self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._label}")
         self._attr_device_class = ent.device_class
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
         if ent.state_class:
@@ -97,28 +97,17 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        # Prefer vendor-based entity_id; add host+unit suffix only if needed
+        # Always prefer vendor+label entity_id
         if getattr(self._ent, "vendor_id", None):
             registry = er.async_get(self.hass)
             current = registry.async_get(self.entity_id)
             if not current:
                 return
-            base_obj = _slugify(self._ent.vendor_id)
-            preferred_eid = f"sensor.{base_obj}"
-            if current.entity_id != preferred_eid and registry.async_get(preferred_eid) is None:
+            desired_obj = _slugify(f"{self._ent.vendor_id}_{self._label}")
+            desired_eid = f"sensor.{desired_obj}"
+            if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
                 try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=preferred_eid)
-                    return
-                except Exception:
-                    pass
-            # Fallback with prefix to avoid conflicts
-            # Use short hub label for brevity when multiple hubs exist
-            fallback_suffix = self._label or f"{self._host}_{self._unit}"
-            fallback_obj = _slugify(f"{self._ent.vendor_id}_{fallback_suffix}")
-            fallback_eid = f"sensor.{fallback_obj}"
-            if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
-                try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=fallback_eid)
+                    registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
                 except Exception:
                     pass
 

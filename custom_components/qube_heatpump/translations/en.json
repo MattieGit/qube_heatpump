@@ -24,7 +24,8 @@
         "description": "Set advanced options. Unit/Slave ID selects which device behind a Modbus/TCP gateway to read from. If you have multiple devices at the same IP, create one integration entry per unit ID. You can also choose to display the vendor's unique names instead of friendly names.",
         "data": {
           "unit_id": "Unit/Slave ID",
-          "use_vendor_names": "Use vendor names for display"
+          "use_vendor_names": "Use vendor names for display",
+          "label": "Hub label (e.g., qube1)"
         }
       }
     }

@@ -141,6 +141,10 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.48 — 2025-09-16
 - feat: Add Repairs flow for entity registry migration (invokes `migrate_registry`); create fixable issue when legacy suffixed unique_ids are detected.
 
+## 2025.9.49 — 2025-09-16
+- feat: Always include hub label in entity names and entity_ids; persist per‑entry label and allow editing in Options.
+- feat: Migration service/Repairs flow supports enforcing label suffix on entity_ids.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 

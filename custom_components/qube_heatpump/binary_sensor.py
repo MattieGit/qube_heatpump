@@ -34,10 +34,10 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._host = host
         self._unit = unit
         self._label = label
-        self._attr_name = ent.name
+        self._attr_name = f"{ent.name} ({self._label})"
         self._attr_unique_id = ent.unique_id or f"wp_qube_binary_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
         if getattr(ent, "vendor_id", None):
-            self._attr_suggested_object_id = _slugify(ent.vendor_id)
+            self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._label}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -61,20 +61,11 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             current = registry.async_get(self.entity_id)
             if not current:
                 return
-            base_obj = _slugify(self._ent.vendor_id)
-            preferred_eid = f"binary_sensor.{base_obj}"
-            if current.entity_id != preferred_eid and registry.async_get(preferred_eid) is None:
+            desired_obj = _slugify(f"{self._ent.vendor_id}_{self._label}")
+            desired_eid = f"binary_sensor.{desired_obj}"
+            if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
                 try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=preferred_eid)
-                    return
-                except Exception:
-                    pass
-            fallback_suffix = self._label or f"{self._host}_{self._unit}"
-            fallback_obj = _slugify(f"{self._ent.vendor_id}_{fallback_suffix}")
-            fallback_eid = f"binary_sensor.{fallback_obj}"
-            if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
-                try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=fallback_eid)
+                    registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
                 except Exception:
                     pass
 
