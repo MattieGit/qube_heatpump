@@ -15,12 +15,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
     coordinator = data["coordinator"]
+    show_label = bool(data.get("show_label_in_name", False))
 
     entities: list[SwitchEntity] = []
     for ent in hub.entities:
         if ent.platform != "switch":
             continue
-        entities.append(WPQubeSwitch(coordinator, hub, ent))
+        entities.append(WPQubeSwitch(coordinator, hub, show_label, ent))
 
     async_add_entities(entities)
 
@@ -28,11 +29,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, hub, ent: EntityDef) -> None:
+    def __init__(self, coordinator, hub, show_label: bool, ent: EntityDef) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._hub = hub
-        self._attr_name = f"{ent.name} ({self._hub.label})"
+        self._attr_name = f"{ent.name} ({self._hub.label})" if show_label else ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_switch_{self._hub.host}_{self._hub.unit}_{ent.write_type}_{ent.address}"
         if getattr(ent, "vendor_id", None):
             self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._hub.label}")

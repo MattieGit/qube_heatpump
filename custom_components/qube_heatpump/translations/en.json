@@ -25,7 +25,8 @@
         "data": {
           "unit_id": "Unit/Slave ID",
           "use_vendor_names": "Use vendor names for display",
-          "label": "Hub label (e.g., qube1)"
+          "label": "Hub label (e.g., qube1)",
+          "show_label_in_name": "Show hub label in entity names"
         }
       }
     }

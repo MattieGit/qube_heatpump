@@ -16,6 +16,7 @@ from .const import (
     CONF_UNIT_ID,
     CONF_USE_VENDOR_NAMES,
     CONF_LABEL,
+    CONF_SHOW_LABEL_IN_NAME,
 )
 
 
@@ -64,10 +65,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         unit_id = self._entry.options.get(CONF_UNIT_ID, 1)
         use_vendor = self._entry.options.get(CONF_USE_VENDOR_NAMES, False)
         label = self._entry.options.get(CONF_LABEL, "qube1")
+        show_label = self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)
         schema = vol.Schema({
             vol.Required(CONF_UNIT_ID, default=unit_id): vol.Coerce(int),
             vol.Required(CONF_USE_VENDOR_NAMES, default=use_vendor): bool,
             vol.Required(CONF_LABEL, default=label): str,
+            vol.Required(CONF_SHOW_LABEL_IN_NAME, default=show_label): bool,
         })
         # Description provided via translations
         return self.async_show_form(step_id="init", data_schema=schema)

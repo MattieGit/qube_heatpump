@@ -6,6 +6,7 @@ CONF_PORT = "port"
 CONF_UNIT_ID = "unit_id"
 CONF_LABEL = "label"
 CONF_USE_VENDOR_NAMES = "use_vendor_names"
+CONF_SHOW_LABEL_IN_NAME = "show_label_in_name"
 DEFAULT_PORT = 502
 DEFAULT_SCAN_INTERVAL = 10
 

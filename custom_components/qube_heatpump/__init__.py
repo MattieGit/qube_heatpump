@@ -86,6 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     name_map = _load_name_map()
     use_vendor_names = bool(entry.options.get(CONF_USE_VENDOR_NAMES, False))
+    show_label_in_name = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
     # Entity registry for conflict detection/adoption when building unique_ids
     from homeassistant.helpers import entity_registry as er
     ent_reg = er.async_get(hass)
@@ -228,6 +229,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "hub": hub,
         "coordinator": coordinator,
         "label": label,
+        "show_label_in_name": show_label_in_name,
     }
 
     # Listen for options updates to apply unit/slave id without HA restart
@@ -243,10 +245,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         current_opts = {
             "unit_id": hub.unit,
             "use_vendor_names": bool(updated_entry.options.get(CONF_USE_VENDOR_NAMES, False)),
+            "show_label_in_name": bool(updated_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)),
         }
         new_unit = int(updated_entry.options.get(CONF_UNIT_ID, hub.unit))
         new_use_vendor = bool(updated_entry.options.get(CONF_USE_VENDOR_NAMES, False))
-        if new_unit != hub.unit and new_use_vendor == current_opts["use_vendor_names"]:
+        new_show_label = bool(updated_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
+        if new_unit != hub.unit and new_use_vendor == current_opts["use_vendor_names"] and new_show_label == current_opts["show_label_in_name"]:
             # Apply unit change live
             hub.set_unit_id(new_unit)
             await coord.async_request_refresh()

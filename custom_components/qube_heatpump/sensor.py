@@ -17,12 +17,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
     coordinator = data["coordinator"]
+    show_label = bool(data.get("show_label_in_name", False))
 
     entities: list[SensorEntity] = []
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
-        entities.append(WPQubeSensor(coordinator, hub.host, hub.unit, hub.label, ent))
+        entities.append(WPQubeSensor(coordinator, hub.host, hub.unit, hub.label, show_label, ent))
 
     # Add computed/template-like sensors equivalent to template_sensors.yaml
     # 1) Qube status full (maps numeric status to human-readable string)
@@ -73,13 +74,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, unit: int, label: str, ent: EntityDef) -> None:
+    def __init__(self, coordinator, host: str, unit: int, label: str, show_label: bool, ent: EntityDef) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._host = host
         self._unit = unit
         self._label = label
-        self._attr_name = f"{ent.name} ({self._label})"
+        self._attr_name = f"{ent.name} ({self._label})" if show_label else ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
         # Suggest vendor-only entity_id; conflict fallback handled in async_added_to_hass
         if getattr(ent, "vendor_id", None):

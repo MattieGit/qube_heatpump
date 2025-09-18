@@ -31,7 +31,8 @@ This custom integration will read the Modbus registers of the Qube heatpump, cre
 
 **Multi‑hub behavior**
 - Each hub is assigned a short label (`qube1`, `qube2`, …) which you can change in Options.
-- Entity names always include the label (e.g., `Flow (qube2)`), and entity IDs always include the label (e.g., `sensor.<vendor_id>_qube2`). This keeps setups stable and unambiguous.
+- Entity IDs always include the label (e.g., `sensor.<vendor_id>_qube2`).
+- Entity names can optionally include the label (see Options → “Show hub label in entity names”). They default to friendly names without a label.
 
 **Error handling & recovery**
 - The integration uses connection backoff and per‑read timeouts to avoid log flooding and to recover automatically when the device returns online.

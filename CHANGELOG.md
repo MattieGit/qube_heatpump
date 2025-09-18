@@ -148,6 +148,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.50 — 2025-09-16
 - fix: Do not await `async_update_entry` (synchronous API) when persisting the auto‑assigned hub label during setup.
 
+## 2025.9.51 — 2025-09-16
+- feat: Do not include hub label in friendly names by default; add option “Show hub label in entity names”. Entity IDs continue to include the label for uniqueness.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 
