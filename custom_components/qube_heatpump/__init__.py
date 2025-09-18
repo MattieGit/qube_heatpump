@@ -356,4 +356,8 @@ def _entity_key(ent: EntityDef) -> str:
     return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
 
 
-# Options flow is exposed via config_flow.async_get_options_flow
+# Expose Options Flow so the Configure button appears in the UI
+async def async_get_options_flow(config_entry: ConfigEntry):
+    from .config_flow import OptionsFlowHandler  # lazy import
+
+    return OptionsFlowHandler(config_entry)
