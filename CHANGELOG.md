@@ -138,6 +138,9 @@ All notable changes to this project are documented in this file. This project us
 - feat: Add diagnostics endpoint exporting redacted hub metadata and entity sample.
 - docs: Document diagnostics, multi‑hub labels, naming behavior, and error handling.
 
+## 2025.9.48 — 2025-09-16
+- feat: Add Repairs flow for entity registry migration (invokes `migrate_registry`); create fixable issue when legacy suffixed unique_ids are detected.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 

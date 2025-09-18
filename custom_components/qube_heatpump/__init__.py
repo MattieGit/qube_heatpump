@@ -162,6 +162,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hub.entities.extend(_to_entity_defs("sensor", spec.get("sensors")))
     hub.entities.extend(_to_entity_defs("switch", spec.get("switches")))
 
+    # Create a Repairs issue suggesting registry migration if legacy suffixed unique_ids are detected
+    try:
+        from homeassistant.helpers import issue_registry as ir
+        from homeassistant.helpers.issue_registry import IssueSeverity
+
+        legacy_found = any(
+            isinstance(e.unique_id, str) and e.unique_id.endswith(f"_{host}_{unit_id}")
+            for e in hub.entities
+        )
+        if legacy_found:
+            ir.async_create_issue(
+                hass,
+                DOMAIN,
+                issue_id="registry_migration_suggested",
+                is_fixable=True,
+                severity=IssueSeverity.WARNING,
+                translation_key=None,
+                translation_placeholders=None,
+                learn_more_url=None,
+            )
+    except Exception:
+        pass
+
     async def _async_update_data() -> dict[str, Any]:
         # Connect once per cycle; if it fails, bubble up so Coordinator marks unavailable
         await hub.async_connect()
