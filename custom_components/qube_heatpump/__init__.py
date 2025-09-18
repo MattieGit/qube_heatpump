@@ -21,6 +21,7 @@ from .const import (
     CONF_UNIT_ID,
     CONF_USE_VENDOR_NAMES,
     CONF_LABEL,
+    CONF_SHOW_LABEL_IN_NAME,
 )
 
 
