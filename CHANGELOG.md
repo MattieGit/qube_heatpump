@@ -23,6 +23,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.59 — 2025-09-16
 - fix: Make hub.close robust to sync/async implementations (avoid TypeError on unload when client is None or `close()` is synchronous).
 
+## 2025.9.60 — 2025-09-16
+- fix: Expose `async_get_options_flow` at module import (re-export from `config_flow`) to ensure HA detects the Configure hook without lazy import.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.

@@ -357,12 +357,15 @@ def _entity_key(ent: EntityDef) -> str:
 
 
 import logging
+# Eagerly expose the options flow symbol at module import, matching core patterns (e.g., MQTT)
+try:
+    from .config_flow import async_get_options_flow as async_get_options_flow  # type: ignore[reimported]
+except Exception:  # pragma: no cover
+    # Fallback lazy path; HA will import this attribute when rendering Configure
+    async def async_get_options_flow(config_entry: ConfigEntry):
+        logging.getLogger(__name__).debug(
+            "async_get_options_flow (lazy) for entry %s", config_entry.entry_id
+        )
+        from .config_flow import OptionsFlowHandler  # lazy import
 
-# Options flow: expose hook so the Configure button appears
-async def async_get_options_flow(config_entry: ConfigEntry):
-    logging.getLogger(__name__).debug(
-        "async_get_options_flow invoked for entry %s", config_entry.entry_id
-    )
-    from .config_flow import OptionsFlowHandler  # lazy import
-
-    return OptionsFlowHandler(config_entry)
+        return OptionsFlowHandler(config_entry)
