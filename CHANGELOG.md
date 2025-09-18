@@ -11,6 +11,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.55 — 2025-09-16
 - fix: Use `OptionsFlowWithConfigEntry` and `config_entry` attribute per latest HA docs to ensure options flow reliability.
 
+## 2025.9.56 — 2025-09-16
+- fix: Align with common core integrations (ESPHome style) by exposing options flow from `config_flow` only and subclassing `OptionsFlow` with an explicit `config_entry`.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.
