@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for ent in hub.entities:
         if ent.platform != "binary_sensor":
             continue
-        entities.append(WPQubeBinarySensor(coordinator, hub.host, hub.unit, ent))
+        entities.append(WPQubeBinarySensor(coordinator, hub.host, hub.unit, hub.label, ent))
 
     async_add_entities(entities)
 
@@ -28,11 +28,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, unit: int, ent: EntityDef) -> None:
+    def __init__(self, coordinator, host: str, unit: int, label: str, ent: EntityDef) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._host = host
         self._unit = unit
+        self._label = label
         self._attr_name = ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_binary_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
         if getattr(ent, "vendor_id", None):
@@ -42,7 +43,7 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
-            name="Qube Heatpump",
+            name=(getattr(self, "_label", None) or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
         )
@@ -68,7 +69,8 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
                     return
                 except Exception:
                     pass
-            fallback_obj = _slugify(f"{self._ent.vendor_id}_{self._host}_{self._unit}")
+            fallback_suffix = self._label or f"{self._host}_{self._unit}"
+            fallback_obj = _slugify(f"{self._ent.vendor_id}_{fallback_suffix}")
             fallback_eid = f"binary_sensor.{fallback_obj}"
             if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
                 try:

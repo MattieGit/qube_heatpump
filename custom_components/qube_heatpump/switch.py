@@ -41,7 +41,7 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name="Qube Heatpump",
+            name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
         )
@@ -77,7 +77,9 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
                     return
                 except Exception:
                     pass
-            fallback_obj = _slugify(f"{self._ent.vendor_id}_{self._hub.host}_{self._hub.unit}")
+            label = getattr(self._hub, "label", None)
+            fallback_suffix = label or f"{self._hub.host}_{self._hub.unit}"
+            fallback_obj = _slugify(f"{self._ent.vendor_id}_{fallback_suffix}")
             fallback_eid = f"switch.{fallback_obj}"
             if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
                 try:

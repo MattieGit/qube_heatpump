@@ -22,7 +22,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
-        entities.append(WPQubeSensor(coordinator, hub.host, hub.unit, ent))
+        entities.append(WPQubeSensor(coordinator, hub.host, hub.unit, hub.label, ent))
 
     # Add computed/template-like sensors equivalent to template_sensors.yaml
     # 1) Qube status full (maps numeric status to human-readable string)
@@ -73,11 +73,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, unit: int, ent: EntityDef) -> None:
+    def __init__(self, coordinator, host: str, unit: int, label: str, ent: EntityDef) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._host = host
         self._unit = unit
+        self._label = label
         self._attr_name = ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
         # Suggest vendor-only entity_id; conflict fallback handled in async_added_to_hass
@@ -111,7 +112,9 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
                 except Exception:
                     pass
             # Fallback with prefix to avoid conflicts
-            fallback_obj = _slugify(f"{self._ent.vendor_id}_{self._host}_{self._unit}")
+            # Use short hub label for brevity when multiple hubs exist
+            fallback_suffix = self._label or f"{self._host}_{self._unit}"
+            fallback_obj = _slugify(f"{self._ent.vendor_id}_{fallback_suffix}")
             fallback_eid = f"sensor.{fallback_obj}"
             if current.entity_id != fallback_eid and registry.async_get(fallback_eid) is None:
                 try:
@@ -123,7 +126,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
-            name="Qube Heatpump",
+            name=(self._label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
         )
@@ -183,7 +186,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name="Qube Heatpump",
+            name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
         )

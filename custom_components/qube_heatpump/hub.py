@@ -32,11 +32,12 @@ class EntityDef:
 
 
 class WPQubeHub:
-    def __init__(self, hass: HomeAssistant, host: str, port: int, unit_id: int = 1) -> None:
+    def __init__(self, hass: HomeAssistant, host: str, port: int, unit_id: int = 1, label: str | None = None) -> None:
         self._hass = hass
         self._host = host
         self._port = port
         self._unit = unit_id
+        self._label = label or "qube1"
         self._client: Optional[AsyncModbusTcpClient] = None
         self.entities: List[EntityDef] = []
 
@@ -47,6 +48,10 @@ class WPQubeHub:
     @property
     def unit(self) -> int:
         return self._unit
+
+    @property
+    def label(self) -> str:
+        return self._label
 
     async def async_connect(self) -> None:
         if self._client is None:

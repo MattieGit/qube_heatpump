@@ -127,6 +127,11 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.45 — 2025-09-16
 - fix(yaml): set address 61 (`GeneralMng_EletricPwr`) to `device_class: power`, `unit_of_measurement: W`, and `state_class: measurement`; address 63 (`GeneralMng_TotalThermic_computed`) is already set to power/W/measurement.
 
+## 2025.9.46 — 2025-09-16
+- feat: Short hub labels (qube1/qube2/...) for multi‑hub setups; device names show the label.
+- feat: Entity_id conflict fallback uses short label instead of IP/unit for readability.
+- fix: Unique_id adoption checks that base UID belongs to this entry; otherwise prefers legacy UID to avoid cross‑entry collisions.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 

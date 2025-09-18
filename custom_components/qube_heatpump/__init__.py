@@ -48,7 +48,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Options override: allow user to set Modbus unit/slave id via Options Flow
     unit_id = int(entry.options.get(CONF_UNIT_ID, spec.get("unit_id", 1)))
 
-    hub = WPQubeHub(hass, host, port, unit_id)
+    # Determine a short label for this hub across all entries (qube1, qube2, ...)
+    existing = [e for e in hass.config_entries.async_entries(DOMAIN)]
+    # Sort for deterministic ordering
+    existing_sorted = sorted(existing, key=lambda e: e.entry_id)
+    index = existing_sorted.index(entry) if entry in existing_sorted else len(existing_sorted)
+    label = f"qube{index + 1}"
+
+    hub = WPQubeHub(hass, host, port, unit_id, label)
 
     # Optional translations for entity display names based on vendor unique_id
     def _load_name_map() -> dict[str, str]:
@@ -107,8 +114,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 legacy_uid = f"{vendor_id}_{host}_{unit_id}"
                 adopted_uid = base_uid
                 # If base UID exists, adopt it
-                if ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid) is not None:
-                    adopted_uid = base_uid
+                ent_id_for_base = ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid)
+                if ent_id_for_base is not None:
+                    ent_entry = ent_reg.async_get(ent_id_for_base)
+                    if ent_entry and ent_entry.config_entry_id == entry.entry_id:
+                        adopted_uid = base_uid
+                    else:
+                        # Base UID exists but belongs to a different entry: avoid adopting
+                        adopted_uid = legacy_uid
                 # Else if legacy UID exists, adopt legacy to attach to existing entity
                 elif ent_reg.async_get_entity_id(platform_domain, DOMAIN, legacy_uid) is not None:
                     adopted_uid = legacy_uid
@@ -175,6 +188,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "hub": hub,
         "coordinator": coordinator,
+        "label": label,
     }
 
     # Listen for options updates to apply unit/slave id without HA restart
