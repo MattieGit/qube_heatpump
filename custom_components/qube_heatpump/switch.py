@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.network import get_url
 
 from .const import DOMAIN
 from .hub import EntityDef
@@ -40,11 +41,17 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
+        url = None
+        try:
+            url = f"{get_url(self.hass)}/config/integrations/integration/qube_heatpump"
+        except Exception:
+            pass
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            configuration_url=url,
         )
 
     @property

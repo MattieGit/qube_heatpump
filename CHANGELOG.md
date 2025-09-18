@@ -32,6 +32,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.62 — 2025-09-16
 - fix: Remove invalid `configuration_url` (must be an http/https URL) to prevent entity setup errors and restore sensor updates.
 
+## 2025.9.63 — 2025-09-16
+- feat: Re-add device configuration_url using the instance base URL (via `get_url(hass)`) so a valid Configure link appears on device pages.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.
