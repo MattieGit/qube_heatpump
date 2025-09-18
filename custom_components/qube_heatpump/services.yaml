@@ -26,3 +26,14 @@ migrate_registry:
       required: false
       selector:
         boolean: {}
+open_options:
+  name: Open options
+  description: Start the options flow for an integration entry. If `entry_id` is omitted and only one entry exists, that entry is used.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry_id to open the options flow for
+      example: 01K5E61VGN2SSXVTW8PB37D42C
+      required: false
+      selector:
+        text: {}

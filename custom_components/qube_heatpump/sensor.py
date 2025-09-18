@@ -119,6 +119,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
             name=(self._label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            configuration_url="/config/integrations/integration/qube_heatpump",
         )
 
     @property
@@ -179,6 +180,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            configuration_url="/config/integrations/integration/qube_heatpump",
         )
 
     @property

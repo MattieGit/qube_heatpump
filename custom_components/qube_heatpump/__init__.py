@@ -334,6 +334,47 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     hass.services.async_register(DOMAIN, "migrate_registry", _async_migrate_registry, schema=svc_schema)
 
+    # Service: open options flow programmatically
+    async def _async_open_options(call):
+        import voluptuous as vol
+        from homeassistant.helpers import config_validation as cv
+
+        schema = vol.Schema({vol.Optional("entry_id"): cv.string})
+        data = schema(call.data)
+
+        target_entry: ConfigEntry | None = None
+        eid = data.get("entry_id")
+        if eid:
+            target_entry = hass.config_entries.async_get_entry(eid)
+        else:
+            # If only one entry exists for this domain, pick it
+            entries = [e for e in hass.config_entries.async_entries(DOMAIN)]
+            if len(entries) == 1:
+                target_entry = entries[0]
+        if target_entry is None:
+            logging.getLogger(__name__).warning(
+                "open_options: unable to determine target entry; provide entry_id"
+            )
+            return
+        logging.getLogger(__name__).debug(
+            "open_options: starting options flow for %s", target_entry.entry_id
+        )
+        try:
+            result = await hass.config_entries.options.async_init(target_entry.entry_id)
+            logging.getLogger(__name__).debug(
+                "open_options: flow created: %s", result
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).error("open_options failed: %s", exc)
+
+    from homeassistant.helpers import config_validation as cv
+    hass.services.async_register(
+        DOMAIN,
+        "open_options",
+        _async_open_options,
+        schema=cv.make_entity_service_schema({}),
+    )
+
     # Initial refresh
     await coordinator.async_config_entry_first_refresh()
 
