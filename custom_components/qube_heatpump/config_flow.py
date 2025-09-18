@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 import asyncio
 import contextlib
+import logging
 
 import voluptuous as vol
 
@@ -56,10 +57,13 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self.config_entry = config_entry
+        _LOGGER.debug("OptionsFlowHandler initialized for entry %s", config_entry.entry_id)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
+        _LOGGER.debug("OptionsFlowHandler.async_step_init called; user_input=%s", bool(user_input))
         if user_input is not None:
             # Persist options
+            _LOGGER.debug("OptionsFlowHandler creating options entry: %s", user_input)
             return self.async_create_entry(title="", data=user_input)
 
         # Defaults from existing options or sensible defaults
@@ -76,6 +80,7 @@ class OptionsFlowHandler(OptionsFlow):
         # Description provided via translations
         return self.async_show_form(step_id="init", data_schema=schema)
 
+_LOGGER = logging.getLogger(__name__)
 
 async def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
     return OptionsFlowHandler(config_entry)
