@@ -7,6 +7,7 @@ import contextlib
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import OptionsFlowWithConfigEntry
 
 from .const import (
     DOMAIN,
@@ -52,9 +53,9 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
 
-class OptionsFlowHandler(config_entries.OptionsFlow):
+class OptionsFlowHandler(OptionsFlowWithConfigEntry):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self._entry = config_entry
+        super().__init__(config_entry)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
         if user_input is not None:
@@ -62,10 +63,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         # Defaults from existing options or sensible defaults
-        unit_id = self._entry.options.get(CONF_UNIT_ID, 1)
-        use_vendor = self._entry.options.get(CONF_USE_VENDOR_NAMES, False)
-        label = self._entry.options.get(CONF_LABEL, "qube1")
-        show_label = self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)
+        unit_id = self.config_entry.options.get(CONF_UNIT_ID, 1)
+        use_vendor = self.config_entry.options.get(CONF_USE_VENDOR_NAMES, False)
+        label = self.config_entry.options.get(CONF_LABEL, "qube1")
+        show_label = self.config_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)
         schema = vol.Schema({
             vol.Required(CONF_UNIT_ID, default=unit_id): vol.Coerce(int),
             vol.Required(CONF_USE_VENDOR_NAMES, default=use_vendor): bool,
