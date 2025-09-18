@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.9.53 — 2025-09-16
+- fix: Ensure Options Flow is exposed via `config_flow` only so the Configure button appears.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.
