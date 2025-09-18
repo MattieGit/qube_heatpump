@@ -356,4 +356,13 @@ def _entity_key(ent: EntityDef) -> str:
     return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
 
 
-# Options flow is exposed via config_flow.async_get_options_flow
+import logging
+
+# Options flow: expose hook so the Configure button appears
+async def async_get_options_flow(config_entry: ConfigEntry):
+    logging.getLogger(__name__).debug(
+        "async_get_options_flow invoked for entry %s", config_entry.entry_id
+    )
+    from .config_flow import OptionsFlowHandler  # lazy import
+
+    return OptionsFlowHandler(config_entry)
