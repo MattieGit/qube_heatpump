@@ -145,6 +145,9 @@ All notable changes to this project are documented in this file. This project us
 - feat: Always include hub label in entity names and entity_ids; persist per‑entry label and allow editing in Options.
 - feat: Migration service/Repairs flow supports enforcing label suffix on entity_ids.
 
+## 2025.9.50 — 2025-09-16
+- fix: Do not await `async_update_entry` (synchronous API) when persisting the auto‑assigned hub label during setup.
+
 ## 2025.9.41 — 2025-09-16
 - chore: Add `services.yaml` and service schema for `migrate_registry` to satisfy Hassfest validation.
 

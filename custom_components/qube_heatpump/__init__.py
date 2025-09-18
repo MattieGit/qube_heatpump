@@ -59,10 +59,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         while f"qube{n}" in used:
             n += 1
         label = f"qube{n}"
-        # Persist label into options
+        # Persist label into options (synchronous API)
         new_opts = dict(entry.options)
         new_opts[CONF_LABEL] = label
-        await hass.config_entries.async_update_entry(entry, options=new_opts)
+        hass.config_entries.async_update_entry(entry, options=new_opts)
 
     hub = WPQubeHub(hass, host, port, unit_id, label)
 
