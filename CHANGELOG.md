@@ -29,6 +29,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.61 — 2025-09-16
 - feat: Add service `open_options` to start the options flow programmatically; add `configuration_url` on devices to provide a Configure link on the device page.
 
+## 2025.9.62 — 2025-09-16
+- fix: Remove invalid `configuration_url` (must be an http/https URL) to prevent entity setup errors and restore sensor updates.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.

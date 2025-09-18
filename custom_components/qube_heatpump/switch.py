@@ -45,7 +45,6 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
-            configuration_url="/config/integrations/integration/qube_heatpump",
         )
 
     @property
