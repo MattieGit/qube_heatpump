@@ -343,6 +343,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         {
             vol.Optional("dry_run", default=True): cv.boolean,
             vol.Optional("prefer_vendor_only", default=True): cv.boolean,
+            vol.Optional("enforce_label_suffix", default=False): cv.boolean,
+            vol.Optional("label"): cv.string,
         }
     )
     hass.services.async_register(DOMAIN, "migrate_registry", _async_migrate_registry, schema=svc_schema)

@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.loader import async_get_loaded_integration
+from homeassistant.loader import async_get_loaded_integration, async_get_integration
 
 from .const import DOMAIN
 
@@ -79,6 +79,8 @@ class QubeInfoButton(CoordinatorEntity, ButtonEntity):
         version = "unknown"
         try:
             integ = await async_get_loaded_integration(self.hass, DOMAIN)
+            if not integ:
+                integ = await async_get_integration(self.hass, DOMAIN)
             if integ and getattr(integ, "version", None):
                 version = integ.version
         except Exception:
