@@ -7,6 +7,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_loaded_integration, async_get_integration
+from pathlib import Path
+import json
 
 from .const import DOMAIN
 
@@ -20,7 +22,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities([
         QubeReloadButton(coordinator, hub, entry.entry_id, show_label),
         QubeInfoButton(coordinator, hub, show_label),
-        QubeMigrateIdsButton(coordinator, hub, entry.entry_id, show_label),
     ])
 
 
@@ -85,6 +86,17 @@ class QubeInfoButton(CoordinatorEntity, ButtonEntity):
                 version = integ.version
         except Exception:
             pass
+        if version == "unknown":
+            # Fallback: read from manifest.json next to this component
+            try:
+                manifest = Path(__file__).resolve().parent / "manifest.json"
+                if manifest.exists():
+                    data = json.loads(manifest.read_text(encoding="utf-8"))
+                    vers = data.get("version")
+                    if vers:
+                        version = str(vers)
+            except Exception:
+                pass
         msg = (
             f"Label: {hub.label}\n"
             f"Host: {hub.host}\n"
@@ -100,48 +112,3 @@ class QubeInfoButton(CoordinatorEntity, ButtonEntity):
             {"message": msg, "title": "Qube info"},
             blocking=False,
         )
-
-
-class QubeMigrateIdsButton(CoordinatorEntity, ButtonEntity):
-    _attr_should_poll = False
-
-    def __init__(self, coordinator, hub, entry_id: str, show_label: bool) -> None:
-        super().__init__(coordinator)
-        self._hub = hub
-        self._entry_id = entry_id
-        label = hub.label or "qube1"
-        self._attr_name = f"Migrate IDs ({label})" if show_label else "Migrate IDs"
-        self._attr_unique_id = f"qube_migrate_{hub.host}_{hub.unit}"
-        self._attr_entity_category = EntityCategory.CONFIG
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
-            manufacturer="Qube",
-            model="Heatpump",
-        )
-
-    async def async_press(self) -> None:
-        # Invoke migration service with label suffix enforced
-        try:
-            await self.hass.services.async_call(
-                DOMAIN,
-                "migrate_registry",
-                {"prefer_vendor_only": False, "enforce_label_suffix": True, "label": self._hub.label, "dry_run": False},
-                blocking=True,
-            )
-            await self.hass.services.async_call(
-                "persistent_notification",
-                "create",
-                {"message": "Migration done (see logs for details).", "title": "Qube migrate IDs"},
-                blocking=False,
-            )
-        except Exception as exc:
-            await self.hass.services.async_call(
-                "persistent_notification",
-                "create",
-                {"message": f"Migration failed: {exc}", "title": "Qube migrate IDs"},
-                blocking=False,
-            )
