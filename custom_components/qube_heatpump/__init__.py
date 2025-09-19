@@ -362,10 +362,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             result = await hass.config_entries.options.async_init(target_entry.entry_id)
             logging.getLogger(__name__).debug(
-                "open_options: flow created: %s", result
+                "open_options: flow created: %r", result
             )
         except Exception as exc:
-            logging.getLogger(__name__).error("open_options failed: %s", exc)
+            logging.getLogger(__name__).error("open_options failed: %r", exc)
 
     # Register with a simple schema (no entity/device selector required)
     import voluptuous as vol
@@ -374,6 +374,65 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "open_options",
         _async_open_options,
         schema=vol.Schema({vol.Optional("entry_id"): vol.Coerce(str)}),
+    )
+
+    # Service: set options directly (bypass UI)
+    async def _async_set_options(call):
+        schema = vol.Schema(
+            {
+                vol.Optional("entry_id"): vol.Coerce(str),
+                vol.Optional("unit_id"): vol.Coerce(int),
+                vol.Optional("label"): vol.Coerce(str),
+                vol.Optional("use_vendor_names"): vol.Coerce(bool),
+                vol.Optional("show_label_in_name"): vol.Coerce(bool),
+                vol.Optional("reload", default=True): vol.Coerce(bool),
+            }
+        )
+        data = schema(call.data)
+        target_entry: ConfigEntry | None = None
+        eid = data.get("entry_id")
+        if eid:
+            target_entry = hass.config_entries.async_get_entry(eid)
+        else:
+            entries = [e for e in hass.config_entries.async_entries(DOMAIN)]
+            if len(entries) == 1:
+                target_entry = entries[0]
+        if target_entry is None:
+            logging.getLogger(__name__).warning(
+                "set_options: unable to determine target entry; provide entry_id"
+            )
+            return
+        # Merge options
+        opts = dict(target_entry.options)
+        if "unit_id" in data and data["unit_id"] is not None:
+            opts[CONF_UNIT_ID] = int(data["unit_id"])
+        if "label" in data and data["label"]:
+            opts[CONF_LABEL] = str(data["label"]).strip()
+        if "use_vendor_names" in data and data["use_vendor_names"] is not None:
+            opts[CONF_USE_VENDOR_NAMES] = bool(data["use_vendor_names"])
+        if "show_label_in_name" in data and data["show_label_in_name"] is not None:
+            opts[CONF_SHOW_LABEL_IN_NAME] = bool(data["show_label_in_name"])
+        hass.config_entries.async_update_entry(target_entry, options=opts)
+        if data.get("reload", True):
+            await hass.config_entries.async_reload(target_entry.entry_id)
+        logging.getLogger(__name__).debug(
+            "set_options: updated options for %s -> %r", target_entry.entry_id, opts
+        )
+
+    hass.services.async_register(
+        DOMAIN,
+        "set_options",
+        _async_set_options,
+        schema=vol.Schema(
+            {
+                vol.Optional("entry_id"): vol.Coerce(str),
+                vol.Optional("unit_id"): vol.Coerce(int),
+                vol.Optional("label"): vol.Coerce(str),
+                vol.Optional("use_vendor_names"): vol.Coerce(bool),
+                vol.Optional("show_label_in_name"): vol.Coerce(bool),
+                vol.Optional("reload", default=True): vol.Coerce(bool),
+            }
+        ),
     )
 
     # Initial refresh

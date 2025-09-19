@@ -37,3 +37,43 @@ open_options:
       required: false
       selector:
         text: {}
+
+set_options:
+  name: Set options
+  description: Update options for an integration entry (bypasses the UI).
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry_id to set options for. If omitted and there is only one entry, that one is used.
+      required: false
+      selector:
+        text: {}
+    unit_id:
+      name: Unit/Slave ID
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 247
+          mode: box
+    label:
+      name: Hub label
+      required: false
+      selector:
+        text: {}
+    use_vendor_names:
+      name: Use vendor names for display
+      required: false
+      selector:
+        boolean: {}
+    show_label_in_name:
+      name: Show hub label in entity names
+      required: false
+      selector:
+        boolean: {}
+    reload:
+      name: Reload after update
+      required: false
+      default: true
+      selector:
+        boolean: {}

@@ -38,6 +38,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.64 — 2025-09-16
 - fix: Register `open_options` with a simple schema (no entity/device/area required) so it can be called from Developer Tools directly.
 
+## 2025.9.65 — 2025-09-16
+- feat: Add `set_options` service to update options (unit_id, label, vendor-name display, show label in names) and auto-reload; improve debug for `open_options`.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.
