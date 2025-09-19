@@ -1,5 +1,5 @@
 DOMAIN = "qube_heatpump"
-PLATFORMS = ["sensor", "binary_sensor", "switch", "number", "button"]
+PLATFORMS = ["sensor", "binary_sensor", "switch", "button"]
 
 CONF_HOST = "host"
 CONF_PORT = "port"

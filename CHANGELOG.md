@@ -57,6 +57,10 @@ All notable changes to this project are documented in this file. This project us
 - feat: Add device-level "Qube info" button (creates a persistent notification with hub details).
 - feat: Add reconfigure flow (host/port) and `reconfigure` service to trigger it (modal appears if supported by HA frontend).
 
+## 2025.9.71 — 2025-09-16
+- change: Remove Unit ID number entity per request; keep Reload and Qube info buttons.
+- feat: Mark Reload as config and Qube info as diagnostic so they appear prominently on the device page.
+
 ## 2025.9.66 — 2025-09-16
 - revert: Remove device `configuration_url` again per request (tile cog was not useful). Use `set_options` service to update options reliably while we analyze HA UI Configure behavior.
 

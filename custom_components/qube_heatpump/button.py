@@ -4,6 +4,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -31,6 +32,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         label = hub.label or "qube1"
         self._attr_name = f"Reload ({label})" if show_label else "Reload"
         self._attr_unique_id = f"qube_reload_{hub.host}_{hub.unit}"
+        self._attr_entity_category = EntityCategory.CONFIG
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -54,6 +56,7 @@ class QubeInfoButton(CoordinatorEntity, ButtonEntity):
         label = hub.label or "qube1"
         self._attr_name = f"Qube info ({label})" if show_label else "Qube info"
         self._attr_unique_id = f"qube_info_{hub.host}_{hub.unit}"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def device_info(self) -> DeviceInfo:
