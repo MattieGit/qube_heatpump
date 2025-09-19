@@ -41,6 +41,30 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.9.65 — 2025-09-16
 - feat: Add `set_options` service to update options (unit_id, label, vendor-name display, show label in names) and auto-reload; improve debug for `open_options`.
 
+## 2025.9.66 — 2025-09-16
+- revert: Remove device `configuration_url` again per request (tile cog was not useful). Use `set_options` service to update options reliably while we analyze HA UI Configure behavior.
+
+## 2025.9.67 — 2025-09-16
+- fix: Always use label suffix (e.g., `vendor_id_qube2`) for adopting legacy unique_ids; never use host/IP.
+- fix: Repairs issue only created if legacy unique_ids are active in the registry; marked non‑fixable to avoid broken Fix button; auto‑cleared when no legacy IDs present.
+- fix: Migration service uses provided label (not YAML data) when enforcing suffix.
+
+## 2025.9.69 — 2025-09-16
+- change: Remove options flow and related services; provide per‑device configuration entities instead.
+- feat: Add number entity to adjust Unit/Slave ID live; add button to reload the entry from the device page.
+
+## 2025.9.70 — 2025-09-16
+- feat: Add device-level "Qube info" button (creates a persistent notification with hub details).
+- feat: Add reconfigure flow (host/port) and `reconfigure` service to trigger it (modal appears if supported by HA frontend).
+
+## 2025.9.66 — 2025-09-16
+- revert: Remove device `configuration_url` again per request (tile cog was not useful). Use `set_options` service to update options reliably while we analyze HA UI Configure behavior.
+
+## 2025.9.67 — 2025-09-16
+- fix: Always use label suffix (e.g., `vendor_id_qube2`) for adopting legacy unique_ids; never use host/IP.
+- fix: Repairs issue only created if legacy unique_ids are active in the registry; marked non‑fixable to avoid broken Fix button; auto‑cleared when no legacy IDs present.
+- fix: Migration service uses provided label (not YAML data) when enforcing suffix.
+
 ## 2025.9.30 — 2025-09-16
 - feat: Keep friendly YAML names for display by default; base unique_ids on vendor IDs (lowercased) and namespace with `<host>_<unit>` for multi‑hub.
 - feat(options): Add toggle "Use vendor names for display"; reloading entry applies display mode.

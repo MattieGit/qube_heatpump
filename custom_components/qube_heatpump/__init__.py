@@ -122,7 +122,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     "switch": "switch",
                 }.get(platform, "sensor")
                 base_uid = vendor_id
-                legacy_uid = f"{vendor_id}_{host}_{unit_id}"
+                legacy_uid = f"{vendor_id}_{label}"
                 adopted_uid = base_uid
                 # If base UID exists, adopt it
                 ent_id_for_base = ent_reg.async_get_entity_id(platform_domain, DOMAIN, base_uid)
@@ -173,26 +173,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hub.entities.extend(_to_entity_defs("sensor", spec.get("sensors")))
     hub.entities.extend(_to_entity_defs("switch", spec.get("switches")))
 
-    # Create a Repairs issue suggesting registry migration if legacy suffixed unique_ids are detected
+    # Create or clear a Repairs issue suggesting registry migration if legacy unique_ids are detected
     try:
         from homeassistant.helpers import issue_registry as ir
         from homeassistant.helpers.issue_registry import IssueSeverity
+        from homeassistant.helpers import entity_registry as er
 
-        legacy_found = any(
-            isinstance(e.unique_id, str) and e.unique_id.endswith(f"_{host}_{unit_id}")
-            for e in hub.entities
-        )
+        ent_reg = er.async_get(hass)
+        legacy_suffix = f"_{host}_{unit_id}"
+        legacy_found = False
+        for ent in list(ent_reg.entities.values()):
+            if ent.config_entry_id != entry.entry_id:
+                continue
+            if isinstance(ent.unique_id, str) and ent.unique_id.endswith(legacy_suffix):
+                legacy_found = True
+                break
         if legacy_found:
             ir.async_create_issue(
                 hass,
                 DOMAIN,
                 issue_id="registry_migration_suggested",
-                is_fixable=True,
+                is_fixable=False,
                 severity=IssueSeverity.WARNING,
                 translation_key=None,
                 translation_placeholders=None,
                 learn_more_url=None,
             )
+        else:
+            ir.async_delete_issue(hass, DOMAIN, "registry_migration_suggested")
     except Exception:
         pass
 
@@ -268,6 +276,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         prefer_vendor_only = bool(call.data.get("prefer_vendor_only", True))
         dry_run = bool(call.data.get("dry_run", True))
         enforce_label = bool(call.data.get("enforce_label_suffix", False))
+        svc_label = str(call.data.get("label", label))
         changes = []
         for e in list(ent_reg.entities.values()):
             if e.config_entry_id != entry.entry_id:
@@ -289,7 +298,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            suffix = data.get("label") if enforce_label else None
+            suffix = svc_label if enforce_label else None
             desired_obj = _slugify(f"{base_uid}_{suffix}") if suffix else _slugify(base_uid)
             desired_eid = f"{domain}.{desired_obj}"
             # Skip if this entry already uses desired unique_id
@@ -334,105 +343,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     hass.services.async_register(DOMAIN, "migrate_registry", _async_migrate_registry, schema=svc_schema)
 
-    # Service: open options flow programmatically
-    async def _async_open_options(call):
-        import voluptuous as vol
-        from homeassistant.helpers import config_validation as cv
+    # Remove options-related services; per-device entities replace configuration
+    # Service: start reconfigure flow to change host/port via modal (if supported)
+    import voluptuous as vol
 
-        schema = vol.Schema({vol.Optional("entry_id"): cv.string})
-        data = schema(call.data)
-
+    async def _async_reconfigure(call):
+        from homeassistant.config_entries import SOURCE_RECONFIGURE
+        data = vol.Schema({vol.Optional("entry_id"): str})(call.data)
         target_entry: ConfigEntry | None = None
         eid = data.get("entry_id")
         if eid:
             target_entry = hass.config_entries.async_get_entry(eid)
         else:
-            # If only one entry exists for this domain, pick it
             entries = [e for e in hass.config_entries.async_entries(DOMAIN)]
             if len(entries) == 1:
                 target_entry = entries[0]
-        if target_entry is None:
-            logging.getLogger(__name__).warning(
-                "open_options: unable to determine target entry; provide entry_id"
-            )
+        if not target_entry:
+            logging.getLogger(__name__).warning("reconfigure: no entry resolved; pass entry_id")
             return
-        logging.getLogger(__name__).debug(
-            "open_options: starting options flow for %s", target_entry.entry_id
-        )
         try:
-            result = await hass.config_entries.options.async_init(target_entry.entry_id)
-            logging.getLogger(__name__).debug(
-                "open_options: flow created: %r", result
+            await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_RECONFIGURE, "entry_id": target_entry.entry_id},
+                data={"entry_id": target_entry.entry_id},
             )
         except Exception as exc:
-            logging.getLogger(__name__).error("open_options failed: %r", exc)
-
-    # Register with a simple schema (no entity/device selector required)
-    import voluptuous as vol
-    hass.services.async_register(
-        DOMAIN,
-        "open_options",
-        _async_open_options,
-        schema=vol.Schema({vol.Optional("entry_id"): vol.Coerce(str)}),
-    )
-
-    # Service: set options directly (bypass UI)
-    async def _async_set_options(call):
-        schema = vol.Schema(
-            {
-                vol.Optional("entry_id"): vol.Coerce(str),
-                vol.Optional("unit_id"): vol.Coerce(int),
-                vol.Optional("label"): vol.Coerce(str),
-                vol.Optional("use_vendor_names"): vol.Coerce(bool),
-                vol.Optional("show_label_in_name"): vol.Coerce(bool),
-                vol.Optional("reload", default=True): vol.Coerce(bool),
-            }
-        )
-        data = schema(call.data)
-        target_entry: ConfigEntry | None = None
-        eid = data.get("entry_id")
-        if eid:
-            target_entry = hass.config_entries.async_get_entry(eid)
-        else:
-            entries = [e for e in hass.config_entries.async_entries(DOMAIN)]
-            if len(entries) == 1:
-                target_entry = entries[0]
-        if target_entry is None:
-            logging.getLogger(__name__).warning(
-                "set_options: unable to determine target entry; provide entry_id"
-            )
-            return
-        # Merge options
-        opts = dict(target_entry.options)
-        if "unit_id" in data and data["unit_id"] is not None:
-            opts[CONF_UNIT_ID] = int(data["unit_id"])
-        if "label" in data and data["label"]:
-            opts[CONF_LABEL] = str(data["label"]).strip()
-        if "use_vendor_names" in data and data["use_vendor_names"] is not None:
-            opts[CONF_USE_VENDOR_NAMES] = bool(data["use_vendor_names"])
-        if "show_label_in_name" in data and data["show_label_in_name"] is not None:
-            opts[CONF_SHOW_LABEL_IN_NAME] = bool(data["show_label_in_name"])
-        hass.config_entries.async_update_entry(target_entry, options=opts)
-        if data.get("reload", True):
-            await hass.config_entries.async_reload(target_entry.entry_id)
-        logging.getLogger(__name__).debug(
-            "set_options: updated options for %s -> %r", target_entry.entry_id, opts
-        )
+            logging.getLogger(__name__).warning("reconfigure flow not available: %r", exc)
 
     hass.services.async_register(
-        DOMAIN,
-        "set_options",
-        _async_set_options,
-        schema=vol.Schema(
-            {
-                vol.Optional("entry_id"): vol.Coerce(str),
-                vol.Optional("unit_id"): vol.Coerce(int),
-                vol.Optional("label"): vol.Coerce(str),
-                vol.Optional("use_vendor_names"): vol.Coerce(bool),
-                vol.Optional("show_label_in_name"): vol.Coerce(bool),
-                vol.Optional("reload", default=True): vol.Coerce(bool),
-            }
-        ),
+        DOMAIN, "reconfigure", _async_reconfigure, schema=vol.Schema({vol.Optional("entry_id"): str})
     )
 
     # Initial refresh
