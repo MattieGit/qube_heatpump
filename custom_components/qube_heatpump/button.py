@@ -21,7 +21,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     async_add_entities([
         QubeReloadButton(coordinator, hub, entry.entry_id, show_label),
-        QubeInfoButton(coordinator, hub, show_label),
     ])
 
 
@@ -50,65 +49,4 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         await self.hass.config_entries.async_reload(self._entry_id)
 
 
-class QubeInfoButton(CoordinatorEntity, ButtonEntity):
-    _attr_should_poll = False
-
-    def __init__(self, coordinator, hub, show_label: bool) -> None:
-        super().__init__(coordinator)
-        self._hub = hub
-        label = hub.label or "qube1"
-        self._attr_name = f"Qube info ({label})" if show_label else "Qube info"
-        self._attr_unique_id = f"qube_info_{hub.host}_{hub.unit}"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
-            manufacturer="Qube",
-            model="Heatpump",
-        )
-
-    async def async_press(self) -> None:
-        # Build a short info message
-        hub = self._hub
-        sensors = sum(1 for e in hub.entities if e.platform == "sensor")
-        bsens = sum(1 for e in hub.entities if e.platform == "binary_sensor")
-        switches = sum(1 for e in hub.entities if e.platform == "switch")
-        # Try to resolve integration version
-        version = "unknown"
-        try:
-            integ = await async_get_loaded_integration(self.hass, DOMAIN)
-            if not integ:
-                integ = await async_get_integration(self.hass, DOMAIN)
-            if integ and getattr(integ, "version", None):
-                version = integ.version
-        except Exception:
-            pass
-        if version == "unknown":
-            # Fallback: read from manifest.json next to this component
-            try:
-                manifest = Path(__file__).resolve().parent / "manifest.json"
-                if manifest.exists():
-                    data = json.loads(manifest.read_text(encoding="utf-8"))
-                    vers = data.get("version")
-                    if vers:
-                        version = str(vers)
-            except Exception:
-                pass
-        msg = (
-            f"Label: {hub.label}\n"
-            f"Host: {hub.host}\n"
-            f"Unit/Slave ID: {hub.unit}\n"
-            f"Version: {version}\n"
-            f"Errors: connect={hub.err_connect}, read={hub.err_read}\n"
-            f"Entities: sensors={sensors}, binary_sensors={bsens}, switches={switches}\n\n"
-            "Tips:\n- Use Reload to refresh immediately.\n"
-        )
-        await self.hass.services.async_call(
-            "persistent_notification",
-            "create",
-            {"message": msg, "title": "Qube info"},
-            blocking=False,
-        )
+# QubeInfoButton removed in favor of diagnostic info sensor
