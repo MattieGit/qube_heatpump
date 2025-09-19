@@ -46,6 +46,9 @@ class WPQubeHub:
         self._connect_backoff_max_s: float = 60.0
         self._next_connect_ok_at: float = 0.0
         self._io_timeout_s: float = 3.0
+        # Error counters
+        self._err_connect: int = 0
+        self._err_read: int = 0
 
     @property
     def host(self) -> str:
@@ -73,10 +76,12 @@ class WPQubeHub:
                 # Increase backoff
                 self._connect_backoff_s = min(self._connect_backoff_max_s, (self._connect_backoff_s or 1.0) * 2)
                 self._next_connect_ok_at = now + self._connect_backoff_s
+                self._err_connect += 1
                 raise ModbusException(f"Failed to connect: {exc}")
             if ok is False:
                 self._connect_backoff_s = min(self._connect_backoff_max_s, (self._connect_backoff_s or 1.0) * 2)
                 self._next_connect_ok_at = now + self._connect_backoff_s
+                self._err_connect += 1
                 raise ModbusException("Failed to connect to Modbus TCP server")
             # Reset backoff after success
             self._connect_backoff_s = 0.0
@@ -113,6 +118,17 @@ class WPQubeHub:
 
     def set_unit_id(self, unit_id: int) -> None:
         self._unit = int(unit_id)
+
+    @property
+    def err_connect(self) -> int:
+        return self._err_connect
+
+    @property
+    def err_read(self) -> int:
+        return self._err_read
+
+    def inc_read_error(self) -> None:
+        self._err_read += 1
 
     async def async_read_value(self, ent: EntityDef) -> Any:
         if self._client is None:

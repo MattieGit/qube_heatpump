@@ -214,6 +214,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 val = await hub.async_read_value(ent)
             except Exception as err:
+                try:
+                    hub.inc_read_error()
+                except Exception:
+                    pass
                 if warn_count < max_warn:
                     logging.getLogger(__name__).warning(
                         "Read failed (%s %s@%s): %s", ent.platform, ent.input_type or ent.write_type, ent.address, err
