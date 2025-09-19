@@ -72,6 +72,9 @@ All notable changes to this project are documented in this file. This project us
 - change: Remove the device-level "Migrate IDs" button per request.
 - fix: Qube info now falls back to reading manifest.json to display the actual version when integration loader does not expose it.
 
+## 2025.9.75 — 2025-09-16
+- feat: Add a diagnostic Qube info sensor per device; clicking it opens the more-info dialog with version, host, label, unit, error counters, and entity counts.
+
 ## 2025.9.66 — 2025-09-16
 - revert: Remove device `configuration_url` again per request (tile cog was not useful). Use `set_options` service to update options reliably while we analyze HA UI Configure behavior.
 

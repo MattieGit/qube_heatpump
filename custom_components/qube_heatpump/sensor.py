@@ -5,9 +5,12 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.loader import async_get_loaded_integration, async_get_integration
+from pathlib import Path
+import json
 
 from .const import DOMAIN
 from .hub import EntityDef, WPQubeHub
@@ -20,6 +23,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     show_label = bool(data.get("show_label_in_name", False))
 
     entities: list[SensorEntity] = []
+    # Add a diagnostic Qube info sensor per device
+    entities.append(QubeInfoSensor(coordinator, hub, show_label))
+
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
@@ -125,6 +131,79 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> Any:
         key = self._ent.unique_id or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         return self.coordinator.data.get(key)
+
+
+class QubeInfoSensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, hub, show_label: bool) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        label = hub.label or "qube1"
+        self._attr_name = f"Qube info ({label})" if show_label else "Qube info"
+        self._attr_unique_id = f"qube_info_sensor_{hub.host}_{hub.unit}"
+        self._state = "ok"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=(self._hub.label or "Qube Heatpump"),
+            manufacturer="Qube",
+            model="Heatpump",
+        )
+
+    @property
+    def native_value(self):
+        return self._state
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        hub = self._hub
+        sensors = sum(1 for e in hub.entities if e.platform == "sensor")
+        bsens = sum(1 for e in hub.entities if e.platform == "binary_sensor")
+        switches = sum(1 for e in hub.entities if e.platform == "switch")
+        version = "unknown"
+        try:
+            integ = self.hass.async_add_job(async_get_loaded_integration, self.hass, DOMAIN)
+        except Exception:
+            integ = None
+        if hasattr(integ, "result"):
+            integ = integ.result()
+        if not integ:
+            try:
+                integ = self.hass.async_add_job(async_get_integration, self.hass, DOMAIN)
+            except Exception:
+                integ = None
+            if hasattr(integ, "result"):
+                integ = integ.result()
+        try:
+            if integ and getattr(integ, "version", None):
+                version = integ.version
+        except Exception:
+            pass
+        if version == "unknown":
+            try:
+                manifest = Path(__file__).resolve().parent / "manifest.json"
+                if manifest.exists():
+                    data = json.loads(manifest.read_text(encoding="utf-8"))
+                    vers = data.get("version")
+                    if vers:
+                        version = str(vers)
+            except Exception:
+                pass
+        return {
+            "version": version,
+            "label": hub.label,
+            "host": hub.host,
+            "unit_id": hub.unit,
+            "errors_connect": hub.err_connect,
+            "errors_read": hub.err_read,
+            "count_sensors": sensors,
+            "count_binary_sensors": bsens,
+            "count_switches": switches,
+        }
 
 
 def _entity_key(ent: EntityDef) -> str:
