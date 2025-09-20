@@ -43,6 +43,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=_resolve_integration_version(),
         )
 
     async def async_press(self) -> None:
@@ -50,3 +51,17 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
 
 
 # QubeInfoButton removed in favor of diagnostic info sensor
+
+
+def _resolve_integration_version() -> str:
+    """Resolve integration version from manifest for displaying in Device info."""
+    try:
+        manifest = Path(__file__).resolve().parent / "manifest.json"
+        if manifest.exists():
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            vers = data.get("version")
+            if vers:
+                return str(vers)
+    except Exception:
+        pass
+    return "unknown"

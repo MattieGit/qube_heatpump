@@ -50,6 +50,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
+def _resolve_integration_version() -> str:
+    """Resolve integration version from manifest.
+
+    Keep simple and synchronous: read bundled manifest.json and return its version.
+    """
+    try:
+        manifest = Path(__file__).resolve().parent / "manifest.json"
+        if manifest.exists():
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            vers = data.get("version")
+            if vers:
+                return str(vers)
+    except Exception:
+        pass
+    return "unknown"
+
+
 class WPQubeSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
@@ -98,6 +115,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
             name=(self._label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=_resolve_integration_version(),
         )
 
     @property
@@ -125,6 +143,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=_resolve_integration_version(),
         )
 
     @property
@@ -231,6 +250,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=_resolve_integration_version(),
         )
 
     @property
