@@ -26,6 +26,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # Add a diagnostic Qube info sensor per device
     entities.append(QubeInfoSensor(coordinator, hub, show_label))
 
+    # Add key diagnostic metrics as separate sensors so users can mark them as
+    # Preferred on the device page for quick visibility.
+    entities.extend(
+        [
+            QubeMetricSensor(coordinator, hub, show_label, kind="errors_connect"),
+            QubeMetricSensor(coordinator, hub, show_label, kind="errors_read"),
+            QubeMetricSensor(coordinator, hub, show_label, kind="count_sensors"),
+            QubeMetricSensor(
+                coordinator, hub, show_label, kind="count_binary_sensors"
+            ),
+            QubeMetricSensor(coordinator, hub, show_label, kind="count_switches"),
+        ]
+    )
+
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
@@ -196,6 +210,58 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             "count_binary_sensors": bsens,
             "count_switches": switches,
         }
+
+
+class QubeMetricSensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, hub: WPQubeHub, show_label: bool, kind: str) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._kind = kind
+        label = hub.label or "qube1"
+        name = {
+            "errors_connect": "Qube connect errors",
+            "errors_read": "Qube read errors",
+            "count_sensors": "Qube sensor count",
+            "count_binary_sensors": "Qube binary sensor count",
+            "count_switches": "Qube switch count",
+        }.get(kind, kind)
+        self._attr_name = f"{name} ({label})" if show_label else name
+        self._attr_unique_id = f"qube_metric_{kind}_{label}"
+        # These are plain numeric counters; mark as measurement for charts.
+        try:
+            from homeassistant.components.sensor import SensorStateClass
+
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        except Exception:
+            pass
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=(self._hub.label or "Qube Heatpump"),
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=_resolve_integration_version(),
+        )
+
+    @property
+    def native_value(self):
+        hub = self._hub
+        if self._kind == "errors_connect":
+            return getattr(hub, "err_connect", None)
+        if self._kind == "errors_read":
+            return getattr(hub, "err_read", None)
+        if self._kind == "count_sensors":
+            return sum(1 for e in hub.entities if e.platform == "sensor")
+        if self._kind == "count_binary_sensors":
+            return sum(1 for e in hub.entities if e.platform == "binary_sensor")
+        if self._kind == "count_switches":
+            return sum(1 for e in hub.entities if e.platform == "switch")
+        return None
 
 
 def _entity_key(ent: EntityDef) -> str:
