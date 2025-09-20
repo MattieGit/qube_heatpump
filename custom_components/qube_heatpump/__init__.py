@@ -201,6 +201,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
         else:
             ir.async_delete_issue(hass, DOMAIN, "registry_migration_suggested")
+
+        # Auto-migrate known host/IP suffixed UIDs to label-suffixed UIDs for this entry
+        try:
+            for ent in list(ent_reg.entities.values()):
+                if ent.config_entry_id != entry.entry_id:
+                    continue
+                uid = ent.unique_id
+                if not isinstance(uid, str) or not uid.endswith(legacy_suffix):
+                    continue
+                # For our computed/info/reload UIDs, replace suffix with label
+                if uid.startswith("wp_qube_") or uid.startswith("qube_info_sensor_") or uid.startswith("qube_reload_") or uid.startswith("wp_qube_sensor_"):
+                    new_uid = uid[: -len(legacy_suffix)] + f"_{label}"
+                    try:
+                        ent_reg.async_update_entity(ent.entity_id, new_unique_id=new_uid)  # type: ignore[arg-type]
+                    except Exception:
+                        pass
+        except Exception:
+            pass
     except Exception:
         pass
 

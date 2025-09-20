@@ -33,7 +33,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         self._entry_id = entry_id
         label = hub.label or "qube1"
         self._attr_name = f"Reload ({label})" if show_label else "Reload"
-        self._attr_unique_id = f"qube_reload_{hub.host}_{hub.unit}"
+        self._attr_unique_id = f"qube_reload_{label}"
         self._attr_entity_category = EntityCategory.CONFIG
 
     @property

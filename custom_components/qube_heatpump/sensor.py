@@ -35,44 +35,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # 1) Qube status full (maps numeric status to human-readable string)
     status_src = _find_status_source(hub)
     if status_src is not None:
-        entities.append(
-            WPQubeComputedSensor(
-                coordinator,
-                hub,
-                name="Qube status full",
-                unique_suffix="status_full",
-                kind="status",
-                source=status_src,
-            )
-        )
+        entities.append(WPQubeComputedSensor(coordinator, hub, name="Qube status full", unique_suffix="status_full", kind="status", source=status_src))
 
     # 2) Qube Driewegklep DHW/CV status (binary sensor address 4)
     drie_src = _find_binary_by_address(hub, 4)
     if drie_src is not None:
-        entities.append(
-            WPQubeComputedSensor(
-                coordinator,
-                hub,
-                name="Qube Driewegklep DHW/CV status",
-                unique_suffix="driewegklep_dhw_cv",
-                kind="drieweg",
-                source=drie_src,
-            )
-        )
+        entities.append(WPQubeComputedSensor(coordinator, hub, name="Qube Driewegklep DHW/CV status", unique_suffix="driewegklep_dhw_cv", kind="drieweg", source=drie_src))
 
     # 3) Qube Vierwegklep verwarmen/koelen status (binary sensor address 2)
     vier_src = _find_binary_by_address(hub, 2)
     if vier_src is not None:
-        entities.append(
-            WPQubeComputedSensor(
-                coordinator,
-                hub,
-                name="Qube Vierwegklep verwarmen/koelen status",
-                unique_suffix="vierwegklep_verwarmen_koelen",
-                kind="vierweg",
-                source=vier_src,
-            )
-        )
+        entities.append(WPQubeComputedSensor(coordinator, hub, name="Qube Vierwegklep verwarmen/koelen status", unique_suffix="vierwegklep_verwarmen_koelen", kind="vierweg", source=vier_src))
 
     async_add_entities(entities)
 
@@ -87,7 +60,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         self._unit = unit
         self._label = label
         self._attr_name = f"{ent.name} ({self._label})" if show_label else ent.name
-        self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
+        self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._label}_{ent.input_type}_{ent.address}"
         # Suggest vendor-only entity_id; conflict fallback handled in async_added_to_hass
         if getattr(ent, "vendor_id", None):
             self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._label}")
@@ -142,7 +115,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         self._hub = hub
         label = hub.label or "qube1"
         self._attr_name = f"Qube info ({label})" if show_label else "Qube info"
-        self._attr_unique_id = f"qube_info_sensor_{hub.host}_{hub.unit}"
+        self._attr_unique_id = f"qube_info_sensor_{label}"
         self._state = "ok"
 
     @property
@@ -249,7 +222,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._source = source
         self._attr_name = name
         # Make unique per host to support multiple entries
-        self._attr_unique_id = f"wp_qube_{unique_suffix}_{hub.host}_{hub.unit}"
+        self._attr_unique_id = f"wp_qube_{unique_suffix}_{hub.label}"
 
     @property
     def device_info(self) -> DeviceInfo:
