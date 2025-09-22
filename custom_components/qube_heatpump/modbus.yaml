@@ -640,16 +640,7 @@
     state_class: measurement
     unique_id: GeneralMng_EletricPwr
 
-  - name: "Totaal thermisch vermogen (berekend)"
-    address: 63
-    input_type: input
-    data_type: float32
-    scan_interval: 10
-    precision: 0
-    device_class: power
-    unit_of_measurement: "W"
-    state_class: measurement
-    unique_id: GeneralMng_TotalThermic_computed
+  # Removed per vendor guidance: Input register 63 is invalid/unsupported
 
   - name: "Setpoint plantregeling"
     address: 65

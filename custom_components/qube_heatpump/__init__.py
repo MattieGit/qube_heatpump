@@ -222,6 +222,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception:
         pass
 
+    # Cleanup: remove deprecated sensor for input register 63 from the entity registry
+    try:
+        legacy_uids = {
+            "GeneralMng_TotalThermic_computed",
+            f"wp_qube_sensor_{label}_input_63",
+        }
+        for ent in list(ent_reg.entities.values()):
+            try:
+                if ent.config_entry_id != entry.entry_id or ent.domain != "sensor":
+                    continue
+                if isinstance(ent.unique_id, str) and ent.unique_id in legacy_uids:
+                    ent_reg.async_remove(ent.entity_id)
+            except Exception:
+                continue
+    except Exception:
+        pass
+
     async def _async_update_data() -> dict[str, Any]:
         # Connect once per cycle; if it fails, bubble up so Coordinator marks unavailable
         await hub.async_connect()
