@@ -94,6 +94,35 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 _LOGGER = logging.getLogger(__name__)
 
 """
-Options UI has been removed in favor of per-device entities.
+Options Flow
 Reconfigure flow is available to change host/port when triggered by a service.
+Adds an option to show the hub label in entity names for sensors/switches.
+The option is effective primarily for multi-device setups.
 """
+
+
+def async_get_options_flow(config_entry):  # type: ignore[override]
+    return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(OptionsFlow):
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self._entry = config_entry
+
+    async def async_step_init(self, user_input: dict | None = None):
+        # Determine if multiple Qube entries exist
+        entries = [e for e in self.hass.config_entries.async_entries(DOMAIN) if e.entry_id != self._entry.entry_id]
+        multi_device = len(entries) >= 1
+
+        if user_input is not None:
+            # Persist option; it will be combined with multi_device at runtime
+            opts = dict(self._entry.options)
+            opts[CONF_SHOW_LABEL_IN_NAME] = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
+            self.hass.config_entries.async_update_entry(self._entry, options=opts)
+            return self.async_create_entry(title="", data=opts)
+
+        import voluptuous as vol
+
+        current = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
+        schema = vol.Schema({vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current and multi_device): bool})
+        return self.async_show_form(step_id="init", data_schema=schema)

@@ -319,7 +319,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "hub": hub,
         "coordinator": coordinator,
         "label": label,
+        # Only apply label suffix for sensors/switches when both option is enabled
+        # and multiple devices exist.
         "show_label_in_name": show_label_in_name,
+        "show_label_combined": bool(show_label_in_name and multi_device),
         # When more than one heat pump is configured, we will always show the
         # label suffix in Diagnostics entities to help distinguish devices.
         "force_label_in_diag": multi_device,

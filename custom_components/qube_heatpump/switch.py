@@ -15,7 +15,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
     coordinator = data["coordinator"]
-    show_label = bool(data.get("show_label_in_name", False))
+    show_label = bool(data.get("show_label_combined", False))
 
     entities: list[SwitchEntity] = []
     for ent in hub.entities:
