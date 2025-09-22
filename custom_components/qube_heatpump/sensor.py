@@ -21,22 +21,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     hub = data["hub"]
     coordinator = data["coordinator"]
     show_label = bool(data.get("show_label_in_name", False))
+    # For diagnostics, auto-show label when multiple devices exist
+    show_label_diag = bool(data.get("force_label_in_diag", False)) or show_label
 
     entities: list[SensorEntity] = []
     # Add a diagnostic Qube info sensor per device
-    entities.append(QubeInfoSensor(coordinator, hub, show_label))
+    entities.append(QubeInfoSensor(coordinator, hub, show_label_diag))
 
     # Add key diagnostic metrics as separate sensors so users can mark them as
     # Preferred on the device page for quick visibility.
     entities.extend(
         [
-            QubeMetricSensor(coordinator, hub, show_label, kind="errors_connect"),
-            QubeMetricSensor(coordinator, hub, show_label, kind="errors_read"),
-            QubeMetricSensor(coordinator, hub, show_label, kind="count_sensors"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, kind="errors_connect"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, kind="errors_read"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, kind="count_sensors"),
             QubeMetricSensor(
-                coordinator, hub, show_label, kind="count_binary_sensors"
+                coordinator, hub, show_label_diag, kind="count_binary_sensors"
             ),
-            QubeMetricSensor(coordinator, hub, show_label, kind="count_switches"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, kind="count_switches"),
         ]
     )
 
@@ -146,7 +148,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._hub = hub
         label = hub.label or "qube1"
-        self._attr_name = f"Qube info ({label})" if show_label else "Qube info"
+        disp = _format_label(label) if show_label else None
+        self._attr_name = f"Qube info ({disp})" if show_label else "Qube info"
         self._attr_unique_id = f"qube_info_sensor_{label}"
         self._state = "ok"
 
@@ -228,7 +231,8 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             "count_binary_sensors": "Qube binary sensor count",
             "count_switches": "Qube switch count",
         }.get(kind, kind)
-        self._attr_name = f"{name} ({label})" if show_label else name
+        disp = _format_label(label) if show_label else None
+        self._attr_name = f"{name} ({disp})" if show_label else name
         self._attr_unique_id = f"qube_metric_{kind}_{label}"
         # These are plain numeric counters; mark as measurement for charts.
         try:
@@ -271,6 +275,16 @@ def _entity_key(ent: EntityDef) -> str:
 def _slugify(text: str) -> str:
     # Minimal slugify to align with HA object_id expectations
     return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
+
+
+def _format_label(label: str) -> str:
+    """Insert a space before trailing digits in label (e.g., qube1 -> qube 1)."""
+    try:
+        import re
+
+        return re.sub(r"^(.*?)(\d+)$", r"\1 \2", str(label))
+    except Exception:
+        return label
 
 
 def _find_status_source(hub: WPQubeHub) -> EntityDef | None:

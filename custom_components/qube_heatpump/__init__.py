@@ -273,11 +273,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
     )
 
+    # Determine whether multiple Qube entries exist (to auto-append label for diagnostics)
+    try:
+        other_entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
+        multi_device = len(other_entries) >= 1
+    except Exception:
+        multi_device = False
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "hub": hub,
         "coordinator": coordinator,
         "label": label,
         "show_label_in_name": show_label_in_name,
+        # When more than one heat pump is configured, we will always show the
+        # label suffix in Diagnostics entities to help distinguish devices.
+        "force_label_in_diag": multi_device,
     }
 
     # Listen for options updates to apply unit/slave id without HA restart
