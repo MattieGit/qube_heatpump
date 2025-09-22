@@ -239,6 +239,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception:
         pass
 
+    # When multiple devices are configured, ensure Diagnostics entities have
+    # label-suffixed unique_ids to avoid ambiguity. Do not change anything for
+    # single-device setups to preserve stability.
+    try:
+        if multi_device:
+            diag_bases = [
+                "qube_info_sensor",
+                "qube_metric_errors_connect",
+                "qube_metric_errors_read",
+                "qube_metric_count_sensors",
+                "qube_metric_count_binary_sensors",
+                "qube_metric_count_switches",
+            ]
+            for base in diag_bases:
+                old_uid = base
+                new_uid = f"{base}_{label}"
+                try:
+                    # Find entity by old unique_id for this platform/integration
+                    old_ent_id = ent_reg.async_get_entity_id("sensor", DOMAIN, old_uid)
+                    if not old_ent_id:
+                        continue
+                    ent = ent_reg.async_get(old_ent_id)
+                    if not ent or ent.config_entry_id != entry.entry_id:
+                        continue
+                    # Skip if the target unique_id already exists or equals old
+                    conflict = ent_reg.async_get_entity_id("sensor", DOMAIN, new_uid)
+                    if conflict and conflict != old_ent_id:
+                        continue
+                    if ent.unique_id != new_uid:
+                        ent_reg.async_update_entity(old_ent_id, new_unique_id=new_uid)  # type: ignore[arg-type]
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
     async def _async_update_data() -> dict[str, Any]:
         # Connect once per cycle; if it fails, bubble up so Coordinator marks unavailable
         await hub.async_connect()
