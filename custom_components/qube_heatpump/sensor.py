@@ -147,11 +147,16 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, hub, show_label: bool) -> None:
         super().__init__(coordinator)
         self._hub = hub
+        self._show_label = bool(show_label)
         label = hub.label or "qube1"
         disp = _format_label(label) if show_label else None
         self._attr_name = f"Qube info ({disp})" if show_label else "Qube info"
         self._attr_unique_id = f"qube_info_sensor_{label}"
         self._state = "ok"
+        # Ensure predictable entity_id when multiple devices exist.
+        # Only suggest an object id in multi-device setups to avoid churn for single-device users.
+        if self._show_label:
+            self._attr_suggested_object_id = _slugify(f"qube_info_{label}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -214,6 +219,24 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             "count_switches": switches,
         }
 
+    async def async_added_to_hass(self) -> None:
+        # If multiple devices exist, align entity_id to the desired label-suffixed form
+        # e.g., sensor.qube_info_qube2, provided there is no conflict.
+        await super().async_added_to_hass()
+        if not self._show_label:
+            return
+        registry = er.async_get(self.hass)
+        current = registry.async_get(self.entity_id)
+        if not current:
+            return
+        desired_obj = _slugify(f"qube_info_{self._hub.label}")
+        desired_eid = f"sensor.{desired_obj}"
+        if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
+            try:
+                registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
+            except Exception:
+                pass
+
 
 class QubeMetricSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
@@ -223,6 +246,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._hub = hub
         self._kind = kind
+        self._show_label = bool(show_label)
         label = hub.label or "qube1"
         name = {
             "errors_connect": "Qube connect errors",
@@ -234,6 +258,8 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         disp = _format_label(label) if show_label else None
         self._attr_name = f"{name} ({disp})" if show_label else name
         self._attr_unique_id = f"qube_metric_{kind}_{label}"
+        if self._show_label:
+            self._attr_suggested_object_id = _slugify(f"qube_metric_{kind}_{label}")
         # These are plain numeric counters; mark as measurement for charts.
         try:
             from homeassistant.components.sensor import SensorStateClass
@@ -266,6 +292,23 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         if self._kind == "count_switches":
             return sum(1 for e in hub.entities if e.platform == "switch")
         return None
+
+    async def async_added_to_hass(self) -> None:
+        # Ensure entity_id includes label suffix when multi-device is detected.
+        await super().async_added_to_hass()
+        if not self._show_label:
+            return
+        registry = er.async_get(self.hass)
+        current = registry.async_get(self.entity_id)
+        if not current:
+            return
+        desired_obj = _slugify(f"qube_metric_{self._kind}_{self._hub.label}")
+        desired_eid = f"sensor.{desired_obj}"
+        if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
+            try:
+                registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
+            except Exception:
+                pass
 
 
 def _entity_key(ent: EntityDef) -> str:

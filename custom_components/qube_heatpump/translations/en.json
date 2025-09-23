@@ -8,7 +8,7 @@
     },
     "step": {
       "user": {
-        "title": "WP Qube Heatpump",
+        "title": "Qube Heatpump",
         "description": "Enter the heat pump IP or host.",
         "data": {
           "host": "Host/IP"
