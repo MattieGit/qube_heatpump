@@ -328,6 +328,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "force_label_in_diag": multi_device,
     }
 
+    # Ensure Reload button unique_id is label-suffixed when multiple devices
+    # are configured, to avoid ambiguity across entries.
+    try:
+        if multi_device:
+            from homeassistant.helpers import entity_registry as er
+            ent_reg = er.async_get(hass)
+            base = "qube_reload"
+            old_ent_id = ent_reg.async_get_entity_id("button", DOMAIN, base)
+            if old_ent_id:
+                ent = ent_reg.async_get(old_ent_id)
+                if ent and ent.config_entry_id == entry.entry_id:
+                    new_uid = f"{base}_{label}"
+                    conflict = ent_reg.async_get_entity_id("button", DOMAIN, new_uid)
+                    if (not conflict) or (conflict == old_ent_id):
+                        try:
+                            ent_reg.async_update_entity(old_ent_id, new_unique_id=new_uid)  # type: ignore[arg-type]
+                        except Exception:
+                            pass
+    except Exception:
+        pass
+
     # Listen for options updates to apply unit/slave id without HA restart
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         if updated_entry.entry_id != entry.entry_id:
