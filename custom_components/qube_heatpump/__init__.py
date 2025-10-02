@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
+import json
 import logging
 from typing import Any
 import re
@@ -39,8 +41,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     yaml_path = Path(__file__).parent / CONF_FILE_NAME
     if not yaml_path.exists():
         yaml_path = Path(__file__).resolve().parents[2] / CONF_FILE_NAME
-    with yaml_path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    def _load_yaml_from_path(path: Path) -> dict[str, Any]:
+        with path.open("r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+
+    data = await hass.async_add_executor_job(_load_yaml_from_path, yaml_path)
 
     # The YAML may contain a list with one dict
     spec = data[0] if isinstance(data, list) and data else data
@@ -68,7 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hub = WPQubeHub(hass, host, port, unit_id, label)
 
     # Optional translations for entity display names based on vendor unique_id
-    def _load_name_map() -> dict[str, str]:
+    async def _load_name_map() -> dict[str, str]:
         lang = getattr(hass.config, "language", None) or "en"
         lang = str(lang).lower().split("-")[0]
         base = Path(__file__).parent / "translations"
@@ -79,13 +84,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for path in candidates:
             try:
                 if path.exists():
-                    import json
-                    return {k.lower(): v for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
+                    loader = partial(path.read_text, encoding="utf-8")
+                    text = await hass.async_add_executor_job(loader)
+                    return {k.lower(): v for k, v in json.loads(text).items()}
             except Exception:
                 continue
         return {}
 
-    name_map = _load_name_map()
+    name_map = await _load_name_map()
+
+    async def _async_resolve_version() -> str:
+        manifest = Path(__file__).resolve().parent / "manifest.json"
+        if not manifest.exists():
+            return "unknown"
+        try:
+            loader = partial(manifest.read_text, encoding="utf-8")
+            text = await hass.async_add_executor_job(loader)
+            data = json.loads(text)
+            version = data.get("version")
+            if version:
+                return str(version)
+        except Exception:
+            return "unknown"
+        return "unknown"
+
+    version = await _async_resolve_version()
     use_vendor_names = bool(entry.options.get(CONF_USE_VENDOR_NAMES, False))
     show_label_in_name = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
     # Entity registry for conflict detection/adoption when building unique_ids
@@ -326,6 +349,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # When more than one heat pump is configured, we will always show the
         # label suffix in Diagnostics entities to help distinguish devices.
         "force_label_in_diag": multi_device,
+        "version": version,
     }
 
     # Ensure Reload button unique_id is label-suffixed when multiple devices

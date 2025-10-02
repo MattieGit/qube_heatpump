@@ -9,8 +9,6 @@ from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_loaded_integration, async_get_integration
-from pathlib import Path
-import json
 
 from .const import DOMAIN
 from .hub import EntityDef, WPQubeHub
@@ -20,78 +18,104 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
     coordinator = data["coordinator"]
+    version = data.get("version", "unknown")
     show_label = bool(data.get("show_label_combined", False))
     # For diagnostics, auto-show label when multiple devices exist
     show_label_diag = bool(data.get("force_label_in_diag", False)) or show_label
 
     entities: list[SensorEntity] = []
     # Add a diagnostic Qube info sensor per device
-    entities.append(QubeInfoSensor(coordinator, hub, show_label_diag))
+    entities.append(QubeInfoSensor(coordinator, hub, show_label_diag, version))
 
     # Add key diagnostic metrics as separate sensors so users can mark them as
     # Preferred on the device page for quick visibility.
     entities.extend(
         [
-            QubeMetricSensor(coordinator, hub, show_label_diag, kind="errors_connect"),
-            QubeMetricSensor(coordinator, hub, show_label_diag, kind="errors_read"),
-            QubeMetricSensor(coordinator, hub, show_label_diag, kind="count_sensors"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="errors_connect"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="errors_read"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="count_sensors"),
             QubeMetricSensor(
-                coordinator, hub, show_label_diag, kind="count_binary_sensors"
+                coordinator, hub, show_label_diag, version, kind="count_binary_sensors"
             ),
-            QubeMetricSensor(coordinator, hub, show_label_diag, kind="count_switches"),
+            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="count_switches"),
         ]
     )
 
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
-        entities.append(WPQubeSensor(coordinator, hub.host, hub.unit, hub.label, show_label, ent))
+        entities.append(
+            WPQubeSensor(coordinator, hub.host, hub.unit, hub.label, show_label, version, ent)
+        )
 
     # Add computed/template-like sensors equivalent to template_sensors.yaml
     # 1) Qube status full (maps numeric status to human-readable string)
     status_src = _find_status_source(hub)
     if status_src is not None:
-        entities.append(WPQubeComputedSensor(coordinator, hub, name="Qube status full", unique_suffix="status_full", kind="status", source=status_src))
+        entities.append(
+            WPQubeComputedSensor(
+                coordinator,
+                hub,
+                name="Qube status full",
+                unique_suffix="status_full",
+                kind="status",
+                source=status_src,
+                version=version,
+            )
+        )
 
     # 2) Qube Driewegklep DHW/CV status (binary sensor address 4)
     drie_src = _find_binary_by_address(hub, 4)
     if drie_src is not None:
-        entities.append(WPQubeComputedSensor(coordinator, hub, name="Qube Driewegklep DHW/CV status", unique_suffix="driewegklep_dhw_cv", kind="drieweg", source=drie_src))
+        entities.append(
+            WPQubeComputedSensor(
+                coordinator,
+                hub,
+                name="Qube Driewegklep DHW/CV status",
+                unique_suffix="driewegklep_dhw_cv",
+                kind="drieweg",
+                source=drie_src,
+                version=version,
+            )
+        )
 
     # 3) Qube Vierwegklep verwarmen/koelen status (binary sensor address 2)
     vier_src = _find_binary_by_address(hub, 2)
     if vier_src is not None:
-        entities.append(WPQubeComputedSensor(coordinator, hub, name="Qube Vierwegklep verwarmen/koelen status", unique_suffix="vierwegklep_verwarmen_koelen", kind="vierweg", source=vier_src))
+        entities.append(
+            WPQubeComputedSensor(
+                coordinator,
+                hub,
+                name="Qube Vierwegklep verwarmen/koelen status",
+                unique_suffix="vierwegklep_verwarmen_koelen",
+                kind="vierweg",
+                source=vier_src,
+                version=version,
+            )
+        )
 
     async_add_entities(entities)
-
-
-def _resolve_integration_version() -> str:
-    """Resolve integration version from manifest.
-
-    Keep simple and synchronous: read bundled manifest.json and return its version.
-    """
-    try:
-        manifest = Path(__file__).resolve().parent / "manifest.json"
-        if manifest.exists():
-            data = json.loads(manifest.read_text(encoding="utf-8"))
-            vers = data.get("version")
-            if vers:
-                return str(vers)
-    except Exception:
-        pass
-    return "unknown"
 
 
 class WPQubeSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, unit: int, label: str, show_label: bool, ent: EntityDef) -> None:
+    def __init__(
+        self,
+        coordinator,
+        host: str,
+        unit: int,
+        label: str,
+        show_label: bool,
+        version: str,
+        ent: EntityDef,
+    ) -> None:
         super().__init__(coordinator)
         self._ent = ent
         self._host = host
         self._unit = unit
         self._label = label
+        self._version = version
         self._attr_name = f"{ent.name} ({self._label})" if show_label else ent.name
         self._attr_unique_id = ent.unique_id or f"wp_qube_sensor_{self._label}_{ent.input_type}_{ent.address}"
         # Suggest vendor-only entity_id; conflict fallback handled in async_added_to_hass
@@ -131,7 +155,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
             name=(self._label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
-            sw_version=_resolve_integration_version(),
+            sw_version=self._version,
         )
 
     @property
@@ -144,10 +168,11 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, coordinator, hub, show_label: bool) -> None:
+    def __init__(self, coordinator, hub, show_label: bool, version: str) -> None:
         super().__init__(coordinator)
         self._hub = hub
         self._show_label = bool(show_label)
+        self._version = version
         label = hub.label or "qube1"
         disp = _format_label(label) if show_label else None
         self._attr_name = f"Qube info ({disp})" if show_label else "Qube info"
@@ -165,7 +190,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
-            sw_version=_resolve_integration_version(),
+            sw_version=self._version,
         )
 
     @property
@@ -178,7 +203,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         sensors = sum(1 for e in hub.entities if e.platform == "sensor")
         bsens = sum(1 for e in hub.entities if e.platform == "binary_sensor")
         switches = sum(1 for e in hub.entities if e.platform == "switch")
-        version = "unknown"
+        version = self._version or "unknown"
         try:
             integ = self.hass.async_add_job(async_get_loaded_integration, self.hass, DOMAIN)
         except Exception:
@@ -197,16 +222,6 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
                 version = integ.version
         except Exception:
             pass
-        if version == "unknown":
-            try:
-                manifest = Path(__file__).resolve().parent / "manifest.json"
-                if manifest.exists():
-                    data = json.loads(manifest.read_text(encoding="utf-8"))
-                    vers = data.get("version")
-                    if vers:
-                        version = str(vers)
-            except Exception:
-                pass
         return {
             "version": version,
             "label": hub.label,
@@ -242,11 +257,19 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, coordinator, hub: WPQubeHub, show_label: bool, kind: str) -> None:
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        show_label: bool,
+        version: str,
+        kind: str,
+    ) -> None:
         super().__init__(coordinator)
         self._hub = hub
         self._kind = kind
         self._show_label = bool(show_label)
+        self._version = version
         label = hub.label or "qube1"
         name = {
             "errors_connect": "Qube connect errors",
@@ -275,7 +298,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
-            sw_version=_resolve_integration_version(),
+            sw_version=self._version,
         )
 
     @property
@@ -356,12 +379,22 @@ def _find_binary_by_address(hub: WPQubeHub, address: int) -> EntityDef | None:
 class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, hub: WPQubeHub, name: str, unique_suffix: str, kind: str, source: EntityDef) -> None:
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        name: str,
+        unique_suffix: str,
+        kind: str,
+        source: EntityDef,
+        version: str,
+    ) -> None:
         super().__init__(coordinator)
         self._hub = hub
         self._name = name
         self._kind = kind
         self._source = source
+        self._version = version
         self._attr_name = name
         # Make unique per host to support multiple entries
         self._attr_unique_id = f"wp_qube_{unique_suffix}_{hub.label}"
@@ -373,7 +406,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
-            sw_version=_resolve_integration_version(),
+            sw_version=self._version,
         )
 
     @property

@@ -6,9 +6,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.loader import async_get_loaded_integration, async_get_integration
-from pathlib import Path
-import json
 
 from .const import DOMAIN
 
@@ -17,6 +14,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
     coordinator = data["coordinator"]
+    version = data.get("version", "unknown")
     # For parity with Diagnostics sensors: show label in name when multiple
     # devices exist (force_label_in_diag), or if user opted in.
     show_label_diag = bool(data.get("force_label_in_diag", False)) or bool(
@@ -29,6 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             hub,
             entry.entry_id,
             show_label_diag,
+            version,
             force_label=bool(data.get("force_label_in_diag", False)),
         ),
     ])
@@ -37,11 +36,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class QubeReloadButton(CoordinatorEntity, ButtonEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, hub, entry_id: str, show_label: bool, force_label: bool = False) -> None:
+    def __init__(
+        self,
+        coordinator,
+        hub,
+        entry_id: str,
+        show_label: bool,
+        version: str,
+        force_label: bool = False,
+    ) -> None:
         super().__init__(coordinator)
         self._hub = hub
         self._entry_id = entry_id
         self._force_label = bool(force_label)
+        self._version = version
         label = hub.label or "qube1"
         self._attr_name = f"Reload ({label})" if show_label else "Reload"
         # Unique_id: include label suffix only when multiple devices exist.
@@ -64,28 +72,11 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
-            sw_version=_resolve_integration_version(),
+            sw_version=self._version,
         )
 
     async def async_press(self) -> None:
         await self.hass.config_entries.async_reload(self._entry_id)
-
-
-# QubeInfoButton removed in favor of diagnostic info sensor
-
-
-def _resolve_integration_version() -> str:
-    """Resolve integration version from manifest for displaying in Device info."""
-    try:
-        manifest = Path(__file__).resolve().parent / "manifest.json"
-        if manifest.exists():
-            data = json.loads(manifest.read_text(encoding="utf-8"))
-            vers = data.get("version")
-            if vers:
-                return str(vers)
-    except Exception:
-        pass
-    return "unknown"
 
     async def async_added_to_hass(self) -> None:
         # Align entity_id with desired label form in multi-device setups.
