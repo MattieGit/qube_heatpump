@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2025.9.86 — 2025-10-02
+## 2025.10.0 — 2025-10-02
 - fix: Offload YAML, translation, and manifest reads to the executor and reuse the cached version to avoid blocking calls in async handlers.
 
 ## 2025.9.53 — 2025-09-16
