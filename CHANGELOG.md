@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.2 — 2025-10-05
+- fix: Replace deprecated `async_add_job` usage in the diagnostics sensor and cache the integration version asynchronously.
+
 ## 2025.10.1 — 2025-10-05
 - fix: Align the computed status sensors with the label-aware naming logic so multi-hub setups get the hub suffix when enabled.
 

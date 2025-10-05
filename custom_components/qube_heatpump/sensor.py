@@ -175,7 +175,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._hub = hub
         self._show_label = bool(show_label)
-        self._version = version
+        self._version = str(version) if version else "unknown"
         label = hub.label or "qube1"
         disp = _format_label(label) if show_label else None
         self._attr_name = f"Qube info ({disp})" if show_label else "Qube info"
@@ -206,27 +206,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         sensors = sum(1 for e in hub.entities if e.platform == "sensor")
         bsens = sum(1 for e in hub.entities if e.platform == "binary_sensor")
         switches = sum(1 for e in hub.entities if e.platform == "switch")
-        version = self._version or "unknown"
-        try:
-            integ = self.hass.async_add_job(async_get_loaded_integration, self.hass, DOMAIN)
-        except Exception:
-            integ = None
-        if hasattr(integ, "result"):
-            integ = integ.result()
-        if not integ:
-            try:
-                integ = self.hass.async_add_job(async_get_integration, self.hass, DOMAIN)
-            except Exception:
-                integ = None
-            if hasattr(integ, "result"):
-                integ = integ.result()
-        try:
-            if integ and getattr(integ, "version", None):
-                version = integ.version
-        except Exception:
-            pass
         return {
-            "version": version,
+            "version": self._version,
             "label": hub.label,
             "host": hub.host,
             "unit_id": hub.unit,
@@ -238,9 +219,10 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         }
 
     async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        await self._async_refresh_integration_version()
         # If multiple devices exist, align entity_id to the desired label-suffixed form
         # e.g., sensor.qube_info_qube2, provided there is no conflict.
-        await super().async_added_to_hass()
         if not self._show_label:
             return
         registry = er.async_get(self.hass)
@@ -254,6 +236,25 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
                 registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
             except Exception:
                 pass
+
+    async def _async_refresh_integration_version(self) -> None:
+        try:
+            integ = await async_get_loaded_integration(self.hass, DOMAIN)
+        except Exception:
+            integ = None
+        if not integ:
+            try:
+                integ = await async_get_integration(self.hass, DOMAIN)
+            except Exception:
+                integ = None
+        try:
+            if integ and getattr(integ, "version", None):
+                new_version = str(integ.version)
+                if new_version and new_version != self._version:
+                    self._version = new_version
+                    self.async_write_ha_state()
+        except Exception:
+            pass
 
 
 class QubeMetricSensor(CoordinatorEntity, SensorEntity):
