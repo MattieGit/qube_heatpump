@@ -60,6 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 unique_suffix="status_full",
                 kind="status",
                 source=status_src,
+                show_label=show_label,
                 version=version,
             )
         )
@@ -75,6 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 unique_suffix="driewegklep_dhw_cv",
                 kind="drieweg",
                 source=drie_src,
+                show_label=show_label,
                 version=version,
             )
         )
@@ -90,6 +92,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 unique_suffix="vierwegklep_verwarmen_koelen",
                 kind="vierweg",
                 source=vier_src,
+                show_label=show_label,
                 version=version,
             )
         )
@@ -387,6 +390,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         unique_suffix: str,
         kind: str,
         source: EntityDef,
+        show_label: bool,
         version: str,
     ) -> None:
         super().__init__(coordinator)
@@ -395,9 +399,15 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._kind = kind
         self._source = source
         self._version = version
-        self._attr_name = name
+        self._show_label = bool(show_label)
+        self._label = hub.label or "qube1"
+        self._object_base = _slugify(name)
+        disp = _format_label(self._label) if self._show_label else None
+        self._attr_name = f"{name} ({disp})" if self._show_label else name
         # Make unique per host to support multiple entries
-        self._attr_unique_id = f"wp_qube_{unique_suffix}_{hub.label}"
+        self._attr_unique_id = f"wp_qube_{unique_suffix}_{self._label}"
+        if self._show_label:
+            self._attr_suggested_object_id = f"{self._object_base}_{self._label}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -436,3 +446,19 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         except Exception:
             return None
         return None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if not self._show_label:
+            return
+        registry = er.async_get(self.hass)
+        current = registry.async_get(self.entity_id)
+        if not current:
+            return
+        desired_obj = f"{self._object_base}_{self._label}"
+        desired_eid = f"sensor.{desired_obj}"
+        if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
+            try:
+                registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
+            except Exception:
+                pass

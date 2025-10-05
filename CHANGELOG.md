@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.1 — 2025-10-05
+- fix: Align the computed status sensors with the label-aware naming logic so multi-hub setups get the hub suffix when enabled.
+
 ## 2025.10.0 — 2025-10-02
 - fix: Offload YAML, translation, and manifest reads to the executor and reuse the cached version to avoid blocking calls in async handlers.
 
