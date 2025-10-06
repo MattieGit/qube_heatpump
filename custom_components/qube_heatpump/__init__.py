@@ -529,19 +529,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 continue
             ent_def = lookup.get((domain, uid))
             desired_uid = uid
-            if prefer_vendor_only and ent_def and getattr(ent_def, "unique_id", None):
-                desired_uid = str(ent_def.unique_id)
+            ent_unique = ent_def.unique_id if ent_def else None
+            if prefer_vendor_only and ent_unique:
+                desired_uid = str(ent_unique)
 
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            base_entity = None
-            if ent_def and getattr(ent_def, "vendor_id", None):
+            base_entity: str
+            if ent_unique:
+                base_entity = str(ent_unique)
+            elif ent_def and getattr(ent_def, "vendor_id", None):
                 base_entity = str(ent_def.vendor_id)
-            if not base_entity:
+            else:
                 base_entity = desired_uid
 
             suffix = svc_label if enforce_label else (label if use_label_suffix else None)
+            if suffix and base_entity.lower().endswith(f"_{suffix.lower()}"):
+                suffix = None
             desired_obj = _slugify(f"{base_entity}_{suffix}") if suffix else _slugify(base_entity)
             desired_eid = f"{domain}.{desired_obj}"
             # Skip if this entry already uses desired unique_id

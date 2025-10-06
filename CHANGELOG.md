@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.13 — 2025-10-05
+- fix: Recreate entity IDs now bases entity_id slugs directly on the Modbus unique_ids (optionally suffixed with the hub label), keeping names aligned with vendor documentation.
+
 ## 2025.10.12 — 2025-10-05
 - fix: Recreate entity IDs service now restores vendor-based entity IDs (with optional hub suffix) instead of using friendly names.
 
