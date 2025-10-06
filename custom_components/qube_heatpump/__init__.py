@@ -536,12 +536,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            base_entity: str
+            base_entity: str | None = None
             if ent_unique:
                 base_entity = str(ent_unique)
             elif ent_def and getattr(ent_def, "vendor_id", None):
                 base_entity = str(ent_def.vendor_id)
-            else:
+            if not base_entity:
                 base_entity = desired_uid
 
             suffix = svc_label if enforce_label else (label if use_label_suffix else None)
