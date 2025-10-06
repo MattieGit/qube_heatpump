@@ -492,11 +492,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 uid_variants.add(str(ent.unique_id).lower())
                 uid_variants.add(str(ent.unique_id).upper())
                 candidates.update(uid_variants)
-            if ent.name:
-                name_raw = str(ent.name)
-                candidates.add(name_raw)
-                candidates.add(name_raw.lower())
-                candidates.add(_slugify(name_raw))
             suffix = None
             if ent.platform == "sensor":
                 suffix = f"{ent.input_type}_{ent.address}"
@@ -553,16 +548,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if not isinstance(uid, str):
                 continue
             ent_def = lookup.get((domain, uid))
-            desired_uid = uid
-            ent_unique = ent_def.unique_id if ent_def else None
-            unique_slug_seed: str | None = None
-            if ent_unique:
-                unique_slug_seed = str(ent_unique)
-                desired_uid = str(ent_unique) if prefer_vendor_only else uid
-            elif ent_def and getattr(ent_def, "vendor_id", None):
-                unique_slug_seed = str(ent_def.vendor_id)
-            if not unique_slug_seed:
-                unique_slug_seed = desired_uid
+            if not ent_def or not getattr(ent_def, "unique_id", None):
+                continue
+            ent_unique = str(ent_def.unique_id)
+            desired_uid = ent_unique
+            unique_slug_seed = ent_unique
 
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
@@ -572,8 +562,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             suffix = svc_label if enforce_label else (label if use_label_suffix else None)
             if suffix and base_entity.lower().endswith(f"_{suffix.lower()}"):
                 suffix = None
-            desired_obj = _slugify(f"{base_entity}_{suffix}") if suffix else _slugify(base_entity)
-            desired_eid = f"{domain}.{desired_obj}"
+            base_slug = _slugify(base_entity)
+            if suffix:
+                base_slug = f"{base_slug}_{_slugify(suffix)}"
+            desired_eid = f"{domain}.{base_slug}"
             # Skip if this entry already uses desired unique_id
             if e.unique_id == desired_uid and e.entity_id == desired_eid:
                 continue
