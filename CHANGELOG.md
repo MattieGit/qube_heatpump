@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.5 — 2025-10-05
+- fix: Declare Recorder as an `after_dependency` to satisfy hassfest validation when clearing statistics.
+
 ## 2025.10.4 — 2025-10-05
 - fix: Auto-clear long-term statistics for enum sensors when the state class is removed to avoid Recorder warnings.
 
