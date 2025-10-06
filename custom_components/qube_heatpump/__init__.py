@@ -556,8 +556,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if not isinstance(uid, str):
                 continue
             ent_def = lookup.get((domain, uid))
+            matched_via = "unique"
             if not ent_def:
                 ent_def = friendly_lookup.get((domain, uid))
+                if ent_def:
+                    matched_via = "friendly"
             if not ent_def or not getattr(ent_def, "unique_id", None):
                 continue
             ent_unique = str(ent_def.unique_id)
@@ -579,6 +582,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Skip if this entry already uses desired unique_id
             if e.unique_id == desired_uid and e.entity_id == desired_eid:
                 continue
+            logging.getLogger(__name__).debug(
+                "registry migrate candidate: %s (uid=%s) -> %s (uid=%s) via=%s",
+                e.entity_id,
+                e.unique_id,
+                desired_eid,
+                desired_uid,
+                matched_via,
+            )
             # Check conflicts
             target_conflict = ent_reg.async_get_entity_id(domain, DOMAIN, desired_uid)
             eid_conflict = ent_reg.async_get(desired_eid)
