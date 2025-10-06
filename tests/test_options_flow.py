@@ -11,7 +11,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.qube_heatpump.const import (
     CONF_SHOW_LABEL_IN_NAME,
     CONF_UNIT_ID,
-    CONF_USE_VENDOR_NAMES,
     DOMAIN,
 )
 
@@ -41,14 +40,12 @@ async def test_options_flow_updates_options(hass):
         init_result["flow_id"],
         user_input={
             CONF_UNIT_ID: "3",
-            CONF_USE_VENDOR_NAMES: True,
             CONF_SHOW_LABEL_IN_NAME: True,
         },
     )
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_UNIT_ID] == 3
-    assert entry.options[CONF_USE_VENDOR_NAMES] is True
     assert entry.options[CONF_SHOW_LABEL_IN_NAME] is True
 
     sys.modules.pop("homeassistant.components.modbus", None)

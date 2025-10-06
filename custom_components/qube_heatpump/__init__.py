@@ -21,7 +21,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     CONF_FILE_NAME,
     CONF_UNIT_ID,
-    CONF_USE_VENDOR_NAMES,
     CONF_LABEL,
     CONF_SHOW_LABEL_IN_NAME,
 )
@@ -109,7 +108,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return "unknown"
 
     version = await _async_resolve_version()
-    use_vendor_names = bool(entry.options.get(CONF_USE_VENDOR_NAMES, False))
+    use_vendor_names = False
     show_label_in_name = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
     # Entity registry for conflict detection/adoption when building unique_ids
     from homeassistant.helpers import entity_registry as er
@@ -458,13 +457,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Track current options to decide reload vs live update
         current_opts = {
             "unit_id": hub.unit,
-            "use_vendor_names": bool(updated_entry.options.get(CONF_USE_VENDOR_NAMES, False)),
             "show_label_in_name": bool(updated_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)),
         }
         new_unit = int(updated_entry.options.get(CONF_UNIT_ID, hub.unit))
-        new_use_vendor = bool(updated_entry.options.get(CONF_USE_VENDOR_NAMES, False))
         new_show_label = bool(updated_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
-        if new_unit != hub.unit and new_use_vendor == current_opts["use_vendor_names"] and new_show_label == current_opts["show_label_in_name"]:
+        if new_unit != hub.unit and new_show_label == current_opts["show_label_in_name"]:
             # Apply unit change live
             hub.set_unit_id(new_unit)
             await coord.async_request_refresh()

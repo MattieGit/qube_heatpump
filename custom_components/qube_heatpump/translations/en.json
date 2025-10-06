@@ -24,10 +24,9 @@
     "step": {
       "init": {
         "title": "Qube Heat Pump Options",
-        "description": "Set the ID for the Qube heat pump (1-247). For example, keep it at 1 when only a single heat pump is connected, or choose 2, 3, etc. when multiple pumps share the same Modbus gateway. Enable \"Add vendor names\" to display the original vendor identifiers (for example, \"WPQUBE003\" instead of \"Flow temperature\"). Enable \"Add hub label\" to append the hub label such as \"(qube1)\" to entity names so they are easier to recognise when multiple devices are configured.",
+        "description": "Set the ID for the Qube heat pump (1-247). For example, keep it at 1 when only a single heat pump is connected, or choose 2, 3, etc. when multiple pumps share the same Modbus gateway. Enable \"Add hub label\" to append the hub label such as \"(qube1)\" to entity names so they are easier to recognise when multiple devices are configured.",
         "data": {
           "unit_id": "Heat pump ID (1-247)",
-          "use_vendor_names": "Add vendor names to entity names",
           "show_label_in_name": "Add hub label to entity names"
         }
       }

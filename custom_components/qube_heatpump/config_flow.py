@@ -18,7 +18,6 @@ from .const import (
     CONF_PORT,
     DEFAULT_PORT,
     CONF_UNIT_ID,
-    CONF_USE_VENDOR_NAMES,
     CONF_LABEL,
     CONF_SHOW_LABEL_IN_NAME,
 )
@@ -128,7 +127,6 @@ class OptionsFlowHandler(OptionsFlow):
             else:
                 opts = dict(self._entry.options)
                 opts[CONF_UNIT_ID] = unit_int
-                opts[CONF_USE_VENDOR_NAMES] = bool(user_input.get(CONF_USE_VENDOR_NAMES, False))
                 opts[CONF_SHOW_LABEL_IN_NAME] = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
                 self.hass.config_entries.async_update_entry(self._entry, options=opts)
                 return self.async_create_entry(title="", data=opts)
@@ -138,7 +136,6 @@ class OptionsFlowHandler(OptionsFlow):
         current_unit = int(
             self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
         )
-        current_vendor = bool(self._entry.options.get(CONF_USE_VENDOR_NAMES, False))
         current_label_option = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
 
         schema = vol.Schema(
@@ -147,7 +144,6 @@ class OptionsFlowHandler(OptionsFlow):
                     CONF_UNIT_ID,
                     default=str(current_unit),
                 ): str,
-                vol.Optional(CONF_USE_VENDOR_NAMES, default=current_vendor): bool,
                 vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current_label_option): bool,
             }
         )
