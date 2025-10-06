@@ -492,6 +492,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 uid_variants.add(str(ent.unique_id).lower())
                 uid_variants.add(str(ent.unique_id).upper())
                 candidates.update(uid_variants)
+            if ent.name:
+                name_raw = str(ent.name)
+                candidates.add(name_raw)
+                candidates.add(name_raw.lower())
+                candidates.add(_slugify(name_raw))
             suffix = None
             if ent.platform == "sensor":
                 suffix = f"{ent.input_type}_{ent.address}"
