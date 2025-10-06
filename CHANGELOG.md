@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.3 — 2025-10-05
+- fix: Skip assigning a `state_class` on enum sensors to satisfy Home Assistant validation.
+
 ## 2025.10.2 — 2025-10-05
 - fix: Replace deprecated `async_add_job` usage in the diagnostics sensor and cache the integration version asynchronously.
 

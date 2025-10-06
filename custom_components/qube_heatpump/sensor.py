@@ -126,7 +126,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
             self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._label}")
         self._attr_device_class = ent.device_class
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
-        if ent.state_class:
+        if ent.state_class and str(ent.device_class or "").lower() != "enum":
             self._attr_state_class = ent.state_class
         # Hint UI display precision to avoid decimals for precision 0 (e.g., kWh totals)
         if getattr(ent, "precision", None) is not None:
