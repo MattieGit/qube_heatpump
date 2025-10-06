@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.recorder.const import DATA_INSTANCE as RECORDER_DATA_INSTANCE
-from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -395,7 +393,15 @@ def _find_binary_by_address(hub: WPQubeHub, address: int) -> EntityDef | None:
 async def _async_clear_legacy_statistics(hass: HomeAssistant, entity_ids: set[str]) -> None:
     if not entity_ids:
         return
-    instance = hass.data.get(RECORDER_DATA_INSTANCE)
+    try:
+        from homeassistant.components import recorder
+        from homeassistant.components.recorder.statistics import clear_statistics
+    except ImportError:
+        return
+    try:
+        instance = recorder.get_instance(hass)
+    except (KeyError, AttributeError):
+        return
     if instance is None:
         return
 
