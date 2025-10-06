@@ -482,6 +482,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         dry_run = bool(call.data.get("dry_run", True))
         enforce_label = bool(call.data.get("enforce_label_suffix", False))
         svc_label = str(call.data.get("label", label))
+        data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+        hub: WPQubeHub = data.get("hub", hub)  # fallback to local hub
+        slug_host = _slugify(hub.host)
+        default_label_suffix = bool(data.get("enforce_label_uid", False))
+        use_label_suffix = bool(enforce_label or default_label_suffix)
+
+        def _candidate_uids(ent: EntityDef) -> set[str]:
+            candidates: set[str] = set()
+            if ent.unique_id:
+                candidates.add(str(ent.unique_id))
+            suffix = None
+            if ent.platform == "sensor":
+                suffix = f"{ent.input_type}_{ent.address}"
+                if suffix:
+                    candidates.add(f"wp_qube_sensor_{label}_{suffix}")
+                    candidates.add(f"wp_qube_sensor_{slug_host}_{hub.unit}_{suffix}")
+            elif ent.platform == "binary_sensor":
+                suffix = f"{ent.input_type}_{ent.address}"
+                if suffix:
+                    candidates.add(f"wp_qube_binary_{hub.host}_{hub.unit}_{suffix}")
+                    candidates.add(f"wp_qube_binary_{slug_host}_{hub.unit}_{suffix}")
+            elif ent.platform == "switch":
+                suffix = f"{ent.write_type}_{ent.address}"
+                if suffix:
+                    candidates.add(f"wp_qube_switch_{hub.host}_{hub.unit}_{suffix}")
+                    candidates.add(f"wp_qube_switch_{slug_host}_{hub.unit}_{suffix}")
+            return {c for c in candidates if c}
+
+        lookup: dict[tuple[str, str], EntityDef] = {}
+        for ent_def in getattr(hub, "entities", []):
+            dom = ent_def.platform
+            for key in _candidate_uids(ent_def):
+                lookup[(dom, key)] = ent_def
+            # include coordinator key fallback
+            lookup[(dom, _entity_key(ent_def))] = ent_def
+
         changes = []
         for e in list(ent_reg.entities.values()):
             if e.config_entry_id != entry.entry_id:
@@ -491,20 +527,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             uid = e.unique_id
             if not isinstance(uid, str):
                 continue
-            parts = uid.split("_")
-            # Heuristic: legacy uid ends with _<host>_<unit>
-            base_uid = uid
-            if len(parts) > 2 and parts[-1].isdigit():
-                # Likely legacy form
-                base_uid = "_".join(parts[:-2])
-            # Determine desired unique_id
-            desired_uid = base_uid if prefer_vendor_only else uid
-            # Determine desired entity_id object id
+            ent_def = lookup.get((domain, uid))
+            desired_uid = uid
+            if prefer_vendor_only and ent_def and getattr(ent_def, "unique_id", None):
+                desired_uid = str(ent_def.unique_id)
+
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            suffix = svc_label if enforce_label else None
-            desired_obj = _slugify(f"{base_uid}_{suffix}") if suffix else _slugify(base_uid)
+            base_entity = None
+            if ent_def and getattr(ent_def, "vendor_id", None):
+                base_entity = str(ent_def.vendor_id)
+            if not base_entity:
+                base_entity = desired_uid
+
+            suffix = svc_label if enforce_label else (label if use_label_suffix else None)
+            desired_obj = _slugify(f"{base_entity}_{suffix}") if suffix else _slugify(base_entity)
             desired_eid = f"{domain}.{desired_obj}"
             # Skip if this entry already uses desired unique_id
             if e.unique_id == desired_uid and e.entity_id == desired_eid:

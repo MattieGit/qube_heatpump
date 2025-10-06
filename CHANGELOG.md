@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.12 — 2025-10-05
+- fix: Recreate entity IDs service now restores vendor-based entity IDs (with optional hub suffix) instead of using friendly names.
+
+## 2025.10.11 — 2025-10-05
+- fix: Drop hub labels from unique_ids when a single heat pump exists, migrate existing entities to host/unit-based IDs, and keep label suffixes only when explicitly enabled or required.
+
 ## 2025.10.10 — 2025-10-05
 - fix: Drop hub labels from unique_ids when a single heat pump exists, migrate existing entities to host/unit-based IDs, and keep label suffixes only when explicitly enabled or required.
 
