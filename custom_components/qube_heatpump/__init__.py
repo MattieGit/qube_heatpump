@@ -533,7 +533,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if instance is None or not hasattr(instance, "async_clear_statistics"):
                 return
             try:
-                instance.async_clear_statistics(list(stat_ids))
+                event = asyncio.Event()
+                instance.async_clear_statistics(list(stat_ids), on_done=event.set)
+                await event.wait()
             except Exception:
                 pass
 
