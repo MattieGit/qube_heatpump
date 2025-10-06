@@ -395,23 +395,19 @@ async def _async_clear_legacy_statistics(hass: HomeAssistant, entity_ids: set[st
         return
     try:
         from homeassistant.components import recorder
-        from homeassistant.components.recorder.statistics import clear_statistics
     except ImportError:
         return
     try:
         instance = recorder.get_instance(hass)
     except (KeyError, AttributeError):
         return
-    if instance is None:
+    if instance is None or not hasattr(instance, "async_clear_statistics"):
         return
 
-    def _clear(ids: set[str]) -> None:
-        try:
-            clear_statistics(instance, list(ids))
-        except Exception:
-            pass
-
-    await hass.async_add_executor_job(_clear, entity_ids)
+    try:
+        instance.async_clear_statistics(list(entity_ids))
+    except Exception:
+        return
 
 
 class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):

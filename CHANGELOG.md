@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.8 — 2025-10-05
+- fix: Clear statistics via the Recorder task queue to avoid thread-safety errors when dropping legacy enum data.
+
 ## 2025.10.7 — 2025-10-05
 - feat: Expand the options flow with Modbus unit ID and vendor-name toggles so the integration exposes a Configure cog in the UI.
 
