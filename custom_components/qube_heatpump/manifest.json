@@ -1,10 +1,10 @@
 {
   "domain": "qube_heatpump",
   "name": "Qube Heat Pump",
+  "after_dependencies": ["recorder"],
   "codeowners": ["@MattieGit"],
   "config_flow": true,
   "dependencies": ["modbus"],
-  "after_dependencies": ["recorder"],
   "documentation": "https://github.com/MattieGit/wp-qube/blob/main/README.md",
   "integration_type": "hub",
   "iot_class": "local_polling",
