@@ -577,7 +577,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     pass
         if changes:
             logging.getLogger(__name__).info(
-                "Registry migration (%s): %s", "dry_run" if dry_run else "applied", changes
+                "Registry migration (%s): %s",
+                "dry_run" if dry_run else "applied",
+                [
+                    {
+                        "entity_id": old_eid,
+                        "new_entity_id": new_eid,
+                        "old_unique_id": old_uid,
+                        "new_unique_id": new_uid,
+                    }
+                    for (old_eid, new_eid, old_uid, new_uid) in changes
+                ],
             )
 
     # Register service with schema for validation (also described in services.yaml)
