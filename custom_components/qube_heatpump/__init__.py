@@ -516,15 +516,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             dom = ent_def.platform
             for key in _candidate_uids(ent_def):
                 lookup[(dom, key)] = ent_def
-            # include coordinator key fallback
             lookup[(dom, _entity_key(ent_def))] = ent_def
             if ent_def.name:
-                for variant in {
-                    str(ent_def.name),
-                    str(ent_def.name).lower(),
-                    _slugify(str(ent_def.name)),
-                }:
-                    friendly_lookup[(dom, variant)] = ent_def
+                friendly_lookup[(dom, _slugify(str(ent_def.name)))] = ent_def
 
         changes = []
         async def _async_clear_statistics(stat_ids: set[str]) -> None:
@@ -547,75 +541,90 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             except Exception:
                 pass
 
-        for e in list(ent_reg.entities.values()):
-            if e.config_entry_id != entry.entry_id:
-                continue
-            domain = e.domain  # sensor/binary_sensor/switch
-            # Extract vendor_id and legacy suffix if present
-            uid = e.unique_id
-            if not isinstance(uid, str):
-                continue
-            ent_def = lookup.get((domain, uid))
-            matched_via = "unique"
-            if not ent_def:
-                ent_def = friendly_lookup.get((domain, uid))
-                if ent_def:
-                    matched_via = "friendly"
-            if not ent_def or not getattr(ent_def, "unique_id", None):
-                continue
-            ent_unique = str(ent_def.unique_id)
-            desired_uid = ent_unique
-            unique_slug_seed = ent_unique
+        def _desired_ids(ent_def: EntityDef) -> tuple[str, str] | None:
+            platform = ent_def.platform
+            if platform not in ("sensor", "binary_sensor", "switch"):
+                return None
 
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            base_entity = unique_slug_seed
+            if platform == "sensor":
+                suffix = f"{ent_def.input_type}_{ent_def.address}"
+                if ent_def.unique_id:
+                    desired_uid = str(ent_def.unique_id)
+                else:
+                    if enforce_label_uid:
+                        desired_uid = f"wp_qube_sensor_{label}_{suffix}"
+                    else:
+                        desired_uid = f"wp_qube_sensor_{slug_host}_{hub.unit}_{suffix}"
+            elif platform == "binary_sensor":
+                suffix = f"{ent_def.input_type}_{ent_def.address}"
+                desired_uid = (
+                    str(ent_def.unique_id)
+                    if ent_def.unique_id
+                    else f"wp_qube_binary_{hub.host}_{hub.unit}_{suffix}"
+                )
+            else:
+                suffix = f"{ent_def.write_type}_{ent_def.address}"
+                desired_uid = (
+                    str(ent_def.unique_id)
+                    if ent_def.unique_id
+                    else f"wp_qube_switch_{hub.host}_{hub.unit}_{suffix}"
+                )
 
-            suffix = svc_label if enforce_label else (label if use_label_suffix else None)
-            if suffix and base_entity.lower().endswith(f"_{suffix.lower()}"):
-                suffix = None
-            base_slug = _slugify(base_entity)
-            if suffix:
-                base_slug = f"{base_slug}_{_slugify(suffix)}"
-            desired_eid = f"{domain}.{base_slug}"
-            # Skip if this entry already uses desired unique_id
-            if e.unique_id == desired_uid and e.entity_id == desired_eid:
+            base_slug_seed = ent_def.vendor_id or desired_uid
+            if use_label_suffix:
+                base_slug_seed = f"{base_slug_seed}_{svc_label if enforce_label else label}"
+            desired_slug = _slugify(base_slug_seed)
+            return str(desired_uid), desired_slug
+
+        def _find_registry_entry(ent_def: EntityDef, desired_uid: str):
+            domain = ent_def.platform
+            # Try unique-id based lookups
+            for candidate in _candidate_uids(ent_def) | {desired_uid, desired_uid.lower()}:
+                ent_id = ent_reg.async_get_entity_id(domain, DOMAIN, candidate)
+                if ent_id:
+                    entry_obj = ent_reg.async_get(ent_id)
+                    if entry_obj and entry_obj.config_entry_id == entry.entry_id:
+                        return entry_obj
+            # Friendly fallback
+            if ent_def.name:
+                friendly_slug = _slugify(str(ent_def.name))
+                ent_id = f"{domain}.{friendly_slug}"
+                entry_obj = ent_reg.async_get(ent_id)
+                if entry_obj and entry_obj.config_entry_id == entry.entry_id:
+                    return entry_obj
+            return None
+
+        changes = []
+        for ent_def in getattr(hub, "entities", []):
+            desired = _desired_ids(ent_def)
+            if not desired:
                 continue
-            logging.getLogger(__name__).debug(
-                "registry migrate candidate: %s (uid=%s) -> %s (uid=%s) via=%s",
-                e.entity_id,
-                e.unique_id,
-                desired_eid,
-                desired_uid,
-                matched_via,
-            )
-            # Check conflicts
-            target_conflict = ent_reg.async_get_entity_id(domain, DOMAIN, desired_uid)
-            eid_conflict = ent_reg.async_get(desired_eid)
-            if target_conflict and target_conflict != e.entity_id:
-                # Can't switch unique_id because target exists
+            desired_uid, desired_slug = desired
+            desired_entity_id = f"{ent_def.platform}.{desired_slug}"
+            entry_obj = _find_registry_entry(ent_def, desired_uid)
+            if not entry_obj:
                 continue
-            if eid_conflict and eid_conflict.entity_id != e.entity_id:
-                # Can't rename entity_id because target exists
+            if entry_obj.unique_id == desired_uid and entry_obj.entity_id == desired_entity_id:
                 continue
-            changes.append((e.entity_id, desired_eid, e.unique_id, desired_uid))
-            if not dry_run:
-                stats_to_clear: set[str] = set()
-                if e.entity_id != desired_eid:
-                    stats_to_clear.add(e.entity_id)
-                    stats_to_clear.add(desired_eid)
-                await _async_clear_statistics(stats_to_clear)
-                # Try to update entity_id first
+            conflict = ent_reg.async_get(desired_entity_id)
+            if conflict and conflict.entity_id != entry_obj.entity_id:
+                continue
+            changes.append((entry_obj.entity_id, desired_entity_id, entry_obj.unique_id, desired_uid))
+            if dry_run:
+                continue
+            await _async_clear_statistics({entry_obj.entity_id, desired_entity_id})
+            if entry_obj.entity_id != desired_entity_id:
                 try:
-                    if e.entity_id != desired_eid:
-                        ent_reg.async_update_entity(e.entity_id, new_entity_id=desired_eid)
+                    ent_reg.async_update_entity(entry_obj.entity_id, new_entity_id=desired_entity_id)
                 except Exception:
-                    pass
-                # Try to update unique_id if HA supports it
+                    continue
+            target_entity_id = desired_entity_id
+            if entry_obj.unique_id != desired_uid:
                 try:
-                    if e.unique_id != desired_uid:
-                        ent_reg.async_update_entity(desired_eid, new_unique_id=desired_uid)  # type: ignore[arg-type]
+                    ent_reg.async_update_entity(target_entity_id, new_unique_id=desired_uid)  # type: ignore[arg-type]
                 except Exception:
                     pass
         if changes:
