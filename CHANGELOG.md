@@ -2,8 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.21 — 2025-10-05
+- fix: Match registry entries back to Modbus definitions, falling back to friendly names only for lookups while still slugs based on the Modbus unique_id.
+
 ## 2025.10.20 — 2025-10-05
-- fix: Match registry entries back to Modbus definitions by unique_id only so the recreation service always produces the Modbus slug (no friendly-name flip backs).
+- fix: Wait for recorder statistics to be cleared during entity recreation so renames can proceed without collisions.
 
 ## 2025.10.19 — 2025-10-05
 - fix: Wait for recorder statistics to be cleared during entity recreation so renames can proceed without collisions.
