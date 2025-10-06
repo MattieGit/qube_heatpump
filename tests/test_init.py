@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
+import json
+from pathlib import Path
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -39,7 +41,8 @@ async def test_async_setup_entry_registers_integration(hass: HomeAssistant, monk
     assert DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]
     stored = hass.data[DOMAIN][entry.entry_id]
     assert stored["label"] == "qube1"
-    assert stored["version"] == "2025.10.0"
+    manifest = json.loads((Path("custom_components/qube_heatpump/manifest.json")).read_text())
+    assert stored["version"] == manifest.get("version")
 
     forward_mock.assert_called_once_with(entry, PLATFORMS)
     first_refresh_mock.assert_called_once()
