@@ -511,12 +511,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return {c for c in candidates if c}
 
         lookup: dict[tuple[str, str], EntityDef] = {}
+        friendly_lookup: dict[tuple[str, str], EntityDef] = {}
         for ent_def in getattr(hub, "entities", []):
             dom = ent_def.platform
             for key in _candidate_uids(ent_def):
                 lookup[(dom, key)] = ent_def
             # include coordinator key fallback
             lookup[(dom, _entity_key(ent_def))] = ent_def
+            if ent_def.name:
+                for variant in {
+                    str(ent_def.name),
+                    str(ent_def.name).lower(),
+                    _slugify(str(ent_def.name)),
+                }:
+                    friendly_lookup[(dom, variant)] = ent_def
 
         changes = []
         async def _async_clear_statistics(stat_ids: set[str]) -> None:
@@ -548,6 +556,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if not isinstance(uid, str):
                 continue
             ent_def = lookup.get((domain, uid))
+            if not ent_def:
+                ent_def = friendly_lookup.get((domain, uid))
             if not ent_def or not getattr(ent_def, "unique_id", None):
                 continue
             ent_unique = str(ent_def.unique_id)
