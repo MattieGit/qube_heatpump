@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.components.recorder.const import DATA_INSTANCE as RECORDER_DATA_INSTANCE
+from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -126,7 +128,8 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
             self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._label}")
         self._attr_device_class = ent.device_class
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
-        if ent.state_class and str(ent.device_class or "").lower() != "enum":
+        self._clear_stats = bool(ent.state_class and str(ent.device_class or "").lower() == "enum")
+        if ent.state_class and not self._clear_stats:
             self._attr_state_class = ent.state_class
         # Hint UI display precision to avoid decimals for precision 0 (e.g., kWh totals)
         if getattr(ent, "precision", None) is not None:
@@ -137,19 +140,28 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        clear_ids: set[str] = set()
+        if getattr(self, "_clear_stats", False):
+            clear_ids.add(self.entity_id)
         # Always prefer vendor+label entity_id
         if getattr(self._ent, "vendor_id", None):
             registry = er.async_get(self.hass)
             current = registry.async_get(self.entity_id)
             if not current:
+                if clear_ids:
+                    await _async_clear_legacy_statistics(self.hass, clear_ids)
                 return
             desired_obj = _slugify(f"{self._ent.vendor_id}_{self._label}")
             desired_eid = f"sensor.{desired_obj}"
             if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
                 try:
                     registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
+                    if getattr(self, "_clear_stats", False):
+                        clear_ids.add(desired_eid)
                 except Exception:
                     pass
+        if clear_ids:
+            await _async_clear_legacy_statistics(self.hass, clear_ids)
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -378,6 +390,22 @@ def _find_binary_by_address(hub: WPQubeHub, address: int) -> EntityDef | None:
         if ent.platform == "binary_sensor" and int(ent.address) == int(address):
             return ent
     return None
+
+
+async def _async_clear_legacy_statistics(hass: HomeAssistant, entity_ids: set[str]) -> None:
+    if not entity_ids:
+        return
+    instance = hass.data.get(RECORDER_DATA_INSTANCE)
+    if instance is None:
+        return
+
+    def _clear(ids: set[str]) -> None:
+        try:
+            clear_statistics(instance, list(ids))
+        except Exception:
+            pass
+
+    await hass.async_add_executor_job(_clear, entity_ids)
 
 
 class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):

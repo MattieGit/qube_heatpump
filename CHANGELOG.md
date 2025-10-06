@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.4 — 2025-10-05
+- fix: Auto-clear long-term statistics for enum sensors when the state class is removed to avoid Recorder warnings.
+
 ## 2025.10.3 — 2025-10-05
 - fix: Skip assigning a `state_class` on enum sensors to satisfy Home Assistant validation.
 
