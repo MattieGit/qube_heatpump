@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_RECONFIGURE
 from homeassistant.config_entries import OptionsFlow
+from homeassistant.core import callback
 
 from .const import (
     DOMAIN,
@@ -26,6 +27,11 @@ from .const import (
 class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     _reconfig_entry: config_entries.ConfigEntry | None = None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlow:
+        return OptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
         errors: dict[str, str] = {}
@@ -99,30 +105,42 @@ Reconfigure flow is available to change host/port when triggered by a service.
 Adds an option to show the hub label in entity names for sensors/switches.
 The option is effective primarily for multi-device setups.
 """
-
-
-def async_get_options_flow(config_entry):  # type: ignore[override]
-    return OptionsFlowHandler(config_entry)
-
-
 class OptionsFlowHandler(OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._entry = config_entry
 
     async def async_step_init(self, user_input: dict | None = None):
-        # Determine if multiple Qube entries exist
-        entries = [e for e in self.hass.config_entries.async_entries(DOMAIN) if e.entry_id != self._entry.entry_id]
+        # Determine if multiple Qube entries exist to hint when label suffix becomes effective
+        entries = [
+            e for e in self.hass.config_entries.async_entries(DOMAIN) if e.entry_id != self._entry.entry_id
+        ]
         multi_device = len(entries) >= 1
 
         if user_input is not None:
-            # Persist option; it will be combined with multi_device at runtime
             opts = dict(self._entry.options)
+            opts[CONF_UNIT_ID] = int(user_input.get(CONF_UNIT_ID, opts.get(CONF_UNIT_ID, 1)))
+            opts[CONF_USE_VENDOR_NAMES] = bool(user_input.get(CONF_USE_VENDOR_NAMES, False))
             opts[CONF_SHOW_LABEL_IN_NAME] = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
             self.hass.config_entries.async_update_entry(self._entry, options=opts)
             return self.async_create_entry(title="", data=opts)
 
         import voluptuous as vol
 
-        current = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
-        schema = vol.Schema({vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current and multi_device): bool})
+        current_unit = int(
+            self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
+        )
+        current_vendor = bool(self._entry.options.get(CONF_USE_VENDOR_NAMES, False))
+        current_label_option = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_UNIT_ID,
+                    default=current_unit,
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
+                vol.Optional(CONF_USE_VENDOR_NAMES, default=current_vendor): bool,
+                vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current_label_option): bool,
+            }
+        )
+
         return self.async_show_form(step_id="init", data_schema=schema)

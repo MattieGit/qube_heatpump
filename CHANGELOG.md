@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.7 — 2025-10-05
+- feat: Expand the options flow with Modbus unit ID and vendor-name toggles so the integration exposes a Configure cog in the UI.
+
 ## 2025.10.6 — 2025-10-05
 - fix: Make Recorder cleanup optional by importing it lazily to avoid setup errors when Recorder internals differ.
 
