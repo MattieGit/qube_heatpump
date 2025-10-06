@@ -2,7 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-- 2025.10.17 — 2025-10-05
+- 2025.10.18 — 2025-10-05
+- fix: Clear conflicting statistics IDs during entity recreation and drop the last vendor-name references so regenerated entity_ids reliably use the Modbus unique IDs.
+
+## 2025.10.17 — 2025-10-05
 - fix: Add detailed logging to the entity recreation service and resolve Modbus-unique-id lookups case-insensitively to ensure preview/apply slugs use the expected identifiers.
 
 ## 2025.10.16 — 2025-10-05

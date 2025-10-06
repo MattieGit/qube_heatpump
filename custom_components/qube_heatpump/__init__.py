@@ -475,7 +475,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def _async_migrate_registry(call):
         from homeassistant.helpers import entity_registry as er
         ent_reg = er.async_get(hass)
-        prefer_vendor_only = bool(call.data.get("prefer_vendor_only", True))
+        prefer_vendor_only = True
         dry_run = bool(call.data.get("dry_run", True))
         enforce_label = bool(call.data.get("enforce_label_suffix", False))
         svc_label = str(call.data.get("label", label))
@@ -519,6 +519,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             lookup[(dom, _entity_key(ent_def))] = ent_def
 
         changes = []
+        async def _async_clear_statistics(stat_ids: set[str]) -> None:
+            if not stat_ids:
+                return
+            try:
+                from homeassistant.components import recorder
+            except ImportError:
+                return
+            try:
+                instance = recorder.get_instance(hass)
+            except Exception:
+                return
+            if instance is None or not hasattr(instance, "async_clear_statistics"):
+                return
+            try:
+                instance.async_clear_statistics(list(stat_ids))
+            except Exception:
+                pass
+
         for e in list(ent_reg.entities.values()):
             if e.config_entry_id != entry.entry_id:
                 continue
@@ -563,6 +581,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 continue
             changes.append((e.entity_id, desired_eid, e.unique_id, desired_uid))
             if not dry_run:
+                stats_to_clear: set[str] = set()
+                if e.entity_id != desired_eid:
+                    stats_to_clear.add(e.entity_id)
+                    stats_to_clear.add(desired_eid)
+                await _async_clear_statistics(stats_to_clear)
                 # Try to update entity_id first
                 try:
                     if e.entity_id != desired_eid:
@@ -596,7 +619,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     svc_schema = vol.Schema(
         {
             vol.Optional("dry_run", default=True): cv.boolean,
-            vol.Optional("prefer_vendor_only", default=True): cv.boolean,
             vol.Optional("enforce_label_suffix", default=False): cv.boolean,
             vol.Optional("label"): cv.string,
         }
