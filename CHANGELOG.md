@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.10 — 2025-10-05
+- fix: Drop hub labels from unique_ids when a single heat pump exists, migrate existing entities to host/unit-based IDs, and keep label suffixes only when explicitly enabled or required.
+
 ## 2025.10.9 — 2025-10-05
 - feat: Refine the options form with clearer descriptions, a text input for the heat pump ID, and guidance on vendor-name and label suffix behaviour.
 

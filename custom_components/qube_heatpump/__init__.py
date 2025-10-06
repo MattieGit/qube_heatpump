@@ -331,24 +331,97 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
     )
 
-    # Determine whether multiple Qube entries exist (to auto-append label for diagnostics)
+    # Determine whether multiple Qube entries exist (to decide label usage)
     try:
         other_entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
         multi_device = len(other_entries) >= 1
     except Exception:
         multi_device = False
 
+    def _slugify(text: str) -> str:
+        return "".join(ch if ch.isalnum() else "_" for ch in str(text)).strip("_").lower()
+
+    slug_host = _slugify(host)
+    enforce_label_uid = bool(show_label_in_name or multi_device)
+
+    # Migrate unique_ids between label-based and host-based patterns when the
+    # desired mode changes (single-device setups now drop the label by default).
+    try:
+        ent_reg = er.async_get(hass)
+
+        def _maybe_update(domain: str, old_uid: str, new_uid: str) -> None:
+            if old_uid == new_uid:
+                return
+            try:
+                old_ent_id = ent_reg.async_get_entity_id(domain, DOMAIN, old_uid)
+            except Exception:
+                return
+            if not old_ent_id:
+                return
+            ent_entry = ent_reg.async_get(old_ent_id)
+            if not ent_entry or ent_entry.config_entry_id != entry.entry_id:
+                return
+            conflict = ent_reg.async_get_entity_id(domain, DOMAIN, new_uid)
+            if conflict and conflict != old_ent_id:
+                return
+            try:
+                ent_reg.async_update_entity(old_ent_id, new_unique_id=new_uid)  # type: ignore[arg-type]
+            except Exception:
+                return
+
+        for ent in hub.entities:
+            if ent.platform != "sensor" or ent.unique_id:
+                continue
+            suffix = f"{ent.input_type}_{ent.address}"
+            label_uid = f"wp_qube_sensor_{label}_{suffix}"
+            host_uid = f"wp_qube_sensor_{slug_host}_{hub.unit}_{suffix}"
+            if enforce_label_uid:
+                _maybe_update("sensor", host_uid, label_uid)
+            else:
+                _maybe_update("sensor", label_uid, host_uid)
+
+        computed_suffixes = [
+            "status_full",
+            "driewegklep_dhw_cv",
+            "vierwegklep_verwarmen_koelen",
+        ]
+        for suffix in computed_suffixes:
+            label_uid = f"wp_qube_{suffix}_{label}"
+            host_uid = f"wp_qube_{suffix}_{slug_host}_{hub.unit}"
+            if enforce_label_uid:
+                _maybe_update("sensor", host_uid, label_uid)
+            else:
+                _maybe_update("sensor", label_uid, host_uid)
+
+        # Diagnostics sensors (info + metrics)
+        for kind in [
+            "info_sensor",
+            "metric_errors_connect",
+            "metric_errors_read",
+            "metric_count_sensors",
+            "metric_count_binary_sensors",
+            "metric_count_switches",
+        ]:
+            label_uid = f"qube_{kind}_{label}" if kind != "info_sensor" else f"qube_info_sensor_{label}"
+            host_uid = (
+                f"qube_{kind}_{slug_host}_{hub.unit}" if kind != "info_sensor" else f"qube_info_sensor_{slug_host}_{hub.unit}"
+            )
+            if enforce_label_uid:
+                _maybe_update("sensor", host_uid, label_uid)
+            else:
+                _maybe_update("sensor", label_uid, host_uid)
+    except Exception:
+        pass
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "hub": hub,
         "coordinator": coordinator,
         "label": label,
-        # Only apply label suffix for sensors/switches when both option is enabled
-        # and multiple devices exist.
         "show_label_in_name": show_label_in_name,
-        "show_label_combined": bool(show_label_in_name and multi_device),
-        # When more than one heat pump is configured, we will always show the
-        # label suffix in Diagnostics entities to help distinguish devices.
-        "force_label_in_diag": multi_device,
+        "show_label_combined": bool(show_label_in_name or multi_device),
+        "force_label_in_diag": bool(show_label_in_name or multi_device),
+        "enforce_label_uid": enforce_label_uid,
+        "multi_device": multi_device,
         "version": version,
     }
 
