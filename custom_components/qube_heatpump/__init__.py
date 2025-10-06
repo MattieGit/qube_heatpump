@@ -488,7 +488,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         def _candidate_uids(ent: EntityDef) -> set[str]:
             candidates: set[str] = set()
             if ent.unique_id:
-                candidates.add(str(ent.unique_id))
+                uid_variants = {str(ent.unique_id)}
+                uid_variants.add(str(ent.unique_id).lower())
+                uid_variants.add(str(ent.unique_id).upper())
+                candidates.update(uid_variants)
             suffix = None
             if ent.platform == "sensor":
                 suffix = f"{ent.input_type}_{ent.address}"
@@ -527,19 +530,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ent_def = lookup.get((domain, uid))
             desired_uid = uid
             ent_unique = ent_def.unique_id if ent_def else None
-            if prefer_vendor_only and ent_unique:
-                desired_uid = str(ent_unique)
+            unique_slug_seed: str | None = None
+            if ent_unique:
+                unique_slug_seed = str(ent_unique)
+                desired_uid = str(ent_unique) if prefer_vendor_only else uid
+            elif ent_def and getattr(ent_def, "vendor_id", None):
+                unique_slug_seed = str(ent_def.vendor_id)
+            if not unique_slug_seed:
+                unique_slug_seed = desired_uid
 
             def _slugify(text: str) -> str:
                 return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
-            base_entity: str | None = None
-            if ent_unique:
-                base_entity = str(ent_unique)
-            elif ent_def and getattr(ent_def, "vendor_id", None):
-                base_entity = str(ent_def.vendor_id)
-            if not base_entity:
-                base_entity = desired_uid
+            base_entity = unique_slug_seed
 
             suffix = svc_label if enforce_label else (label if use_label_suffix else None)
             if suffix and base_entity.lower().endswith(f"_{suffix.lower()}"):

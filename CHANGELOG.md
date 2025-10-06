@@ -2,10 +2,13 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-- 2025.10.15 — 2025-10-05
+- 2025.10.16 — 2025-10-05
+- fix: Recreate entities now always slug from the Modbus unique_id (case-insensitive lookup) and we removed the vendor-name option from the Configure flow.
+
+## 2025.10.15 — 2025-10-05
 - fix: Remove the vendor-name toggle from the options flow and keep recreated entity_ids aligned with Modbus unique_ids by default.
 
-# 2025.10.14 — 2025-10-05
+## 2025.10.14 — 2025-10-05
 - fix: Ensure entity recreation always slugs from Modbus unique IDs, avoiding a fallback to friendly names.
 
 ## 2025.10.13 — 2025-10-05
