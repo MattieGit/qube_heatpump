@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.9 — 2025-10-05
+- feat: Refine the options form with clearer descriptions, a text input for the heat pump ID, and guidance on vendor-name and label suffix behaviour.
+
 ## 2025.10.8 — 2025-10-05
 - fix: Clear statistics via the Recorder task queue to avoid thread-safety errors when dropping legacy enum data.
 

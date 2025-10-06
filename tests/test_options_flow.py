@@ -40,7 +40,7 @@ async def test_options_flow_updates_options(hass):
     result = await hass.config_entries.options.async_configure(
         init_result["flow_id"],
         user_input={
-            CONF_UNIT_ID: 3,
+            CONF_UNIT_ID: "3",
             CONF_USE_VENDOR_NAMES: True,
             CONF_SHOW_LABEL_IN_NAME: True,
         },

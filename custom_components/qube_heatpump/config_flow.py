@@ -110,6 +110,7 @@ class OptionsFlowHandler(OptionsFlow):
         self._entry = config_entry
 
     async def async_step_init(self, user_input: dict | None = None):
+        errors: dict[str, str] = {}
         # Determine if multiple Qube entries exist to hint when label suffix becomes effective
         entries = [
             e for e in self.hass.config_entries.async_entries(DOMAIN) if e.entry_id != self._entry.entry_id
@@ -117,12 +118,20 @@ class OptionsFlowHandler(OptionsFlow):
         multi_device = len(entries) >= 1
 
         if user_input is not None:
-            opts = dict(self._entry.options)
-            opts[CONF_UNIT_ID] = int(user_input.get(CONF_UNIT_ID, opts.get(CONF_UNIT_ID, 1)))
-            opts[CONF_USE_VENDOR_NAMES] = bool(user_input.get(CONF_USE_VENDOR_NAMES, False))
-            opts[CONF_SHOW_LABEL_IN_NAME] = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
-            self.hass.config_entries.async_update_entry(self._entry, options=opts)
-            return self.async_create_entry(title="", data=opts)
+            unit_raw = user_input.get(CONF_UNIT_ID)
+            try:
+                unit_int = int(str(unit_raw).strip())
+                if unit_int < 1 or unit_int > 247:
+                    raise ValueError
+            except (ValueError, TypeError):
+                errors[CONF_UNIT_ID] = "invalid_unit_id"
+            else:
+                opts = dict(self._entry.options)
+                opts[CONF_UNIT_ID] = unit_int
+                opts[CONF_USE_VENDOR_NAMES] = bool(user_input.get(CONF_USE_VENDOR_NAMES, False))
+                opts[CONF_SHOW_LABEL_IN_NAME] = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
+                self.hass.config_entries.async_update_entry(self._entry, options=opts)
+                return self.async_create_entry(title="", data=opts)
 
         import voluptuous as vol
 
@@ -136,11 +145,11 @@ class OptionsFlowHandler(OptionsFlow):
             {
                 vol.Required(
                     CONF_UNIT_ID,
-                    default=current_unit,
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
+                    default=str(current_unit),
+                ): str,
                 vol.Optional(CONF_USE_VENDOR_NAMES, default=current_vendor): bool,
                 vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current_label_option): bool,
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
