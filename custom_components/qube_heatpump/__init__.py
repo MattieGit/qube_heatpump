@@ -511,16 +511,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return {c for c in candidates if c}
 
         lookup: dict[tuple[str, str], EntityDef] = {}
-        friendly_lookup: dict[tuple[str, str], EntityDef] = {}
         for ent_def in getattr(hub, "entities", []):
             dom = ent_def.platform
             for key in _candidate_uids(ent_def):
                 lookup[(dom, key)] = ent_def
             lookup[(dom, _entity_key(ent_def))] = ent_def
-            if ent_def.name:
-                friendly_lookup[(dom, _slugify(str(ent_def.name)))] = ent_def
 
-        changes = []
+        changes: list[tuple[str, str, str, str]] = []
+        removals: list[str] = []
         async def _async_clear_statistics(stat_ids: set[str]) -> None:
             if not stat_ids:
                 return
@@ -573,75 +571,112 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     else f"wp_qube_switch_{hub.host}_{hub.unit}_{suffix}"
                 )
 
-            base_slug_seed = ent_def.vendor_id or desired_uid
+            base_slug_seed = ent_def.unique_id or ent_def.vendor_id or desired_uid
             if use_label_suffix:
-                base_slug_seed = f"{base_slug_seed}_{svc_label if enforce_label else label}"
+                base_slug_seed = f"{base_slug_seed}_{suffix_label}"
             desired_slug = _slugify(base_slug_seed)
             return str(desired_uid), desired_slug
 
-        def _find_registry_entry(ent_def: EntityDef, desired_uid: str):
+        def _gather_entries(ent_def: EntityDef, desired_uid: str) -> list:
+            entries: list = []
             domain = ent_def.platform
-            # Try unique-id based lookups
-            for candidate in _candidate_uids(ent_def) | {desired_uid, desired_uid.lower()}:
+            candidates = _candidate_uids(ent_def) | {desired_uid, desired_uid.lower()}
+            for candidate in candidates:
                 ent_id = ent_reg.async_get_entity_id(domain, DOMAIN, candidate)
                 if ent_id:
                     entry_obj = ent_reg.async_get(ent_id)
-                    if entry_obj and entry_obj.config_entry_id == entry.entry_id:
-                        return entry_obj
-            # Friendly fallback
+                    if entry_obj and entry_obj.config_entry_id == entry.entry_id and entry_obj not in entries:
+                        entries.append(entry_obj)
             if ent_def.name:
                 friendly_slug = _slugify(str(ent_def.name))
                 ent_id = f"{domain}.{friendly_slug}"
                 entry_obj = ent_reg.async_get(ent_id)
-                if entry_obj and entry_obj.config_entry_id == entry.entry_id:
-                    logging.getLogger(__name__).warning(
-                        "Recreate entities matched friendly slug %s (%s) for desired %s",
-                        ent_id,
-                        ent_def.name,
-                        desired_uid,
+                if entry_obj and entry_obj.config_entry_id == entry.entry_id and entry_obj not in entries:
+                    logging.getLogger(__name__).debug(
+                        "registry map: found friendly %s for %s", ent_id, ent_def.unique_id or ent_def.vendor_id
                     )
-                    return entry_obj
-            return None
+                    entries.append(entry_obj)
+            return entries
 
-        changes = []
         for ent_def in getattr(hub, "entities", []):
             desired = _desired_ids(ent_def)
             if not desired:
                 continue
             desired_uid, desired_slug = desired
             desired_entity_id = f"{ent_def.platform}.{desired_slug}"
-            entry_obj = _find_registry_entry(ent_def, desired_uid)
-            if not entry_obj:
+            entries = _gather_entries(ent_def, desired_uid)
+            if not entries:
                 continue
-            if entry_obj.unique_id == desired_uid and entry_obj.entity_id == desired_entity_id:
+            domain = ent_def.platform
+            canonical_id = ent_reg.async_get_entity_id(domain, DOMAIN, desired_uid)
+            canonical_entry = ent_reg.async_get(canonical_id) if canonical_id else None
+            if canonical_entry and canonical_entry.config_entry_id != entry.entry_id:
+                canonical_entry = None
+
+            if canonical_entry:
+                if canonical_entry.entity_id != desired_entity_id:
+                    if dry_run:
+                        changes.append((canonical_entry.entity_id, desired_entity_id, canonical_entry.unique_id, desired_uid))
+                    else:
+                        await _async_clear_statistics({canonical_entry.entity_id, desired_entity_id})
+                        try:
+                            ent_reg.async_update_entity(canonical_entry.entity_id, new_entity_id=desired_entity_id)
+                        except Exception:
+                            pass
+                extras = [e for e in entries if e.entity_id != canonical_entry.entity_id]
+                if extras:
+                    removals.extend(e.entity_id for e in extras)
+                    if not dry_run:
+                        for extra in extras:
+                            await _async_clear_statistics({extra.entity_id})
+                            ent_reg.async_remove(extra.entity_id)
                 continue
-            conflict = ent_reg.async_get(desired_entity_id)
-            if conflict and conflict.entity_id != entry_obj.entity_id:
-                continue
-            changes.append((entry_obj.entity_id, desired_entity_id, entry_obj.unique_id, desired_uid))
+
+            chosen = None
+            for candidate in entries:
+                if candidate.unique_id.lower() == desired_uid.lower():
+                    chosen = candidate
+                    break
+            if not chosen:
+                chosen = entries[0]
+            extras = [e for e in entries if e.entity_id != chosen.entity_id]
+            removals.extend(e.entity_id for e in extras)
+            changes.append((chosen.entity_id, desired_entity_id, chosen.unique_id, desired_uid))
             if dry_run:
                 continue
-            await _async_clear_statistics({entry_obj.entity_id, desired_entity_id})
-            if entry_obj.entity_id != desired_entity_id:
-                try:
-                    ent_reg.async_update_entity(entry_obj.entity_id, new_entity_id=desired_entity_id)
-                except Exception:
-                    continue
-            target_entity_id = desired_entity_id
-            if entry_obj.unique_id != desired_uid:
-                try:
-                    ent_reg.async_update_entity(target_entity_id, new_unique_id=desired_uid)  # type: ignore[arg-type]
-                except Exception:
-                    pass
-        if changes:
-            for old_eid, new_eid, old_uid, new_uid in changes:
-                logging.getLogger(__name__).warning(
-                    "Registry migration %s -> %s (unique_id %s -> %s)",
-                    old_eid,
-                    new_eid,
-                    old_uid,
-                    new_uid,
-                )
+            await _async_clear_statistics({chosen.entity_id, desired_entity_id})
+            try:
+                if chosen.entity_id != desired_entity_id:
+                    ent_reg.async_update_entity(chosen.entity_id, new_entity_id=desired_entity_id)
+            except Exception:
+                continue
+            try:
+                if chosen.unique_id != desired_uid:
+                    ent_reg.async_update_entity(desired_entity_id, new_unique_id=desired_uid)  # type: ignore[arg-type]
+            except Exception:
+                pass
+            for extra in extras:
+                await _async_clear_statistics({extra.entity_id})
+                ent_reg.async_remove(extra.entity_id)
+
+        if dry_run:
+            logging.getLogger(__name__).warning(
+                "Registry migration preview: rename=%s remove=%s",
+                changes,
+                removals,
+            )
+            return
+
+        if removals:
+            logging.getLogger(__name__).warning("Registry migration removed entries: %s", removals)
+        for old_eid, new_eid, old_uid, new_uid in changes:
+            logging.getLogger(__name__).warning(
+                "Registry migration applied rename %s -> %s (unique_id %s -> %s)",
+                old_eid,
+                new_eid,
+                old_uid,
+                new_uid,
+            )
 
     # Register service with schema for validation (also described in services.yaml)
     import voluptuous as vol

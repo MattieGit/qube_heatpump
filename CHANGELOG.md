@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.23 — 2025-10-05
+- fix: Recreate entities now iterates the Modbus spec, renames only the non-slug duplicates, and removes leftover friendly-name entries while waiting for recorder cleanup.
+
 ## 2025.10.22 — 2025-10-05
 - fix: Rebuild the registry migration to iterate over Modbus definitions, so only entities with non-slug IDs are updated to the Modbus unique_id (optional label suffix) and friendly-name flips are no longer proposed.
 
