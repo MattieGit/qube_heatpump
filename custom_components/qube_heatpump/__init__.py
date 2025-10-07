@@ -594,6 +594,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ent_id = f"{domain}.{friendly_slug}"
                 entry_obj = ent_reg.async_get(ent_id)
                 if entry_obj and entry_obj.config_entry_id == entry.entry_id:
+                    logging.getLogger(__name__).warning(
+                        "Recreate entities matched friendly slug %s (%s) for desired %s",
+                        ent_id,
+                        ent_def.name,
+                        desired_uid,
+                    )
                     return entry_obj
             return None
 
@@ -628,19 +634,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 except Exception:
                     pass
         if changes:
-            logging.getLogger(__name__).info(
-                "Registry migration (%s): %s",
-                "dry_run" if dry_run else "applied",
-                [
-                    {
-                        "entity_id": old_eid,
-                        "new_entity_id": new_eid,
-                        "old_unique_id": old_uid,
-                        "new_unique_id": new_uid,
-                    }
-                    for (old_eid, new_eid, old_uid, new_uid) in changes
-                ],
-            )
+            for old_eid, new_eid, old_uid, new_uid in changes:
+                logging.getLogger(__name__).warning(
+                    "Registry migration %s -> %s (unique_id %s -> %s)",
+                    old_eid,
+                    new_eid,
+                    old_uid,
+                    new_uid,
+                )
 
     # Register service with schema for validation (also described in services.yaml)
     import voluptuous as vol
