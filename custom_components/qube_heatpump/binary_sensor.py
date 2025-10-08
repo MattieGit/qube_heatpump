@@ -4,24 +4,24 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .hub import EntityDef
+from .hub import EntityDef, WPQubeHub
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
     coordinator = data["coordinator"]
-    show_label = bool(data.get("show_label_combined", False))
+    apply_label = bool(data.get("apply_label_in_name", False))
+    multi_device = bool(data.get("multi_device", False))
 
     entities: list[BinarySensorEntity] = []
     for ent in hub.entities:
         if ent.platform != "binary_sensor":
             continue
-        entities.append(WPQubeBinarySensor(coordinator, hub.host, hub.unit, hub.label, show_label, ent))
+        entities.append(WPQubeBinarySensor(coordinator, hub, apply_label, multi_device, ent))
 
     async_add_entities(entities)
 
@@ -29,22 +29,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_should_poll = False
 
-    def __init__(self, coordinator, host: str, unit: int, label: str, show_label: bool, ent: EntityDef) -> None:
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        show_label: bool,
+        multi_device: bool,
+        ent: EntityDef,
+    ) -> None:
         super().__init__(coordinator)
         self._ent = ent
-        self._host = host
-        self._unit = unit
-        self._label = label
-        self._attr_name = f"{ent.name} ({self._label})" if show_label else ent.name
-        self._attr_unique_id = ent.unique_id or f"wp_qube_binary_{self._host}_{self._unit}_{ent.input_type}_{ent.address}"
+        self._hub = hub
+        self._label = hub.label or "qube1"
+        self._show_label = bool(show_label or multi_device)
+        if self._show_label:
+            self._attr_name = f"{ent.name} ({self._label})"
+        else:
+            self._attr_name = ent.name
+        if ent.unique_id:
+            self._attr_unique_id = ent.unique_id
+        else:
+            suffix = f"{ent.input_type or 'input'}_{ent.address}".lower()
+            base_uid = f"wp_qube_binary_{suffix}"
+            self._attr_unique_id = f"{base_uid}_{self._label}" if multi_device else base_uid
         if getattr(ent, "vendor_id", None):
-            self._attr_suggested_object_id = _slugify(f"{ent.vendor_id}_{self._label}")
+            candidate = ent.vendor_id
+            if self._show_label or multi_device:
+                candidate = f"{candidate}_{self._label}"
+            self._attr_suggested_object_id = _slugify(candidate)
 
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
-            name=(getattr(self, "_label", None) or "Qube Heatpump"),
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
         )
@@ -54,21 +72,6 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         key = self._ent.unique_id or f"binary_sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         val = self.coordinator.data.get(key)
         return None if val is None else bool(val)
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        if getattr(self._ent, "vendor_id", None):
-            registry = er.async_get(self.hass)
-            current = registry.async_get(self.entity_id)
-            if not current:
-                return
-            desired_obj = _slugify(f"{self._ent.vendor_id}_{self._label}")
-            desired_eid = f"binary_sensor.{desired_obj}"
-            if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
-                try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
-                except Exception:
-                    pass
 
 
 def _slugify(text: str) -> str:

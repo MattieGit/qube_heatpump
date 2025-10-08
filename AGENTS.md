@@ -93,9 +93,8 @@ This repository contains a HACS custom integration for Home Assistant that integ
   - Loads Modbus YAML spec; builds entities; coordinates data updates.
   - Unique_id migration (legacy host/unit suffix → label suffix) and registry housekeeping.
   - Cleanup for deprecated sensor (input register 63) by unique_id.
-  - Service: `qube_heatpump.migrate_registry` to help adjust entity_id/unique_id patterns safely.
   - Tracks multi-device state and exposes flags used by platforms:
-    - `show_label_in_name`, `show_label_combined`, `force_label_in_diag`.
+    - `apply_label_in_name`, `multi_device`.
 
 - `custom_components/qube_heatpump/config_flow.py`
   - Config flow for creating entries; connectivity check on setup.
@@ -153,6 +152,6 @@ This repository contains a HACS custom integration for Home Assistant that integ
 - **Options flow usability**: The Configure cog must offer a text input for the Modbus unit ID (default `1`) plus clear descriptions explaining vendor-name and label toggles. Multi-device state is derived automatically; label suffixes should only appear when the option is enabled or more than one hub exists.
 - **Statistics cleanup**: Any recorder maintenance (e.g., clearing legacy stats for enum sensors) has to use `Recorder.async_clear_statistics` to stay on the recorder thread. Guard for recorder availability and do nothing if the component is absent.
 - **Label-aware unique_ids**: Single-device setups should default to host/unit-based unique_ids, while multi-device or explicit label toggles enforce the label suffix. Diagnostics, computed sensors, and raw sensors all need to follow the same rule to avoid duplicate or orphaned entities.
-- **Entity recreation service**: The `migrate_registry`/“Recreate entity IDs” flow must slug entity_ids directly from the Modbus YAML `unique_id` (optionally adding the hub label). Never fall back to friendly/display names or translations when regenerating IDs. Ensure conflict checks occur before updating the registry.
 - **Vendor naming option**: Suggested object_ids and recreated entity_ids should prefer the vendor `unique_id` from YAML so users can cross-reference vendor documentation. Only add label suffixes when multi-device behavior requires it.
 - **Testing expectations**: After significant naming or registry changes, run `pytest -q`. Add dedicated tests (e.g., `tests/test_options_flow.py`) to capture regressions around option persistence and naming rules.
+- **Offline migration tooling**: Prototype script `scripts/plan_registry_migration.py` (backed by helpers in `src/qube_migration/`) operates on an exported `core.entity_registry` to plan/vendor-align entity_ids and unique_ids. It defaults to dry-run mode, emits conflict/unmatched reports, and can write an updated registry JSON when invoked with `--apply --output`.

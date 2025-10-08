@@ -6,7 +6,6 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_loaded_integration, async_get_integration
 
@@ -19,25 +18,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     hub = data["hub"]
     coordinator = data["coordinator"]
     version = data.get("version", "unknown")
-    show_label = bool(data.get("show_label_combined", False))
-    enforce_label_uid = bool(data.get("enforce_label_uid", False))
-    show_label_diag = bool(data.get("force_label_in_diag", False))
+    apply_label = bool(data.get("apply_label_in_name", False))
+    multi_device = bool(data.get("multi_device", False))
 
     entities: list[SensorEntity] = []
     # Add a diagnostic Qube info sensor per device
-    entities.append(QubeInfoSensor(coordinator, hub, show_label_diag, version))
+    entities.append(QubeInfoSensor(coordinator, hub, apply_label, multi_device, version))
 
     # Add key diagnostic metrics as separate sensors so users can mark them as
     # Preferred on the device page for quick visibility.
     entities.extend(
         [
-            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="errors_connect"),
-            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="errors_read"),
-            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="count_sensors"),
+            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="errors_connect"),
+            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="errors_read"),
+            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="count_sensors"),
             QubeMetricSensor(
-                coordinator, hub, show_label_diag, version, kind="count_binary_sensors"
+                coordinator, hub, apply_label, multi_device, version, kind="count_binary_sensors"
             ),
-            QubeMetricSensor(coordinator, hub, show_label_diag, version, kind="count_switches"),
+            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="count_switches"),
         ]
     )
 
@@ -50,8 +48,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 hub.host,
                 hub.unit,
                 hub.label,
-                show_label,
-                enforce_label_uid,
+                apply_label,
+                multi_device,
                 version,
                 ent,
             )
@@ -69,8 +67,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 unique_suffix="status_full",
                 kind="status",
                 source=status_src,
-                show_label=show_label,
-                enforce_label_uid=enforce_label_uid,
+                show_label=apply_label,
+                multi_device=multi_device,
                 version=version,
             )
         )
@@ -86,8 +84,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 unique_suffix="driewegklep_dhw_cv",
                 kind="drieweg",
                 source=drie_src,
-                show_label=show_label,
-                enforce_label_uid=enforce_label_uid,
+                show_label=apply_label,
+                multi_device=multi_device,
                 version=version,
             )
         )
@@ -103,8 +101,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 unique_suffix="vierwegklep_verwarmen_koelen",
                 kind="vierweg",
                 source=vier_src,
-                show_label=show_label,
-                enforce_label_uid=enforce_label_uid,
+                show_label=apply_label,
+                multi_device=multi_device,
                 version=version,
             )
         )
@@ -122,7 +120,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         unit: int,
         label: str,
         show_label: bool,
-        enforce_label_uid: bool,
+        multi_device: bool,
         version: str,
         ent: EntityDef,
     ) -> None:
@@ -131,28 +129,35 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         self._host = host
         self._unit = unit
         self._label = label
-        self._slug_host = _slugify(host)
         self._show_label = bool(show_label)
-        self._enforce_label_uid = bool(enforce_label_uid)
+        self._multi_device = bool(multi_device)
         self._version = version
-        self._attr_name = f"{ent.name} ({self._label})" if self._show_label else ent.name
+        if self._show_label or self._multi_device:
+            self._attr_name = f"{ent.name} ({_format_label(self._label)})"
+        else:
+            self._attr_name = ent.name
         if ent.unique_id:
             self._attr_unique_id = ent.unique_id
         else:
-            suffix = f"{ent.input_type}_{ent.address}"
-            if self._enforce_label_uid:
-                self._attr_unique_id = f"wp_qube_sensor_{self._label}_{suffix}"
-            else:
-                self._attr_unique_id = f"wp_qube_sensor_{self._slug_host}_{self._unit}_{suffix}"
+            suffix_parts = []
+            if ent.input_type:
+                suffix_parts.append(str(ent.input_type))
+            if ent.write_type and not suffix_parts:
+                suffix_parts.append(str(ent.write_type))
+            suffix_parts.append(str(ent.address))
+            suffix = "_".join(str(part) for part in suffix_parts if part)
+            unique_base = f"wp_qube_{ent.platform}_{suffix}".lower()
+            if self._multi_device:
+                unique_base = f"{unique_base}_{self._label}"
+            self._attr_unique_id = unique_base
         if getattr(ent, "vendor_id", None):
             desired = ent.vendor_id
-            if self._enforce_label_uid or self._show_label:
+            if self._show_label or self._multi_device:
                 desired = f"{desired}_{self._label}"
             self._attr_suggested_object_id = _slugify(desired)
         self._attr_device_class = ent.device_class
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
-        self._clear_stats = bool(ent.state_class and str(ent.device_class or "").lower() == "enum")
-        if ent.state_class and not self._clear_stats:
+        if ent.state_class:
             self._attr_state_class = ent.state_class
         # Hint UI display precision to avoid decimals for precision 0 (e.g., kWh totals)
         if getattr(ent, "precision", None) is not None:
@@ -160,34 +165,6 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
                 self._attr_suggested_display_precision = int(ent.precision)  # type: ignore[attr-defined]
             except Exception:
                 pass
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        clear_ids: set[str] = set()
-        if getattr(self, "_clear_stats", False):
-            clear_ids.add(self.entity_id)
-        # Always prefer vendor-based entity_id when available
-        if getattr(self._ent, "vendor_id", None):
-            registry = er.async_get(self.hass)
-            current = registry.async_get(self.entity_id)
-            if not current:
-                if clear_ids:
-                    await _async_clear_legacy_statistics(self.hass, clear_ids)
-                return
-            desired = self._ent.vendor_id
-            if self._enforce_label_uid or self._show_label:
-                desired = f"{desired}_{self._label}"
-            desired_obj = _slugify(desired)
-            desired_eid = f"sensor.{desired_obj}"
-            if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
-                try:
-                    registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
-                    if getattr(self, "_clear_stats", False):
-                        clear_ids.add(desired_eid)
-                except Exception:
-                    pass
-        if clear_ids:
-            await _async_clear_legacy_statistics(self.hass, clear_ids)
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -209,23 +186,27 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, coordinator, hub, show_label: bool, version: str) -> None:
+    def __init__(
+        self,
+        coordinator,
+        hub,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+    ) -> None:
         super().__init__(coordinator)
         self._hub = hub
-        self._show_label = bool(show_label)
-        self._slug_host = _slugify(hub.host)
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label or multi_device)
         self._version = str(version) if version else "unknown"
         label = hub.label or "qube1"
-        disp = _format_label(label) if show_label else None
-        self._attr_name = f"Qube info ({disp})" if show_label else "Qube info"
-        if self._show_label:
-            self._attr_unique_id = f"qube_info_sensor_{label}"
-        else:
-            self._attr_unique_id = f"qube_info_sensor_{self._slug_host}_{hub.unit}"
+        disp = _format_label(label) if self._show_label else None
+        self._attr_name = f"Qube info ({disp})" if disp else "Qube info"
+        self._attr_unique_id = (
+            f"qube_info_sensor_{label}" if self._multi_device else "qube_info_sensor"
+        )
         self._state = "ok"
-        # Ensure predictable entity_id when multiple devices exist.
-        # Only suggest an object id in multi-device setups to avoid churn for single-device users.
-        if self._show_label:
+        if self._show_label or self._multi_device:
             self._attr_suggested_object_id = _slugify(f"qube_info_{label}")
 
     @property
@@ -263,21 +244,6 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         await self._async_refresh_integration_version()
-        # If multiple devices exist, align entity_id to the desired label-suffixed form
-        # e.g., sensor.qube_info_qube2, provided there is no conflict.
-        if not self._show_label:
-            return
-        registry = er.async_get(self.hass)
-        current = registry.async_get(self.entity_id)
-        if not current:
-            return
-        desired_obj = _slugify(f"qube_info_{self._hub.label}")
-        desired_eid = f"sensor.{desired_obj}"
-        if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
-            try:
-                registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
-            except Exception:
-                pass
 
     async def _async_refresh_integration_version(self) -> None:
         try:
@@ -308,15 +274,16 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         coordinator,
         hub: WPQubeHub,
         show_label: bool,
+        multi_device: bool,
         version: str,
         kind: str,
     ) -> None:
         super().__init__(coordinator)
         self._hub = hub
         self._kind = kind
-        self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label or multi_device)
         self._version = version
-        self._slug_host = _slugify(hub.host)
         label = hub.label or "qube1"
         name = {
             "errors_connect": "Qube connect errors",
@@ -325,13 +292,12 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             "count_binary_sensors": "Qube binary sensor count",
             "count_switches": "Qube switch count",
         }.get(kind, kind)
-        disp = _format_label(label) if show_label else None
-        self._attr_name = f"{name} ({disp})" if show_label else name
-        if self._show_label:
-            self._attr_unique_id = f"qube_metric_{kind}_{label}"
-            self._attr_suggested_object_id = _slugify(f"qube_metric_{kind}_{label}")
-        else:
-            self._attr_unique_id = f"qube_metric_{kind}_{self._slug_host}_{hub.unit}"
+        disp = _format_label(label) if self._show_label else None
+        self._attr_name = f"{name} ({disp})" if disp else name
+        base_uid = f"qube_metric_{kind}"
+        self._attr_unique_id = f"{base_uid}_{label}" if self._multi_device else base_uid
+        if self._show_label or self._multi_device:
+            self._attr_suggested_object_id = _slugify(f"{base_uid}_{label}")
         # These are plain numeric counters; mark as measurement for charts.
         try:
             from homeassistant.components.sensor import SensorStateClass
@@ -364,23 +330,6 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         if self._kind == "count_switches":
             return sum(1 for e in hub.entities if e.platform == "switch")
         return None
-
-    async def async_added_to_hass(self) -> None:
-        # Ensure entity_id includes label suffix when multi-device is detected.
-        await super().async_added_to_hass()
-        if not self._show_label:
-            return
-        registry = er.async_get(self.hass)
-        current = registry.async_get(self.entity_id)
-        if not current:
-            return
-        desired_obj = _slugify(f"qube_metric_{self._kind}_{self._hub.label}")
-        desired_eid = f"sensor.{desired_obj}"
-        if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
-            try:
-                registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
-            except Exception:
-                pass
 
 
 def _entity_key(ent: EntityDef) -> str:
@@ -425,26 +374,6 @@ def _find_binary_by_address(hub: WPQubeHub, address: int) -> EntityDef | None:
     return None
 
 
-async def _async_clear_legacy_statistics(hass: HomeAssistant, entity_ids: set[str]) -> None:
-    if not entity_ids:
-        return
-    try:
-        from homeassistant.components import recorder
-    except ImportError:
-        return
-    try:
-        instance = recorder.get_instance(hass)
-    except (KeyError, AttributeError):
-        return
-    if instance is None or not hasattr(instance, "async_clear_statistics"):
-        return
-
-    try:
-        instance.async_clear_statistics(list(entity_ids))
-    except Exception:
-        return
-
-
 class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
@@ -457,7 +386,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         kind: str,
         source: EntityDef,
         show_label: bool,
-        enforce_label_uid: bool,
+        multi_device: bool,
         version: str,
     ) -> None:
         super().__init__(coordinator)
@@ -466,18 +395,17 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._kind = kind
         self._source = source
         self._version = version
-        self._show_label = bool(show_label)
-        self._enforce_label_uid = bool(enforce_label_uid)
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label or multi_device)
         self._label = hub.label or "qube1"
-        self._slug_host = _slugify(hub.host)
         self._object_base = _slugify(name)
         disp = _format_label(self._label) if self._show_label else None
-        self._attr_name = f"{name} ({disp})" if self._show_label else name
-        if self._enforce_label_uid:
-            self._attr_unique_id = f"wp_qube_{unique_suffix}_{self._label}"
-        else:
-            self._attr_unique_id = f"wp_qube_{unique_suffix}_{self._slug_host}_{self._hub.unit}"
-        if self._show_label:
+        self._attr_name = f"{name} ({disp})" if disp else name
+        base_unique = f"wp_qube_{unique_suffix}"
+        self._attr_unique_id = (
+            f"{base_unique}_{self._label}" if self._multi_device else base_unique
+        )
+        if self._show_label or self._multi_device:
             self._attr_suggested_object_id = f"{self._object_base}_{self._label}"
 
     @property
@@ -517,19 +445,3 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         except Exception:
             return None
         return None
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        if not self._show_label:
-            return
-        registry = er.async_get(self.hass)
-        current = registry.async_get(self.entity_id)
-        if not current:
-            return
-        desired_obj = f"{self._object_base}_{self._label}"
-        desired_eid = f"sensor.{desired_obj}"
-        if current.entity_id != desired_eid and registry.async_get(desired_eid) is None:
-            try:
-                registry.async_update_entity(self.entity_id, new_entity_id=desired_eid)
-            except Exception:
-                pass
