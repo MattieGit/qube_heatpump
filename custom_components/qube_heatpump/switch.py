@@ -106,7 +106,8 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         desired = self._ent.vendor_id or self._attr_unique_id
         if desired and (self._show_label) and not str(desired).endswith(self._hub.label):
             desired = f"{desired}_{self._hub.label}"
-        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)) if desired else None)
+        desired_slug = _slugify(str(desired)) if desired else None
+        await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
 
 
 def _slugify(text: str) -> str:
