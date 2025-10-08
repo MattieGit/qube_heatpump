@@ -200,6 +200,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "multi_device": multi_device,
     }
 
+    try:
+        from homeassistant.helpers import issue_registry as ir
+
+        ir.async_delete_issue(hass, DOMAIN, "registry_migration_suggested")
+    except Exception:
+        pass
+
     for other in existing_entries:
         other_data = hass.data.get(DOMAIN, {}).get(other.entry_id)
         if other_data and not other_data.get("multi_device"):
