@@ -8,6 +8,7 @@ from typing import Any, TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -87,6 +88,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return vendor_id
         return f"{platform} {address}"
 
+    def _slugify(text: str) -> str:
+        return "".join(ch if ch.isalnum() else "_" for ch in str(text)).strip("_").lower()
+
     def _unique_id_for(
         platform: str,
         item: dict[str, Any],
@@ -136,6 +140,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hub.entities.extend(_to_entity_defs("binary_sensor", spec.get("binary_sensors")))
     hub.entities.extend(_to_entity_defs("sensor", spec.get("sensors")))
     hub.entities.extend(_to_entity_defs("switch", spec.get("switches")))
+
+    ent_reg = er.async_get(hass)
+
+    def _suggest_object_id(ent: EntityDef) -> str | None:
+        base: str | None = ent.vendor_id or ent.unique_id
+        if not base:
+            return None
+        if multi_device and ent.vendor_id and not base.endswith(label):
+            base = f"{base}_{label}"
+        return _slugify(base)
+
+    for ent in hub.entities:
+        if not ent.unique_id:
+            continue
+        domain = ent.platform
+        slug = _suggest_object_id(ent)
+        try:
+            registry_entry = ent_reg.async_get_or_create(
+                domain,
+                DOMAIN,
+                ent.unique_id,
+                config_entry=entry,
+                suggested_object_id=slug,
+            )
+        except Exception:
+            continue
+        if slug:
+            desired_eid = f"{domain}.{slug}"
+            if registry_entry.entity_id != desired_eid:
+                if ent_reg.async_get(desired_eid) is None:
+                    try:
+                        ent_reg.async_update_entity(registry_entry.entity_id, new_entity_id=desired_eid)
+                    except Exception:
+                        pass
 
     manifest = Path(__file__).parent / "manifest.json"
     version = "unknown"
