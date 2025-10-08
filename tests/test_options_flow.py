@@ -48,4 +48,9 @@ async def test_options_flow_updates_options(hass):
     assert entry.options[CONF_UNIT_ID] == 3
     assert entry.options[CONF_SHOW_LABEL_IN_NAME] is True
 
+    await hass.async_block_till_done()
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
     sys.modules.pop("homeassistant.components.modbus", None)

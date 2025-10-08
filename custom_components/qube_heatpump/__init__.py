@@ -5,7 +5,6 @@ from pathlib import Path
 import json
 import logging
 from typing import Any, TYPE_CHECKING
-import re
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -74,13 +73,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hub = WPQubeHub(hass, host, port, unit_id, label)
 
-    def _friendly_from_uid(uid: str | None) -> str:
-        if not uid:
-            return "Unnamed"
-        text = uid.replace("_", " ")
-        text = re.sub(r"(?<!^)(?=[A-Z])", " ", text)
-        text = " ".join(text.split())
-        return text if text else uid
+    def _compute_display_name(
+        platform: str,
+        address: int,
+        provided: Any,
+        vendor_id: str | None,
+    ) -> str:
+        if isinstance(provided, str):
+            cleaned = provided.strip()
+            if cleaned:
+                return cleaned
+        if vendor_id:
+            return vendor_id
+        return f"{platform} {address}"
 
     def _unique_id_for(
         platform: str,
@@ -106,11 +111,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             vendor_id = str(vendor_id_raw).strip() if vendor_id_raw else None
             vendor_id_norm = vendor_id.lower() if vendor_id else None
             unique_id = _unique_id_for(platform, item, vendor_id_norm)
-            name_seed = vendor_id if vendor_id else f"{platform}_{address}"
+            display_name = _compute_display_name(platform, address, item.get("name"), vendor_id)
             entities.append(
                 EntityDef(
                     platform=platform,
-                    name=_friendly_from_uid(name_seed),
+                    name=display_name,
                     address=address,
                     vendor_id=vendor_id_norm,
                     input_type=item.get("input_type"),

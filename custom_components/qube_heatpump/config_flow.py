@@ -57,7 +57,7 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={CONF_HOST: host, CONF_PORT: port},
                 )
 
-        schema = vol.Schema({vol.Required(CONF_HOST): str})
+        schema = vol.Schema({vol.Required(CONF_HOST, default="qube.local"): str})
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     async def async_step_reconfigure(self, entry_data: dict | None = None):
@@ -87,10 +87,24 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._reconfig_entry is None:
             return self.async_abort(reason="unknown_entry")
         # Update entry data
+        new_host = user_input[CONF_HOST]
+        new_port = user_input[CONF_PORT]
+        new_unique_id = f"{DOMAIN}-{new_host}-{new_port}"
+        for entry in self._async_current_entries():
+            if entry.entry_id == self._reconfig_entry.entry_id:
+                continue
+            if entry.unique_id == new_unique_id:
+                return self.async_abort(reason="already_configured")
+
         new = dict(self._reconfig_entry.data)
-        new[CONF_HOST] = user_input[CONF_HOST]
-        new[CONF_PORT] = user_input[CONF_PORT]
-        self.hass.config_entries.async_update_entry(self._reconfig_entry, data=new)
+        new[CONF_HOST] = new_host
+        new[CONF_PORT] = new_port
+        self.hass.config_entries.async_update_entry(
+            self._reconfig_entry,
+            data=new,
+            title=f"WP Qube ({new_host})",
+            unique_id=new_unique_id,
+        )
         # Reload
         await self.hass.config_entries.async_reload(self._reconfig_entry.entry_id)
         return self.async_abort(reason="reconfigured")
