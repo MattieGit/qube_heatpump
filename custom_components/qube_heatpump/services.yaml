@@ -1,0 +1,13 @@
+reconfigure:
+  name: Trigger reconfigure flow
+  description: >
+    Open the integration's reconfigure flow so you can update the Modbus host
+    or port from the Home Assistant UI.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: >
+        Optional integration entry_id to reconfigure. If omitted, the service
+        will attempt to resolve the single configured entry automatically.
+      required: false
+      example: "1234567890abcdef1234567890abcdef"
