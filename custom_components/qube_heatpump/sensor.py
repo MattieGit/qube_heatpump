@@ -5,6 +5,7 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_loaded_integration, async_get_integration
@@ -110,6 +111,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
+async def _async_ensure_entity_id(hass: HomeAssistant, entity_id: str, desired_obj: str | None) -> None:
+    """Ensure the entity_id aligns with the desired object id when possible."""
+
+    if not desired_obj:
+        return
+    registry = er.async_get(hass)
+    current = registry.async_get(entity_id)
+    if not current:
+        return
+    desired_eid = f"{current.domain}.{desired_obj}"
+    if current.entity_id == desired_eid:
+        return
+    if registry.async_get(desired_eid):
+        return
+    try:
+        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
+    except Exception:
+        return
+
+
 class WPQubeSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
@@ -181,6 +202,12 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         key = self._ent.unique_id or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         return self.coordinator.data.get(key)
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired = self._ent.vendor_id or self._attr_unique_id
+        if desired and (self._show_label or self._multi_device) and not str(desired).endswith(self._label):
+            desired = f"{desired}_{self._label}"
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)) if desired else None)
 
 class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
@@ -244,6 +271,10 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         await self._async_refresh_integration_version()
+        desired_obj = "qube_info"
+        if self._show_label or self._multi_device:
+            desired_obj = _slugify(f"qube_info_{self._hub.label}")
+        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
     async def _async_refresh_integration_version(self) -> None:
         try:
@@ -330,6 +361,12 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         if self._kind == "count_switches":
             return sum(1 for e in hub.entities if e.platform == "switch")
         return None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        suffix = f"_{self._hub.label}" if (self._show_label or self._multi_device) else ""
+        desired_obj = _slugify(f"qube_metric_{self._kind}{suffix}")
+        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
 
 def _entity_key(ent: EntityDef) -> str:
@@ -445,3 +482,8 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         except Exception:
             return None
         return None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired = self._attr_unique_id or self._object_base
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)))

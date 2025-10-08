@@ -3,6 +3,7 @@ from __future__ import annotations
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -24,6 +25,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entities.append(WPQubeSwitch(coordinator, hub, apply_label, multi_device, ent))
 
     async_add_entities(entities)
+
+
+async def _async_ensure_entity_id(hass: HomeAssistant, entity_id: str, desired_obj: str | None) -> None:
+    if not desired_obj:
+        return
+    registry = er.async_get(hass)
+    current = registry.async_get(entity_id)
+    if not current:
+        return
+    desired_eid = f"{current.domain}.{desired_obj}"
+    if current.entity_id == desired_eid:
+        return
+    if registry.async_get(desired_eid):
+        return
+    try:
+        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
+    except Exception:
+        return
 
 
 class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
@@ -81,6 +100,13 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         await self._hub.async_connect()
         await self._hub.async_write_switch(self._ent, False)
         await self.coordinator.async_request_refresh()
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired = self._ent.vendor_id or self._attr_unique_id
+        if desired and (self._show_label) and not str(desired).endswith(self._hub.label):
+            desired = f"{desired}_{self._hub.label}"
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)) if desired else None)
 
 
 def _slugify(text: str) -> str:

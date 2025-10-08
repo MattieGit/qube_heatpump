@@ -3,6 +3,7 @@ from __future__ import annotations
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -28,6 +29,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             version,
         ),
     ])
+
+
+async def _async_ensure_entity_id(hass: HomeAssistant, entity_id: str, desired_obj: str | None) -> None:
+    if not desired_obj:
+        return
+    registry = er.async_get(hass)
+    current = registry.async_get(entity_id)
+    if not current:
+        return
+    desired_eid = f"{current.domain}.{desired_obj}"
+    if current.entity_id == desired_eid:
+        return
+    if registry.async_get(desired_eid):
+        return
+    try:
+        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
+    except Exception:
+        return
 
 
 class QubeReloadButton(CoordinatorEntity, ButtonEntity):
@@ -73,3 +92,13 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.hass.config_entries.async_reload(self._entry_id)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        label = self._hub.label or "qube1"
+        desired_obj = _slugify_local(f"qube_reload_{label}" if self._multi_device else "qube_reload")
+        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
+
+
+def _slugify_local(text: str) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
