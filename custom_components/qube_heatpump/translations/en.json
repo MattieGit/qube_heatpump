@@ -15,8 +15,7 @@
         }
       }
     }
-  }
-  ,
+  },
   "options": {
     "error": {
       "invalid_unit_id": "Enter a number between 1 and 247."
@@ -24,10 +23,13 @@
     "step": {
       "init": {
         "title": "Options",
-        "description": "Set the ID for the Qube heat pump (1-247). For example, keep it at 1 when only a single heat pump is connected, or choose 2, 3, etc. when you are using multiple heat pumps.\n\nEnable \"Add hub label\" to append the hub label such as \"qube1\" to entity names so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs.",
+        "description": "Set the ID for the Qube heat pump (1-247). For example, keep it at 1 when only a single heat pump is connected, or choose 2, 3, etc. when you are using multiple heat pumps.",
         "data": {
           "unit_id": "Heat pump ID (1-247)",
-          "show_label_in_name": "Add hub label to entity names"
+          "show_label_in_name": {
+            "name": "Add hub label to entity names",
+            "description": "Enable \"Add hub label\" to append the hub label such as \"qube1\" to entity names so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs."
+          }
         }
       }
     }
