@@ -75,7 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             WPQubeComputedSensor(
                 coordinator,
                 hub,
-                name="Status warmtepomp",
+                name="Qube status full",
                 unique_suffix="status_full",
                 kind="status",
                 source=status_src,
