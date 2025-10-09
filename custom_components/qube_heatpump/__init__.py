@@ -158,6 +158,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         base: str | None = ent.vendor_id or ent.unique_id
         if not base:
             return None
+        base = base.lower()
+        if base == "unitstatus":
+            base = "qube_status_heatpump"
         if multi_device and ent.vendor_id and not base.endswith(label):
             base = f"{base}_{label}"
         return _slugify(base)

@@ -1,7 +1,7 @@
 # Based on Modbus documentation from HR-Energy: https://www.hr-energy.com/media/m4gavc0p/202506_modbus-lijst-qube.pdf
 - name: "Qube Heatpump"
   type: tcp
-  host: 192.168.1.100
+  host: qube.local
   port: 502
   
   binary_sensors:

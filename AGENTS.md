@@ -57,7 +57,8 @@ This repository contains a HACS custom integration for Home Assistant that integ
   - Prefer vendor-provided unique IDs from YAML (`unique_id`) where available.
   - When multiple hubs exist, append a hub label (e.g., `qube1`, displayed as “qube 1”) to avoid collisions.
   - Auto-migrate legacy host/unit-suffixed unique_ids to label-suffixed ones for known entity families (computed/info/reload/sensors).
-  - Entity IDs prefer “vendor_id + label” where possible; conflicts are avoided if an entity_id already exists.
+- Entity IDs prefer “vendor_id + label” where possible; conflicts are avoided if an entity_id already exists.
+- During setup the integration removes any existing registry entries for the config entry and re-registers them via `entity_registry.async_get_or_create` with vendor-based slugs so legacy friendly-name slugs never persist.
 
 - Diagnostics
   - Diagnostic “Qube info” sensor: keeps attributes like version, label, host, unit, error counters, and entity counts.

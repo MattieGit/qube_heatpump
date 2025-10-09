@@ -14,6 +14,11 @@ from .const import DOMAIN
 from .hub import EntityDef, WPQubeHub
 
 
+VENDOR_SLUG_OVERRIDES = {
+    "unitstatus": "qube_status_heatpump",
+}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
@@ -172,7 +177,8 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
                 unique_base = f"{unique_base}_{self._label}"
             self._attr_unique_id = unique_base
         if getattr(ent, "vendor_id", None):
-            desired = ent.vendor_id
+            vendor_slug = VENDOR_SLUG_OVERRIDES.get(ent.vendor_id, ent.vendor_id)
+            desired = vendor_slug
             if self._show_label or self._multi_device:
                 desired = f"{desired}_{self._label}"
             self._attr_suggested_object_id = _slugify(desired)
@@ -204,10 +210,12 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        desired = self._ent.vendor_id or self._attr_unique_id
+        vendor_slug = VENDOR_SLUG_OVERRIDES.get(self._ent.vendor_id, self._ent.vendor_id)
+        desired = vendor_slug or self._attr_unique_id
         if desired and (self._show_label or self._multi_device) and not str(desired).endswith(self._label):
             desired = f"{desired}_{self._label}"
-        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)) if desired else None)
+        desired_slug = _slugify(str(desired)) if desired else None
+        await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
 
 class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
