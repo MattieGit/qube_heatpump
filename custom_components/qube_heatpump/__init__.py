@@ -143,6 +143,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     ent_reg = er.async_get(hass)
 
+    # Drop any legacy registry entries for this config entry so we can rebuild
+    # them with vendor-based slugs. This ensures previous friendly-name edits
+    # do not linger across reinstalls.
+    for reg_entry in list(ent_reg.entities.values()):
+        if reg_entry.config_entry_id != entry.entry_id:
+            continue
+        try:
+            ent_reg.async_remove(reg_entry.entity_id)
+        except Exception:
+            continue
+
     def _suggest_object_id(ent: EntityDef) -> str | None:
         base: str | None = ent.vendor_id or ent.unique_id
         if not base:
