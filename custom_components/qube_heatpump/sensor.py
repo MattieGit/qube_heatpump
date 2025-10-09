@@ -464,8 +464,9 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         try:
             if self._kind == "status":
                 code = int(val)
+                if code in (1, 14, 18):
+                    return "Standby"
                 return {
-                    1: "Standby",
                     2: "Alarm",
                     6: "Keyboard off",
                     8: "Compressor start up",
