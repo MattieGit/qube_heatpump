@@ -11,6 +11,12 @@ from .const import DOMAIN
 from .hub import EntityDef, WPQubeHub
 
 
+HIDDEN_VENDOR_IDS = {
+    "dout_threewayvlv_val",
+    "dout_fourwayvlv_val",
+}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     hub = data["hub"]
@@ -71,8 +77,12 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             suffix = f"{ent.input_type or 'input'}_{ent.address}".lower()
             base_uid = f"wp_qube_binary_{suffix}"
             self._attr_unique_id = f"{base_uid}_{self._label}" if multi_device else base_uid
-        if getattr(ent, "vendor_id", None):
-            candidate = ent.vendor_id
+        vendor_id = getattr(ent, "vendor_id", None)
+        if vendor_id in HIDDEN_VENDOR_IDS:
+            self._attr_entity_registry_visible_default = False
+            self._attr_entity_registry_enabled_default = False
+        if vendor_id:
+            candidate = vendor_id
             if self._show_label or multi_device:
                 candidate = f"{candidate}_{self._label}"
             self._attr_suggested_object_id = _slugify(candidate)

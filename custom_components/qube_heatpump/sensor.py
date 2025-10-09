@@ -18,6 +18,12 @@ VENDOR_SLUG_OVERRIDES = {
     "unitstatus": "qube_status_heatpump",
 }
 
+HIDDEN_VENDOR_IDS = {
+    "unitstatus",
+    "dout_threewayvlv_val",
+    "dout_fourwayvlv_val",
+}
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -176,7 +182,11 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
             if self._multi_device:
                 unique_base = f"{unique_base}_{self._label}"
             self._attr_unique_id = unique_base
-        if getattr(ent, "vendor_id", None):
+        vendor_id = getattr(ent, "vendor_id", None)
+        if vendor_id in HIDDEN_VENDOR_IDS:
+            self._attr_entity_registry_visible_default = False
+            self._attr_entity_registry_enabled_default = False
+        if vendor_id:
             vendor_slug = VENDOR_SLUG_OVERRIDES.get(ent.vendor_id, ent.vendor_id)
             desired = vendor_slug
             if self._show_label or self._multi_device:
