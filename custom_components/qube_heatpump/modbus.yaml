@@ -498,7 +498,7 @@
     state_class: measurement
     unique_id: GeneralMng_Thermic_Pwr
 
-  - name: "Status warmtepomp"
+  - name: "Status code"
     state_class: measurement
     scan_interval: 60
     device_class: enum
