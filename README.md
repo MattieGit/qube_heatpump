@@ -30,9 +30,8 @@ This custom integration will read the Modbus registers of the Qube heatpump, cre
  - Built‑in diagnostics: Settings → Integrations → Qube Heat Pump → Menu → Diagnostics exports a redacted snapshot (host, unit, entity counts) useful for troubleshooting.
 
 **Multi‑hub behavior**
-- Each hub is assigned a short label (`qube1`, `qube2`, …) which you can change in Options.
-- Entity IDs always include the label (e.g., `sensor.<vendor_id>_qube2`).
-- Entity names can optionally include the label (see Options → “Show hub label in entity names”). They default to friendly names without a label.
+- Each heat pump is assigned a short label (`qube1`, `qube2`, …) which you can change in Options.
+- Entity names can optionally include the label (see Options → “Show hub label in entity names”). They default to IDs without a label and the name is derived from the HR Energy modbus documentation.
 
 **Error handling & recovery**
 - The integration uses connection backoff and per‑read timeouts to avoid log flooding and to recover automatically when the device returns online.
