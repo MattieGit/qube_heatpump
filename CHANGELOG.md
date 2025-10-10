@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.32 — 2025-10-10
+- fix: Stop marking enum-based status sensors as measurement state class to satisfy Home Assistant validation.
+- fix: Read the integration manifest version via Home Assistant integration APIs to avoid blocking file I/O during setup.
+
 ## 2025.10.21 — 2025-10-05
 - fix: Match registry entries back to Modbus definitions, falling back to friendly names only for lookups while still slugs based on the Modbus unique_id.
 

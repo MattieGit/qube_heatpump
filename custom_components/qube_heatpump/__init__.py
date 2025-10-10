@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from pathlib import Path
-import json
-import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.loader import async_get_integration, async_get_loaded_integration
 
 from .const import (
     DOMAIN,
@@ -116,6 +116,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             vendor_id_norm = vendor_id.lower() if vendor_id else None
             unique_id = _unique_id_for(platform, item, vendor_id_norm)
             display_name = _compute_display_name(platform, address, item.get("name"), vendor_id)
+            device_class = item.get("device_class")
+            state_class = item.get("state_class")
+            if isinstance(device_class, str) and device_class.lower() == "enum":
+                state_class = None
             entities.append(
                 EntityDef(
                     platform=platform,
@@ -126,8 +130,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     write_type=item.get("write_type"),
                     data_type=item.get("data_type"),
                     unit_of_measurement=item.get("unit_of_measurement"),
-                    device_class=item.get("device_class"),
-                    state_class=item.get("state_class"),
+                    device_class=device_class,
+                    state_class=state_class,
                     precision=item.get("precision"),
                     unique_id=unique_id,
                     offset=item.get("offset"),
@@ -189,16 +193,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     except Exception:
                         pass
 
-    manifest = Path(__file__).parent / "manifest.json"
     version = "unknown"
-    if manifest.exists():
+    try:
+        integration = await async_get_loaded_integration(hass, DOMAIN)
+    except Exception:
+        integration = None
+    if not integration:
         try:
-            version_data = json.loads(manifest.read_text(encoding="utf-8"))
-            maybe_version = version_data.get("version")
-            if maybe_version:
-                version = str(maybe_version)
+            integration = await async_get_integration(hass, DOMAIN)
         except Exception:
-            version = "unknown"
+            integration = None
+    if integration and getattr(integration, "version", None):
+        version = str(integration.version)
 
     show_label_option = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
     apply_label_in_name = show_label_option or multi_device
