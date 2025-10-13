@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.34 — 2025-10-13
+- feat: Add a diagnostic “Qube IP address” sensor so the resolved Modbus host address is visible on the device page.
+- fix: Refresh hostname resolution on each coordinator update to keep the IP sensor current.
+
 ## 2025.10.33 — 2025-10-13
 - feat: Expose the resolved heat pump IP address in the diagnostics sensor to help verify hostname resolution.
 - chore: Set `asyncio_default_fixture_loop_scope` for pytest to avoid deprecation warnings during tests.

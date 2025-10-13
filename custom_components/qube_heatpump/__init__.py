@@ -218,6 +218,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_options_updated))
 
     async def _async_update_data() -> dict[str, Any]:
+        await hub.async_resolve_ip()
         await hub.async_connect()
         results: dict[str, Any] = {}
         warn_count = 0

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -36,6 +36,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entities: list[SensorEntity] = []
     # Add a diagnostic Qube info sensor per device
     entities.append(QubeInfoSensor(coordinator, hub, apply_label, multi_device, version))
+    # Surface the resolved host IP as its own diagnostic sensor
+    entities.append(QubeIPAddressSensor(coordinator, hub, apply_label, multi_device, version))
 
     # Add key diagnostic metrics as separate sensors so users can mark them as
     # Preferred on the device page for quick visibility.
@@ -313,6 +315,60 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
                     self.async_write_ha_state()
         except Exception:
             pass
+
+
+class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator,
+        hub,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._version = str(version) if version else "unknown"
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label or multi_device)
+        label = hub.label or "qube1"
+        disp = _format_label(label) if self._show_label else None
+        base_name = "Qube IP address"
+        self._attr_name = f"{base_name} ({disp})" if disp else base_name
+        base_uid = "qube_ip_address"
+        self._attr_unique_id = f"{base_uid}_{label}" if self._multi_device else base_uid
+        if self._show_label or self._multi_device:
+            self._attr_suggested_object_id = _slugify(f"{base_uid}_{label}")
+        if hasattr(SensorDeviceClass, "IP"):
+            try:
+                self._attr_device_class = SensorDeviceClass.IP
+            except Exception:
+                self._attr_device_class = None
+        self._attr_icon = "mdi:ip"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=(self._hub.label or "Qube Heatpump"),
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        return self._hub.resolved_ip or self._hub.host
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired_obj = "qube_ip_address"
+        if self._show_label or self._multi_device:
+            desired_obj = _slugify(f"{desired_obj}_{self._hub.label}")
+        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
 
 class QubeMetricSensor(CoordinatorEntity, SensorEntity):
