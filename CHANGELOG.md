@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.38 — 2025-10-13
+- fix: Clarify the options flow connection error message to guide IP troubleshooting.
+
 ## 2025.10.37 — 2025-10-13
 - fix: Remove stale hub devices when the host changes so no phantom entries remain.
 

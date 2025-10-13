@@ -22,7 +22,7 @@
     "error": {
       "invalid_unit_id": "Enter a number between 1 and 247.",
       "duplicate_ip": "Another Qube heat pump already uses this IP address.",
-      "cannot_connect": "Failed to connect to the heat pump at this address.",
+      "cannot_connect": "Can not connect to Qube. Please check the IP address.",
       "invalid_host": "Enter a valid host or IP address."
     },
     "step": {
