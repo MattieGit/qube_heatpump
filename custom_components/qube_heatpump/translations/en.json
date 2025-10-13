@@ -20,13 +20,17 @@
   },
   "options": {
     "error": {
-      "invalid_unit_id": "Enter a number between 1 and 247."
+      "invalid_unit_id": "Enter a number between 1 and 247.",
+      "duplicate_ip": "Another Qube heat pump already uses this IP address.",
+      "cannot_connect": "Failed to connect to the heat pump at this address.",
+      "invalid_host": "Enter a valid host or IP address."
     },
     "step": {
       "init": {
         "title": "Options",
-        "description": "Set the ID for the Qube heat pump (1-247). For example, keep it at 1 when only a single heat pump is connected, or choose 2, 3, etc. when you are using multiple heat pumps.",
+        "description": "Current IP: {resolved_ip}. Update the host if the heat pump IP changed, adjust the heat pump ID (1-247), and choose whether to append the hub label to entity names.",
         "data": {
+          "host": "Host/IP",
           "unit_id": "Heat pump ID (1-247)",
           "show_label_in_name": "Add hub label to entity names"
         },

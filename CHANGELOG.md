@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.36 — 2025-10-13
+- feat: Show the resolved IP in the options dialog and allow updating the host with live connectivity checks.
+- fix: Reject option updates that would duplicate an existing hub IP or fail to connect to the device.
+- test: Cover config and options flows for duplicate IP detection and host updates.
+
 ## 2025.10.35 — 2025-10-13
 - fix: Prevent adding duplicate hubs when the host resolves to an IP address already in use.
 - fix: Surface a clear error during config and reconfigure flows when a duplicate IP is detected.

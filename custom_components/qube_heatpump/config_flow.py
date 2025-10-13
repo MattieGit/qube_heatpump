@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable
 import asyncio
 import contextlib
 import logging
@@ -25,6 +25,55 @@ from .const import (
 )
 
 
+async def _async_resolve_host(host: str) -> str | None:
+    """Resolve a host or IP string to a canonical IP address."""
+    if not host:
+        return None
+    try:
+        return str(ipaddress.ip_address(host))
+    except Exception:
+        pass
+
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(
+            host,
+            None,
+            type=socket.SOCK_STREAM,
+        )
+    except Exception:
+        return None
+
+    for family, _, _, _, sockaddr in infos:
+        if not sockaddr:
+            continue
+        addr = sockaddr[0]
+        if not isinstance(addr, str):
+            continue
+        if family == socket.AF_INET6 and addr.startswith("::ffff:"):
+            addr = addr.removeprefix("::ffff:")
+        return addr
+    return None
+
+
+async def _async_find_conflicting_entry(
+    entries: Iterable[config_entries.ConfigEntry],
+    host: str,
+) -> tuple[config_entries.ConfigEntry, str | None] | None:
+    """Return a config entry that conflicts with the provided host."""
+
+    candidate_ip = await _async_resolve_host(host)
+    for entry in entries:
+        existing_host = entry.data.get(CONF_HOST)
+        if not existing_host:
+            continue
+        if existing_host == host:
+            return entry, existing_host
+        existing_ip = await _async_resolve_host(existing_host)
+        if candidate_ip and existing_ip and existing_ip == candidate_ip:
+            return entry, existing_ip
+    return None
+
+
 class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     _reconfig_entry: config_entries.ConfigEntry | None = None
@@ -34,56 +83,23 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlow:
         return OptionsFlowHandler(config_entry)
 
-    async def _async_resolve_host(self, host: str) -> str | None:
-        """Resolve a host or IP string to a canonical IP address."""
-        if not host:
-            return None
-        try:
-            return str(ipaddress.ip_address(host))
-        except Exception:
-            pass
-
-        try:
-            infos = await asyncio.get_running_loop().getaddrinfo(
-                host,
-                None,
-                type=socket.SOCK_STREAM,
-            )
-        except Exception:
-            return None
-
-        for family, _, _, _, sockaddr in infos:
-            if not sockaddr:
-                continue
-            addr = sockaddr[0]
-            if not isinstance(addr, str):
-                continue
-            if family == socket.AF_INET6 and addr.startswith("::ffff:"):
-                addr = addr.removeprefix("::ffff:")
-            return addr
-        return None
-
     async def _async_has_conflicting_host(self, host: str, skip_entry_id: str | None = None) -> bool:
         """Check if host resolves to an IP already used by another entry."""
-        candidate_ip = await self._async_resolve_host(host)
-        for entry in self._async_current_entries():
-            if skip_entry_id and entry.entry_id == skip_entry_id:
-                continue
-            existing_host = entry.data.get(CONF_HOST)
-            if not existing_host:
-                continue
-            if existing_host == host:
-                _LOGGER.debug("Host %s already configured; blocking duplicate", host)
-                return True
-            existing_ip = await self._async_resolve_host(existing_host)
-            if candidate_ip and existing_ip and existing_ip == candidate_ip:
-                _LOGGER.debug(
-                    "Host %s resolves to %s already used by entry %s; blocking duplicate",
-                    host,
-                    candidate_ip,
-                    entry.entry_id,
-                )
-                return True
+        entries = [
+            entry
+            for entry in self._async_current_entries()
+            if not skip_entry_id or entry.entry_id != skip_entry_id
+        ]
+        conflict = await _async_find_conflicting_entry(entries, host)
+        if conflict:
+            entry, match = conflict
+            _LOGGER.debug(
+                "Host %s resolves to %s already used by entry %s; blocking duplicate",
+                host,
+                match,
+                entry.entry_id,
+            )
+            return True
         return False
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
@@ -184,25 +200,68 @@ class OptionsFlowHandler(OptionsFlow):
 
     async def async_step_init(self, user_input: dict | None = None):
         errors: dict[str, str] = {}
-        # Determine if multiple Qube entries exist to hint when label suffix becomes effective
+        current_host = str(self._entry.data.get(CONF_HOST, "qube.local")).strip()
+        current_port = int(self._entry.data.get(CONF_PORT, DEFAULT_PORT))
+        # Capture existing entries to support duplicate IP detection
         entries = [
             e for e in self.hass.config_entries.async_entries(DOMAIN) if e.entry_id != self._entry.entry_id
         ]
-        multi_device = len(entries) >= 1
+
+        hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
+        resolved_ip = None
+        hub = hub_entry.get("hub")
+        if hub is not None:
+            resolved_ip = getattr(hub, "resolved_ip", None) or getattr(hub, "host", None)
+        if not resolved_ip:
+            resolved_ip = await _async_resolve_host(current_host)
 
         if user_input is not None:
+            new_host = str(user_input.get(CONF_HOST, current_host)).strip()
             unit_raw = user_input.get(CONF_UNIT_ID)
+            show_label = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
+
+            if not new_host:
+                errors[CONF_HOST] = "invalid_host"
+            else:
+                conflict = await _async_find_conflicting_entry(entries, new_host)
+                if conflict:
+                    errors[CONF_HOST] = "duplicate_ip"
+
+            host_changed = new_host != current_host
+            if host_changed and CONF_HOST not in errors:
+                try:
+                    reader, writer = await asyncio.wait_for(
+                        asyncio.open_connection(new_host, current_port),
+                        timeout=5,
+                    )
+                    writer.close()
+                    with contextlib.suppress(Exception):
+                        await writer.wait_closed()
+                except Exception:
+                    errors[CONF_HOST] = "cannot_connect"
+
             try:
                 unit_int = int(str(unit_raw).strip())
                 if unit_int < 1 or unit_int > 247:
                     raise ValueError
             except (ValueError, TypeError):
                 errors[CONF_UNIT_ID] = "invalid_unit_id"
-            else:
+            if not errors:
                 opts = dict(self._entry.options)
                 opts[CONF_UNIT_ID] = unit_int
-                opts[CONF_SHOW_LABEL_IN_NAME] = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
-                self.hass.config_entries.async_update_entry(self._entry, options=opts)
+                opts[CONF_SHOW_LABEL_IN_NAME] = show_label
+
+                update_kwargs: dict[str, Any] = {"options": opts}
+                if host_changed:
+                    new_data = dict(self._entry.data)
+                    new_data[CONF_HOST] = new_host
+                    new_data[CONF_PORT] = current_port
+                    update_kwargs["data"] = new_data
+                    update_kwargs["title"] = f"WP Qube ({new_host})"
+                    update_kwargs["unique_id"] = f"{DOMAIN}-{new_host}-{current_port}"
+                self.hass.config_entries.async_update_entry(self._entry, **update_kwargs)
+                if host_changed:
+                    await self.hass.config_entries.async_reload(self._entry.entry_id)
                 return self.async_create_entry(title="", data=opts)
 
         import voluptuous as vol
@@ -214,6 +273,7 @@ class OptionsFlowHandler(OptionsFlow):
 
         schema = vol.Schema(
             {
+                vol.Required(CONF_HOST, default=current_host): str,
                 vol.Required(
                     CONF_UNIT_ID,
                     default=str(current_unit),
@@ -222,4 +282,11 @@ class OptionsFlowHandler(OptionsFlow):
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={
+                "resolved_ip": resolved_ip or "unknown",
+            },
+        )
