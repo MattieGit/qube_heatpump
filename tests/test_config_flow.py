@@ -8,6 +8,8 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from homeassistant.helpers import device_registry as dr
+
 from custom_components.qube_heatpump.const import (
     CONF_HOST,
     CONF_PORT,
@@ -163,6 +165,12 @@ async def test_options_updates_host_when_connection_succeeds(
 
     reload_mock = AsyncMock()
 
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, "qube.local:1")},
+    )
+
     monkeypatch.setattr(
         "custom_components.qube_heatpump.config_flow._async_resolve_host",
         fake_resolve,
@@ -181,6 +189,9 @@ async def test_options_updates_host_when_connection_succeeds(
     assert entry.data[CONF_HOST] == "qube.new"
     assert entry.unique_id == f"{DOMAIN}-qube.new-{DEFAULT_PORT}"
     reload_mock.assert_awaited_once_with(entry.entry_id)
+    assert (
+        device_registry.async_get_device({(DOMAIN, "qube.local:1")}) is None
+    )
 
 
 @pytest.mark.asyncio

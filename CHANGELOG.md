@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.37 — 2025-10-13
+- fix: Remove stale hub devices when the host changes so no phantom entries remain.
+
 ## 2025.10.36 — 2025-10-13
 - feat: Show the resolved IP in the options dialog and allow updating the host with live connectivity checks.
 - fix: Reject option updates that would duplicate an existing hub IP or fail to connect to the device.

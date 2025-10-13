@@ -13,6 +13,7 @@ from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_RECONFIGURE
 from homeassistant.config_entries import OptionsFlow
 from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
 
 from .const import (
     DOMAIN,
@@ -207,6 +208,11 @@ class OptionsFlowHandler(OptionsFlow):
             e for e in self.hass.config_entries.async_entries(DOMAIN) if e.entry_id != self._entry.entry_id
         ]
 
+        current_unit = int(
+            self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
+        )
+        current_label_option = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
+
         hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         resolved_ip = None
         hub = hub_entry.get("hub")
@@ -219,6 +225,7 @@ class OptionsFlowHandler(OptionsFlow):
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
             unit_raw = user_input.get(CONF_UNIT_ID)
             show_label = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
+            unit_int = current_unit
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -261,15 +268,15 @@ class OptionsFlowHandler(OptionsFlow):
                     update_kwargs["unique_id"] = f"{DOMAIN}-{new_host}-{current_port}"
                 self.hass.config_entries.async_update_entry(self._entry, **update_kwargs)
                 if host_changed:
+                    device_registry = dr.async_get(self.hass)
+                    identifiers = {(DOMAIN, f"{current_host}:{current_unit}")}
+                    old_device = device_registry.async_get_device(identifiers)
+                    if old_device:
+                        device_registry.async_remove_device(old_device.id)
                     await self.hass.config_entries.async_reload(self._entry.entry_id)
                 return self.async_create_entry(title="", data=opts)
 
         import voluptuous as vol
-
-        current_unit = int(
-            self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
-        )
-        current_label_option = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
 
         schema = vol.Schema(
             {
