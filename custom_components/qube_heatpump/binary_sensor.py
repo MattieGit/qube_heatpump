@@ -66,11 +66,8 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._ent = ent
         self._hub = hub
         self._label = hub.label or "qube1"
-        self._show_label = bool(show_label or multi_device)
-        if self._show_label:
-            self._attr_name = f"{ent.name} ({self._label})"
-        else:
-            self._attr_name = ent.name
+        self._show_label = bool(show_label)
+        self._attr_name = ent.name
         if ent.unique_id:
             self._attr_unique_id = ent.unique_id
         else:
@@ -83,7 +80,7 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             self._attr_entity_registry_enabled_default = False
         if vendor_id:
             candidate = vendor_id
-            if self._show_label or multi_device:
+            if self._show_label:
                 candidate = f"{candidate}_{self._label}"
             self._attr_suggested_object_id = _slugify(candidate)
 
@@ -105,7 +102,7 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         desired = self._ent.vendor_id or self._attr_unique_id
-        if desired and (self._show_label) and not str(desired).endswith(self._label):
+        if desired and self._show_label and not str(desired).endswith(self._label):
             desired = f"{desired}_{self._label}"
         desired_slug = _slugify(str(desired)) if desired else None
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)

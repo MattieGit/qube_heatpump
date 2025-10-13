@@ -59,11 +59,8 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         super().__init__(coordinator)
         self._ent = ent
         self._hub = hub
-        self._show_label = bool(show_label or multi_device)
-        if self._show_label:
-            self._attr_name = f"{ent.name} ({self._hub.label})"
-        else:
-            self._attr_name = ent.name
+        self._show_label = bool(show_label)
+        self._attr_name = ent.name
         if ent.unique_id:
             self._attr_unique_id = ent.unique_id
         else:
@@ -72,7 +69,7 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
             self._attr_unique_id = f"{base_uid}_{self._hub.label}" if multi_device else base_uid
         if getattr(ent, "vendor_id", None):
             candidate = ent.vendor_id
-            if self._show_label or multi_device:
+            if self._show_label:
                 candidate = f"{candidate}_{self._hub.label}"
             self._attr_suggested_object_id = _slugify(candidate)
 
@@ -104,7 +101,7 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         desired = self._ent.vendor_id or self._attr_unique_id
-        if desired and (self._show_label) and not str(desired).endswith(self._hub.label):
+        if desired and self._show_label and not str(desired).endswith(self._hub.label):
             desired = f"{desired}_{self._hub.label}"
         desired_slug = _slugify(str(desired)) if desired else None
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)

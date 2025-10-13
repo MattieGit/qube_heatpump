@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.39 — 2025-10-13
+- fix: Keep friendly names free of hub labels while still letting the options toggle control label suffixes for entity IDs.
+- fix: Only append label suffixes to entity IDs when the “Add hub label” option is enabled.
+- test: Add coverage for naming rules across sensors, switches, and buttons.
+
 ## 2025.10.38 — 2025-10-13
 - fix: Clarify the options flow connection error message to guide IP troubleshooting.
 

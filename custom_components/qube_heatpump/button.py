@@ -24,7 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             coordinator,
             hub,
             entry.entry_id,
-            apply_label or multi_device,
+            apply_label,
             multi_device,
             version,
         ),
@@ -67,15 +67,17 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         label = hub.label or "qube1"
-        self._attr_name = f"Reload ({label})" if show_label else "Reload"
+        self._show_label = bool(show_label)
+        self._attr_name = "Reload"
         self._attr_unique_id = f"qube_reload_{label}" if self._multi_device else "qube_reload"
         self._attr_entity_category = EntityCategory.CONFIG
         # Suggest a stable object_id reflecting multi-device label when needed
         try:
             from .sensor import _slugify  # reuse helper
 
+            base_object = "qube_reload"
             self._attr_suggested_object_id = (
-                _slugify(f"qube_reload_{label}") if self._multi_device or show_label else "qube_reload"
+                _slugify(f"{base_object}_{label}") if self._show_label else base_object
             )
         except Exception:
             pass
@@ -96,7 +98,9 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         label = self._hub.label or "qube1"
-        desired_obj = _slugify_local(f"qube_reload_{label}" if self._multi_device else "qube_reload")
+        desired_obj = _slugify_local(
+            f"qube_reload_{label}" if self._show_label else "qube_reload"
+        )
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
 

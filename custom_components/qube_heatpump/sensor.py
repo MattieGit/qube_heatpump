@@ -166,10 +166,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         self._show_label = bool(show_label)
         self._multi_device = bool(multi_device)
         self._version = version
-        if self._show_label or self._multi_device:
-            self._attr_name = f"{ent.name} ({_format_label(self._label)})"
-        else:
-            self._attr_name = ent.name
+        self._attr_name = ent.name
         if ent.unique_id:
             self._attr_unique_id = ent.unique_id
         else:
@@ -191,7 +188,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         if vendor_id:
             vendor_slug = VENDOR_SLUG_OVERRIDES.get(ent.vendor_id, ent.vendor_id)
             desired = vendor_slug
-            if self._show_label or self._multi_device:
+            if self._show_label:
                 desired = f"{desired}_{self._label}"
             self._attr_suggested_object_id = _slugify(desired)
         self._attr_device_class = ent.device_class
@@ -224,7 +221,7 @@ class WPQubeSensor(CoordinatorEntity, SensorEntity):
         await super().async_added_to_hass()
         vendor_slug = VENDOR_SLUG_OVERRIDES.get(self._ent.vendor_id, self._ent.vendor_id)
         desired = vendor_slug or self._attr_unique_id
-        if desired and (self._show_label or self._multi_device) and not str(desired).endswith(self._label):
+        if desired and self._show_label and not str(desired).endswith(self._label):
             desired = f"{desired}_{self._label}"
         desired_slug = _slugify(str(desired)) if desired else None
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
@@ -244,16 +241,16 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._hub = hub
         self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label or multi_device)
+        self._show_label = bool(show_label)
         self._version = str(version) if version else "unknown"
         label = hub.label or "qube1"
-        disp = _format_label(label) if self._show_label else None
-        self._attr_name = f"Qube info ({disp})" if disp else "Qube info"
+        self._attr_name = "Qube info"
         self._attr_unique_id = (
             f"qube_info_sensor_{label}" if self._multi_device else "qube_info_sensor"
         )
         self._state = "ok"
-        if self._show_label or self._multi_device:
+        self._attr_suggested_object_id = "qube_info"
+        if self._show_label:
             self._attr_suggested_object_id = _slugify(f"qube_info_{label}")
 
     @property
@@ -292,8 +289,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         await self._async_refresh_integration_version()
-        desired_obj = "qube_info"
-        if self._show_label or self._multi_device:
+        desired_obj = self._attr_suggested_object_id or "qube_info"
+        if self._show_label:
             desired_obj = _slugify(f"qube_info_{self._hub.label}")
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
@@ -333,14 +330,14 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         self._hub = hub
         self._version = str(version) if version else "unknown"
         self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label or multi_device)
+        self._show_label = bool(show_label)
         label = hub.label or "qube1"
-        disp = _format_label(label) if self._show_label else None
         base_name = "Qube IP address"
-        self._attr_name = f"{base_name} ({disp})" if disp else base_name
+        self._attr_name = base_name
         base_uid = "qube_ip_address"
         self._attr_unique_id = f"{base_uid}_{label}" if self._multi_device else base_uid
-        if self._show_label or self._multi_device:
+        self._attr_suggested_object_id = base_uid
+        if self._show_label:
             self._attr_suggested_object_id = _slugify(f"{base_uid}_{label}")
         if hasattr(SensorDeviceClass, "IP"):
             try:
@@ -365,9 +362,9 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        desired_obj = "qube_ip_address"
-        if self._show_label or self._multi_device:
-            desired_obj = _slugify(f"{desired_obj}_{self._hub.label}")
+        desired_obj = self._attr_suggested_object_id or "qube_ip_address"
+        if self._show_label:
+            desired_obj = _slugify(f"qube_ip_address_{self._hub.label}")
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
 
@@ -388,7 +385,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._hub = hub
         self._kind = kind
         self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label or multi_device)
+        self._show_label = bool(show_label)
         self._version = version
         label = hub.label or "qube1"
         name = {
@@ -398,11 +395,11 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             "count_binary_sensors": "Qube binary sensor count",
             "count_switches": "Qube switch count",
         }.get(kind, kind)
-        disp = _format_label(label) if self._show_label else None
-        self._attr_name = f"{name} ({disp})" if disp else name
+        self._attr_name = name
         base_uid = f"qube_metric_{kind}"
         self._attr_unique_id = f"{base_uid}_{label}" if self._multi_device else base_uid
-        if self._show_label or self._multi_device:
+        self._attr_suggested_object_id = _slugify(base_uid)
+        if self._show_label:
             self._attr_suggested_object_id = _slugify(f"{base_uid}_{label}")
         # These are plain numeric counters; mark as measurement for charts.
         try:
@@ -439,8 +436,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        suffix = f"_{self._hub.label}" if (self._show_label or self._multi_device) else ""
-        desired_obj = _slugify(f"qube_metric_{self._kind}{suffix}")
+        desired_obj = self._attr_suggested_object_id or _slugify(f"qube_metric_{self._kind}")
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
 
 
@@ -451,16 +447,6 @@ def _entity_key(ent: EntityDef) -> str:
 def _slugify(text: str) -> str:
     # Minimal slugify to align with HA object_id expectations
     return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
-
-
-def _format_label(label: str) -> str:
-    """Insert a space before trailing digits in label (e.g., qube1 -> qube 1)."""
-    try:
-        import re
-
-        return re.sub(r"^(.*?)(\d+)$", r"\1 \2", str(label))
-    except Exception:
-        return label
 
 
 def _find_status_source(hub: WPQubeHub) -> EntityDef | None:
@@ -508,16 +494,16 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._source = source
         self._version = version
         self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label or multi_device)
+        self._show_label = bool(show_label)
         self._label = hub.label or "qube1"
         self._object_base = _slugify(name)
-        disp = _format_label(self._label) if self._show_label else None
-        self._attr_name = f"{name} ({disp})" if disp else name
+        self._attr_name = name
         base_unique = f"wp_qube_{unique_suffix}"
         self._attr_unique_id = (
             f"{base_unique}_{self._label}" if self._multi_device else base_unique
         )
-        if self._show_label or self._multi_device:
+        self._attr_suggested_object_id = self._object_base
+        if self._show_label:
             self._attr_suggested_object_id = f"{self._object_base}_{self._label}"
 
     @property
@@ -561,5 +547,6 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        desired = self._attr_unique_id or self._object_base
+        suffix = f"_{self._label}" if self._show_label else ""
+        desired = f"{self._object_base}{suffix}"
         await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)))
