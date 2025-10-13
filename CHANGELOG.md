@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.33 — 2025-10-13
+- feat: Expose the resolved heat pump IP address in the diagnostics sensor to help verify hostname resolution.
+- chore: Set `asyncio_default_fixture_loop_scope` for pytest to avoid deprecation warnings during tests.
+
 ## 2025.10.32 — 2025-10-10
 - fix: Stop marking enum-based status sensors as measurement state class to satisfy Home Assistant validation.
 - fix: Read the integration manifest version via Home Assistant integration APIs to avoid blocking file I/O during setup.

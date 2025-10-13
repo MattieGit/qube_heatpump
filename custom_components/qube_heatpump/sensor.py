@@ -278,6 +278,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             "version": self._version,
             "label": hub.label,
             "host": hub.host,
+            "ip_address": hub.resolved_ip,
             "unit_id": hub.unit,
             "errors_connect": hub.err_connect,
             "errors_read": hub.err_read,

@@ -6,6 +6,8 @@ import struct
 import logging
 import inspect
 import asyncio
+import socket
+import ipaddress
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.exceptions import ModbusException
@@ -49,6 +51,7 @@ class WPQubeHub:
         # Error counters
         self._err_connect: int = 0
         self._err_read: int = 0
+        self._resolved_ip: str | None = None
 
     @property
     def host(self) -> str:
@@ -61,6 +64,41 @@ class WPQubeHub:
     @property
     def label(self) -> str:
         return self._label
+
+    @property
+    def resolved_ip(self) -> str | None:
+        return self._resolved_ip
+
+    async def async_resolve_ip(self) -> None:
+        """Resolve the host to a concrete IP address for diagnostics."""
+        try:
+            self._resolved_ip = str(ipaddress.ip_address(self._host))
+            return
+        except Exception:
+            pass
+
+        try:
+            infos = await asyncio.get_running_loop().getaddrinfo(
+                self._host,
+                None,
+                type=socket.SOCK_STREAM,
+            )
+        except Exception:
+            self._resolved_ip = None
+            return
+
+        for family, _, _, _, sockaddr in infos:
+            if not sockaddr:
+                continue
+            addr = sockaddr[0]
+            if not isinstance(addr, str):
+                continue
+            if family == socket.AF_INET6 and addr.startswith("::ffff:"):
+                addr = addr.removeprefix("::ffff:")
+            self._resolved_ip = addr
+            return
+
+        self._resolved_ip = None
 
     async def async_connect(self) -> None:
         now = asyncio.get_running_loop().time()

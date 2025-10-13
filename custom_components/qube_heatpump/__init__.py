@@ -73,6 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, options=new_options)
 
     hub = WPQubeHub(hass, host, port, unit_id, label)
+    await hub.async_resolve_ip()
 
     def _compute_display_name(
         platform: str,
