@@ -1,10 +1,12 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Device is already configured."
+      "already_configured": "Device is already configured.",
+      "duplicate_ip": "Another Qube heat pump is already configured with this IP address. Configure each hub with a unique IP."
     },
     "error": {
-      "cannot_connect": "Failed to connect. Check host and port."
+      "cannot_connect": "Failed to connect. Check host and port.",
+      "duplicate_ip": "A Qube heat pump using this IP address already exists. Choose a different host."
     },
     "step": {
       "user": {

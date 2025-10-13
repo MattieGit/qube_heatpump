@@ -48,7 +48,11 @@ class _DummyAsyncModbusTcpClient:
 def patch_pymodbus(monkeypatch: pytest.MonkeyPatch) -> None:
     """Provide a lightweight pymodbus stub so imports succeed in tests."""
 
-    client = SimpleNamespace(AsyncModbusTcpClient=_DummyAsyncModbusTcpClient)
+    client = SimpleNamespace(
+        AsyncModbusTcpClient=_DummyAsyncModbusTcpClient,
+        AsyncModbusSerialClient=_DummyAsyncModbusTcpClient,
+        AsyncModbusUdpClient=_DummyAsyncModbusTcpClient,
+    )
     exceptions = SimpleNamespace(ModbusException=_DummyModbusException)
     module = SimpleNamespace(client=client, exceptions=exceptions)
 

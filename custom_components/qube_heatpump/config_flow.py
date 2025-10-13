@@ -4,6 +4,8 @@ from typing import Any
 import asyncio
 import contextlib
 import logging
+import socket
+import ipaddress
 
 import voluptuous as vol
 
@@ -32,6 +34,58 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlow:
         return OptionsFlowHandler(config_entry)
 
+    async def _async_resolve_host(self, host: str) -> str | None:
+        """Resolve a host or IP string to a canonical IP address."""
+        if not host:
+            return None
+        try:
+            return str(ipaddress.ip_address(host))
+        except Exception:
+            pass
+
+        try:
+            infos = await asyncio.get_running_loop().getaddrinfo(
+                host,
+                None,
+                type=socket.SOCK_STREAM,
+            )
+        except Exception:
+            return None
+
+        for family, _, _, _, sockaddr in infos:
+            if not sockaddr:
+                continue
+            addr = sockaddr[0]
+            if not isinstance(addr, str):
+                continue
+            if family == socket.AF_INET6 and addr.startswith("::ffff:"):
+                addr = addr.removeprefix("::ffff:")
+            return addr
+        return None
+
+    async def _async_has_conflicting_host(self, host: str, skip_entry_id: str | None = None) -> bool:
+        """Check if host resolves to an IP already used by another entry."""
+        candidate_ip = await self._async_resolve_host(host)
+        for entry in self._async_current_entries():
+            if skip_entry_id and entry.entry_id == skip_entry_id:
+                continue
+            existing_host = entry.data.get(CONF_HOST)
+            if not existing_host:
+                continue
+            if existing_host == host:
+                _LOGGER.debug("Host %s already configured; blocking duplicate", host)
+                return True
+            existing_ip = await self._async_resolve_host(existing_host)
+            if candidate_ip and existing_ip and existing_ip == candidate_ip:
+                _LOGGER.debug(
+                    "Host %s resolves to %s already used by entry %s; blocking duplicate",
+                    host,
+                    candidate_ip,
+                    entry.entry_id,
+                )
+                return True
+        return False
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
         errors: dict[str, str] = {}
 
@@ -50,12 +104,15 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except Exception:
                 errors["base"] = "cannot_connect"
             else:
-                await self.async_set_unique_id(f"{DOMAIN}-{host}-{port}")
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(
-                    title=f"WP Qube ({host})",
-                    data={CONF_HOST: host, CONF_PORT: port},
-                )
+                if await self._async_has_conflicting_host(host):
+                    errors["host"] = "duplicate_ip"
+                else:
+                    await self.async_set_unique_id(f"{DOMAIN}-{host}-{port}")
+                    self._abort_if_unique_id_configured()
+                    return self.async_create_entry(
+                        title=f"WP Qube ({host})",
+                        data={CONF_HOST: host, CONF_PORT: port},
+                    )
 
         schema = vol.Schema({vol.Required(CONF_HOST, default="qube.local"): str})
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
@@ -95,6 +152,9 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 continue
             if entry.unique_id == new_unique_id:
                 return self.async_abort(reason="already_configured")
+
+        if await self._async_has_conflicting_host(new_host, skip_entry_id=self._reconfig_entry.entry_id):
+            return self.async_abort(reason="duplicate_ip")
 
         new = dict(self._reconfig_entry.data)
         new[CONF_HOST] = new_host

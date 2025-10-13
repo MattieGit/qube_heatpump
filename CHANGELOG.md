@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.35 — 2025-10-13
+- fix: Prevent adding duplicate hubs when the host resolves to an IP address already in use.
+- fix: Surface a clear error during config and reconfigure flows when a duplicate IP is detected.
+- test: Add config flow coverage for duplicate host/IP validation.
+
 ## 2025.10.34 — 2025-10-13
 - feat: Add a diagnostic “Qube IP address” sensor so the resolved Modbus host address is visible on the device page.
 - fix: Refresh hostname resolution on each coordinator update to keep the IP sensor current.
