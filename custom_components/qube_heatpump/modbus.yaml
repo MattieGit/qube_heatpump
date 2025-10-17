@@ -653,7 +653,7 @@
     state_class: measurement
     unique_id: PlantSetP
 
-  - name: "Totaal Elektrisch verbruik in kWh"
+  - name: "Totaal Elektrisch verbruik"
     address: 69
     input_type: input
     data_type: float32
@@ -664,7 +664,7 @@
     state_class: total_increasing
     unique_id: GeneralMng_AcumulatedPwr
 
-  - name: "Totaal Thermische opbrengst in kWh"
+  - name: "Totaal Thermische opbrengst"
     address: 71
     input_type: input
     data_type: float32
