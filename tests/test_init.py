@@ -50,6 +50,37 @@ async def test_async_setup_entry_registers_integration(hass: HomeAssistant, monk
 
 
 @pytest.mark.asyncio
+async def test_async_setup_entry_includes_room_temp_sensor(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ensure the LINQ room temperature sensor definition is registered."""
+
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "203.0.113.10"})
+    entry.add_to_hass(hass)
+
+    forward_mock = AsyncMock(return_value=None)
+    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
+
+    first_refresh_mock = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
+        first_refresh_mock,
+    )
+
+    monkeypatch.setattr(
+        "homeassistant.setup.async_setup_component",
+        AsyncMock(return_value=True),
+    )
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    hub = hass.data[DOMAIN][entry.entry_id]["hub"]
+    sensor_unique_ids = {ent.unique_id for ent in hub.entities if ent.platform == "sensor"}
+    assert "modbus_roomtemp" in sensor_unique_ids
+
+
+@pytest.mark.asyncio
 async def test_async_unload_entry_cleans_up(hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure unload removes stored data and closes the hub."""
 

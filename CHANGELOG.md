@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.40 — 2025-10-13
+- feat: Expose the LINQ room temperature sensor (register 75) from the Modbus map.
+- test: Ensure setup registers the new room temperature sensor definition.
+
 ## 2025.10.39 — 2025-10-13
 - fix: Keep friendly names free of hub labels while still letting the options toggle control label suffixes for entity IDs.
 - fix: Only append label suffixes to entity IDs when the “Add hub label” option is enabled.

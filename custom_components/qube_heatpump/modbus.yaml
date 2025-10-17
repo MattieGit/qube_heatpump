@@ -675,6 +675,17 @@
     state_class: total_increasing
     unique_id: GeneralMng_AcumulatedThermic
 
+  - name: "Linq ruimtetemperatuur"
+    address: 75
+    input_type: input
+    data_type: float32
+    scan_interval: 10
+    precision: 0
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: Modbus_RoomTemp
+
   switches:
 
   - name: "Activeer warmtevraag"
