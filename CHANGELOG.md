@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.42 — 2025-10-13
+- fix: Increase precision for plant setpoint and total energy Modbus sensors for finer readings.
+
 ## 2025.10.41 — 2025-10-13
 - fix: Shorten total energy sensor names to remove redundant \"in kWh\" suffix.
 
