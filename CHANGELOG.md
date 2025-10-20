@@ -2,13 +2,18 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.45 — 2025-10-20
+- fix: Keep the “Add hub label to entity IDs” option in sync with automatic label suffixing in multi-device setups.
+- chore: Nudge the options helper copy onto its own line for clearer checkbox alignment.
+- test: Extend multi-hub coverage to assert option state updates.
+
+## 2025.10.44 — 2025-10-20
+- chore: Reformat the options dialog description to separate guidance from the current IP for readability.
+
 ## 2025.10.43 — 2025-10-13
 - fix: Ensure all hubs gain label-suffixed entity IDs automatically once multiple devices are configured.
 - fix: Simplify the options dialog by dropping the unused unit ID field and clarifying that the hub label toggle targets entity IDs.
 - test: Cover multi-hub label enforcement and the streamlined options flow.
-
-## 2025.10.44 — 2025-10-20
-- chore: Reformat the options dialog description to separate guidance from the current IP for readability.
 
 ## 2025.10.42 — 2025-10-13
 - fix: Increase precision for plant setpoint and total energy Modbus sensors for finer readings.

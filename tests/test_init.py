@@ -10,7 +10,12 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump import async_unload_entry
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN, PLATFORMS
+from custom_components.qube_heatpump.const import (
+    CONF_HOST,
+    CONF_SHOW_LABEL_IN_NAME,
+    DOMAIN,
+    PLATFORMS,
+)
 
 
 @pytest.mark.asyncio
@@ -121,6 +126,8 @@ async def test_multi_device_enforces_label_suffix(
 
     stored_first = hass.data[DOMAIN][entry_one.entry_id]
     assert stored_first["apply_label_in_name"] is True
+    assert entry_one.options[CONF_SHOW_LABEL_IN_NAME] is True
+    assert entry_two.options[CONF_SHOW_LABEL_IN_NAME] is True
 
 
 @pytest.mark.asyncio

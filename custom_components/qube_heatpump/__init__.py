@@ -208,6 +208,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         version = str(integration.version)
 
     show_label_option = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
+    if multi_device and not show_label_option:
+        updated_options = dict(entry.options)
+        updated_options[CONF_SHOW_LABEL_IN_NAME] = True
+        hass.config_entries.async_update_entry(entry, options=updated_options)
+        show_label_option = True
+
+    if multi_device:
+        for other_entry in existing_entries:
+            if not bool(other_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)):
+                other_updated = dict(other_entry.options)
+                other_updated[CONF_SHOW_LABEL_IN_NAME] = True
+                hass.config_entries.async_update_entry(other_entry, options=other_updated)
+
     apply_label_in_name = show_label_option or multi_device
 
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
