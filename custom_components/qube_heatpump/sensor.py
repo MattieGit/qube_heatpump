@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import RestoreSensor, SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_loaded_integration, async_get_integration
+from homeassistant.util import dt as dt_util
+try:
+    from homeassistant.components.sensor import SensorStateClass
+except Exception:  # pragma: no cover - fallback for older HA cores
+    SensorStateClass = None  # type: ignore[assignment]
 
 from .const import DOMAIN
 from .hub import EntityDef, WPQubeHub
@@ -120,6 +126,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 version=version,
             )
         )
+
+    standby_power = QubeStandbyPowerSensor(coordinator, hub, apply_label, multi_device, version)
+    standby_energy = QubeStandbyEnergySensor(coordinator, hub, apply_label, multi_device, version)
+    total_energy = QubeTotalEnergyIncludingStandbySensor(
+        coordinator,
+        hub,
+        apply_label,
+        multi_device,
+        version,
+        base_unique_id=_energy_unique_id(hub.label, multi_device),
+        standby_sensor=standby_energy,
+    )
+
+    entities.extend([standby_power, standby_energy, total_energy])
 
     async_add_entities(entities)
 
@@ -470,6 +490,222 @@ def _find_binary_by_address(hub: WPQubeHub, address: int) -> EntityDef | None:
         if ent.platform == "binary_sensor" and int(ent.address) == int(address):
             return ent
     return None
+
+
+STANDBY_POWER_WATTS = 17.0
+STANDBY_POWER_UNIQUE_BASE = "qube_standby_power"
+STANDBY_ENERGY_UNIQUE_BASE = "qube_standby_energy"
+TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
+
+
+def _append_label(base: str, label: str | None, multi_device: bool) -> str:
+    if multi_device and label:
+        return f"{base}_{label}"
+    return base
+
+
+def _energy_unique_id(label: str | None, multi_device: bool) -> str:
+    base = "generalmng_acumulatedpwr"
+    return _append_label(base, label, multi_device)
+
+
+class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._label = hub.label or "qube1"
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label)
+        self._version = version
+        self._attr_name = "Qube standby power"
+        unique = _append_label(STANDBY_POWER_UNIQUE_BASE, hub.label, multi_device)
+        self._attr_unique_id = unique
+        suggested = STANDBY_POWER_UNIQUE_BASE
+        if self._show_label:
+            suggested = f"{suggested}_{self._label}"
+        self._attr_suggested_object_id = suggested
+        try:
+            self._attr_device_class = SensorDeviceClass.POWER
+        except Exception:
+            self._attr_device_class = None
+        if SensorStateClass:
+            try:
+                self._attr_state_class = SensorStateClass.MEASUREMENT
+            except Exception:
+                pass
+        self._attr_native_unit_of_measurement = "W"
+        self._attr_native_value = STANDBY_POWER_WATTS
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.label or "Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+
+class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._label = hub.label or "qube1"
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label)
+        self._version = version
+        self._energy_kwh: float = 0.0
+        self._last_update: datetime | None = None
+        self._attr_name = "Qube standby energy"
+        unique = _append_label(STANDBY_ENERGY_UNIQUE_BASE, hub.label, multi_device)
+        self._attr_unique_id = unique
+        suggested = STANDBY_ENERGY_UNIQUE_BASE
+        if self._show_label:
+            suggested = f"{suggested}_{self._label}"
+        self._attr_suggested_object_id = suggested
+        try:
+            self._attr_device_class = SensorDeviceClass.ENERGY
+        except Exception:
+            self._attr_device_class = None
+        if SensorStateClass:
+            try:
+                self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+            except Exception:
+                pass
+        self._attr_native_unit_of_measurement = "kWh"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state and last_state.state not in (None, "", "unknown", "unavailable"):
+            try:
+                self._energy_kwh = float(last_state.state)
+            except (TypeError, ValueError):
+                self._energy_kwh = 0.0
+            self._last_update = last_state.last_changed
+        if self._last_update is None:
+            self._last_update = dt_util.utcnow()
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.label or "Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+    @property
+    def native_value(self) -> float:
+        return round(self._energy_kwh, 3)
+
+    def _integrate(self) -> None:
+        now = dt_util.utcnow()
+        if self._last_update is None:
+            self._last_update = now
+            return
+        elapsed = (now - self._last_update).total_seconds()
+        if elapsed <= 0:
+            return
+        self._last_update = now
+        delta_kwh = (STANDBY_POWER_WATTS / 1000.0) * (elapsed / 3600.0)
+        self._energy_kwh += delta_kwh
+
+    def _handle_coordinator_update(self) -> None:
+        self._integrate()
+        super()._handle_coordinator_update()
+
+    def current_energy(self) -> float:
+        self._integrate()
+        return self._energy_kwh
+
+
+class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+        base_unique_id: str,
+        standby_sensor: QubeStandbyEnergySensor,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._label = hub.label or "qube1"
+        self._multi_device = bool(multi_device)
+        self._show_label = bool(show_label)
+        self._version = version
+        self._base_unique_id = base_unique_id
+        self._standby_sensor = standby_sensor
+        self._total_energy: float | None = None
+        self._attr_name = "Qube total energy (incl. standby)"
+        unique = _append_label(TOTAL_ENERGY_UNIQUE_BASE, hub.label, multi_device)
+        self._attr_unique_id = unique
+        suggested = TOTAL_ENERGY_UNIQUE_BASE
+        if self._show_label:
+            suggested = f"{suggested}_{self._label}"
+        self._attr_suggested_object_id = suggested
+        try:
+            self._attr_device_class = SensorDeviceClass.ENERGY
+        except Exception:
+            self._attr_device_class = None
+        if SensorStateClass:
+            try:
+                self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+            except Exception:
+                pass
+        self._attr_native_unit_of_measurement = "kWh"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.label or "Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        return None if self._total_energy is None else round(self._total_energy, 3)
+
+    def _handle_coordinator_update(self) -> None:
+        base_value = self.coordinator.data.get(self._base_unique_id)
+        standby = self._standby_sensor.current_energy()
+        try:
+            base_float = float(base_value) if base_value is not None else None
+        except (TypeError, ValueError):
+            base_float = None
+        if base_float is None:
+            self._total_energy = None
+        else:
+            self._total_energy = base_float + standby
+        super()._handle_coordinator_update()
 
 
 class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):

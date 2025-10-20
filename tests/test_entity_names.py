@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from types import SimpleNamespace
+import math
 import sys
 
 
@@ -31,10 +33,16 @@ sys.modules.setdefault("pymodbus.client", _client_stub)
 sys.modules.setdefault("pymodbus.exceptions", _exceptions_stub)
 
 import pytest
+from homeassistant.util import dt as dt_util
+
 from custom_components.qube_heatpump.sensor import (
     QubeInfoSensor,
     QubeIPAddressSensor,
     QubeMetricSensor,
+    QubeStandbyEnergySensor,
+    QubeStandbyPowerSensor,
+    QubeTotalEnergyIncludingStandbySensor,
+    STANDBY_POWER_WATTS,
     WPQubeComputedSensor,
     WPQubeSensor,
 )
@@ -46,6 +54,7 @@ from custom_components.qube_heatpump.switch import WPQubeSwitch
 class _DummyCoordinator:
     def __init__(self) -> None:
         self.data: dict[str, object] = {}
+        self.last_update_success = True
 
     def async_add_listener(self, *_args, **_kwargs):  # pragma: no cover - stubbed
         return lambda: None
@@ -198,6 +207,120 @@ def test_qube_reload_button_name_no_label(show_label: bool) -> None:
     assert button.name == "Reload"
     expected_object = f"qube_reload_qube1" if show_label else "qube_reload"
     assert getattr(button, "_attr_suggested_object_id", None) == expected_object
+
+
+@pytest.mark.parametrize("show_label", [False, True])
+def test_qube_standby_power_object_id(show_label: bool) -> None:
+    sensor = QubeStandbyPowerSensor(
+        _DummyCoordinator(),
+        _DummyHub(),
+        show_label=show_label,
+        multi_device=True,
+        version="1.0",
+    )
+
+    expected = "qube_standby_power_qube1" if show_label else "qube_standby_power"
+    assert getattr(sensor, "_attr_suggested_object_id", None) == expected
+
+
+@pytest.mark.parametrize("show_label", [False, True])
+def test_qube_standby_energy_object_id(show_label: bool) -> None:
+    sensor = QubeStandbyEnergySensor(
+        _DummyCoordinator(),
+        _DummyHub(),
+        show_label=show_label,
+        multi_device=True,
+        version="1.0",
+    )
+
+    expected = "qube_standby_energy_qube1" if show_label else "qube_standby_energy"
+    assert getattr(sensor, "_attr_suggested_object_id", None) == expected
+
+
+@pytest.mark.parametrize("show_label", [False, True])
+def test_qube_total_energy_object_id(show_label: bool) -> None:
+    coordinator = _DummyCoordinator()
+    standby = QubeStandbyEnergySensor(
+        coordinator,
+        _DummyHub(),
+        show_label=show_label,
+        multi_device=True,
+        version="1.0",
+    )
+
+    combined = QubeTotalEnergyIncludingStandbySensor(
+        coordinator,
+        _DummyHub(),
+        show_label=show_label,
+        multi_device=True,
+        version="1.0",
+        base_unique_id="generalmng_acumulatedpwr_qube1",
+        standby_sensor=standby,
+    )
+
+    expected = "qube_total_energy_with_standby_qube1" if show_label else "qube_total_energy_with_standby"
+    assert getattr(combined, "_attr_suggested_object_id", None) == expected
+
+
+@pytest.mark.asyncio
+async def test_standby_energy_integration(monkeypatch: pytest.MonkeyPatch, hass) -> None:
+    coordinator = _DummyCoordinator()
+    hub = _DummyHub()
+
+    now = datetime(2025, 1, 1, tzinfo=dt_util.UTC)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: now)
+
+    sensor = QubeStandbyEnergySensor(coordinator, hub, show_label=False, multi_device=False, version="1.0")
+    sensor.hass = hass
+    sensor.entity_id = "sensor.qube_standby_energy"
+    await sensor.async_added_to_hass()
+
+    later = now + timedelta(hours=1)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: later)
+
+    sensor._handle_coordinator_update()
+
+    assert math.isclose(sensor.native_value, 0.017, rel_tol=1e-3)
+
+
+@pytest.mark.asyncio
+async def test_total_energy_combines_base(monkeypatch: pytest.MonkeyPatch, hass) -> None:
+    coordinator = _DummyCoordinator()
+    hub = _DummyHub()
+
+    base_key = "generalmng_acumulatedpwr"
+
+    now = datetime(2025, 1, 1, tzinfo=dt_util.UTC)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: now)
+
+    standby = QubeStandbyEnergySensor(coordinator, hub, show_label=False, multi_device=False, version="1.0")
+    standby.hass = hass
+    standby.entity_id = "sensor.qube_standby_energy"
+    await standby.async_added_to_hass()
+
+    total = QubeTotalEnergyIncludingStandbySensor(
+        coordinator,
+        hub,
+        show_label=False,
+        multi_device=False,
+        version="1.0",
+        base_unique_id=base_key,
+        standby_sensor=standby,
+    )
+    total.hass = hass
+    total.entity_id = "sensor.qube_total_energy_with_standby"
+    await total.async_added_to_hass()
+
+    later = now + timedelta(hours=2)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: later)
+
+    coordinator.data[base_key] = 12.5
+
+    standby._handle_coordinator_update()
+    total._handle_coordinator_update()
+
+    expected = 12.5 + (STANDBY_POWER_WATTS / 1000.0) * 2
+    assert math.isclose(total.native_value or 0.0, expected, rel_tol=1e-3)
 
 
 @pytest.mark.parametrize("show_label", [False, True])
