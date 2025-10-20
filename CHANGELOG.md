@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.47 — 2025-10-20
+- fix: Keep the hub-label helper guidance visible by folding it into the dialog description while preserving checkbox alignment.
+- test: Confirm the streamlined options flow passes without helper selector rows.
+
 ## 2025.10.46 — 2025-10-20
 - fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
 - test: Keep options flow coverage passing with the new selector field.

@@ -14,7 +14,6 @@ from homeassistant.config_entries import SOURCE_RECONFIGURE
 from homeassistant.config_entries import OptionsFlow
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import selector
 
 from .const import (
     DOMAIN,
@@ -25,10 +24,6 @@ from .const import (
     CONF_LABEL,
     CONF_SHOW_LABEL_IN_NAME,
 )
-
-_HELPER_FIELD = "show_label_in_name_helper"
-_HELPER_VALUE = "show_label_in_name_helper"
-
 
 async def _async_resolve_host(host: str) -> str | None:
     """Resolve a host or IP string to a canonical IP address."""
@@ -225,18 +220,10 @@ class OptionsFlowHandler(OptionsFlow):
         if not resolved_ip:
             resolved_ip = await _async_resolve_host(current_host)
 
-        helper_selector = selector.ConstantSelector(
-            selector.ConstantSelectorConfig(
-                value=_HELPER_VALUE,
-                translation_key="show_label_in_name_helper",
-            )
-        )
-
         if user_input is not None:
             user_input = dict(user_input)
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
             show_label = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
-            user_input.pop(_HELPER_FIELD, None)
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -287,7 +274,6 @@ class OptionsFlowHandler(OptionsFlow):
             {
                 vol.Required(CONF_HOST, default=current_host): str,
                 vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current_label_option): bool,
-                vol.Optional(_HELPER_FIELD, default=_HELPER_VALUE): helper_selector,
             }
         )
 
