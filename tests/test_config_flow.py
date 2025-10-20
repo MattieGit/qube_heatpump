@@ -183,7 +183,7 @@ async def test_options_updates_host_when_connection_succeeds(
 
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
-        {CONF_HOST: "qube.new", CONF_UNIT_ID: "1", CONF_SHOW_LABEL_IN_NAME: False},
+        {CONF_HOST: "qube.new", CONF_SHOW_LABEL_IN_NAME: False},
     )
     assert result["type"] == "create_entry"
     assert entry.data[CONF_HOST] == "qube.new"
@@ -192,6 +192,7 @@ async def test_options_updates_host_when_connection_succeeds(
     assert (
         device_registry.async_get_device({(DOMAIN, "qube.local:1")}) is None
     )
+    assert CONF_UNIT_ID not in entry.options
 
 
 @pytest.mark.asyncio
@@ -236,7 +237,7 @@ async def test_options_rejects_duplicate_host(
 
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
-        {CONF_HOST: "duplicate.local", CONF_UNIT_ID: "1", CONF_SHOW_LABEL_IN_NAME: False},
+        {CONF_HOST: "duplicate.local", CONF_SHOW_LABEL_IN_NAME: False},
     )
     assert result["type"] == "form"
     assert result["errors"][CONF_HOST] == "duplicate_ip"
@@ -276,7 +277,7 @@ async def test_options_rejects_connection_failure(
 
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
-        {CONF_HOST: "bad.host", CONF_UNIT_ID: "1", CONF_SHOW_LABEL_IN_NAME: False},
+        {CONF_HOST: "bad.host", CONF_SHOW_LABEL_IN_NAME: False},
     )
     assert result["type"] == "form"
     assert result["errors"][CONF_HOST] == "cannot_connect"

@@ -208,7 +208,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         version = str(integration.version)
 
     show_label_option = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
-    apply_label_in_name = show_label_option
+    apply_label_in_name = show_label_option or multi_device
 
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         if updated_entry.entry_id != entry.entry_id:

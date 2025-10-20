@@ -81,6 +81,49 @@ async def test_async_setup_entry_includes_room_temp_sensor(
 
 
 @pytest.mark.asyncio
+async def test_multi_device_enforces_label_suffix(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ensure applying the second hub forces label suffixing for both entries."""
+
+    entry_one = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "192.0.2.10"})
+    entry_two = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "192.0.2.11"})
+    forward_mock = AsyncMock(return_value=None)
+    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
+
+    first_refresh_mock = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
+        first_refresh_mock,
+    )
+
+    unload_mock = AsyncMock(return_value=True)
+    monkeypatch.setattr(hass.config_entries, "async_unload_platforms", unload_mock)
+
+    monkeypatch.setattr(
+        "homeassistant.setup.async_setup_component",
+        AsyncMock(return_value=True),
+    )
+
+    entry_one.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry_one.entry_id)
+    await hass.async_block_till_done()
+
+    stored_first = hass.data[DOMAIN][entry_one.entry_id]
+    assert stored_first["apply_label_in_name"] is False
+
+    entry_two.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry_two.entry_id)
+    await hass.async_block_till_done()
+
+    stored_second = hass.data[DOMAIN][entry_two.entry_id]
+    assert stored_second["apply_label_in_name"] is True
+
+    stored_first = hass.data[DOMAIN][entry_one.entry_id]
+    assert stored_first["apply_label_in_name"] is True
+
+
+@pytest.mark.asyncio
 async def test_async_unload_entry_cleans_up(hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure unload removes stored data and closes the hub."""
 

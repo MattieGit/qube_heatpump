@@ -223,9 +223,7 @@ class OptionsFlowHandler(OptionsFlow):
 
         if user_input is not None:
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
-            unit_raw = user_input.get(CONF_UNIT_ID)
             show_label = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
-            unit_int = current_unit
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -247,15 +245,9 @@ class OptionsFlowHandler(OptionsFlow):
                 except Exception:
                     errors[CONF_HOST] = "cannot_connect"
 
-            try:
-                unit_int = int(str(unit_raw).strip())
-                if unit_int < 1 or unit_int > 247:
-                    raise ValueError
-            except (ValueError, TypeError):
-                errors[CONF_UNIT_ID] = "invalid_unit_id"
             if not errors:
                 opts = dict(self._entry.options)
-                opts[CONF_UNIT_ID] = unit_int
+                opts.pop(CONF_UNIT_ID, None)
                 opts[CONF_SHOW_LABEL_IN_NAME] = show_label
 
                 update_kwargs: dict[str, Any] = {"options": opts}
@@ -281,10 +273,6 @@ class OptionsFlowHandler(OptionsFlow):
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=current_host): str,
-                vol.Required(
-                    CONF_UNIT_ID,
-                    default=str(current_unit),
-                ): str,
                 vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current_label_option): bool,
             }
         )

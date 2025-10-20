@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.43 — 2025-10-13
+- fix: Ensure all hubs gain label-suffixed entity IDs automatically once multiple devices are configured.
+- fix: Simplify the options dialog by dropping the unused unit ID field and clarifying that the hub label toggle targets entity IDs.
+- test: Cover multi-hub label enforcement and the streamlined options flow.
+
 ## 2025.10.42 — 2025-10-13
 - fix: Increase precision for plant setpoint and total energy Modbus sensors for finer readings.
 

@@ -39,14 +39,14 @@ async def test_options_flow_updates_options(hass):
     result = await hass.config_entries.options.async_configure(
         init_result["flow_id"],
         user_input={
-            CONF_UNIT_ID: "3",
+            CONF_HOST: entry.data[CONF_HOST],
             CONF_SHOW_LABEL_IN_NAME: True,
         },
     )
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options[CONF_UNIT_ID] == 3
     assert entry.options[CONF_SHOW_LABEL_IN_NAME] is True
+    assert CONF_UNIT_ID not in entry.options
 
     await hass.async_block_till_done()
 
