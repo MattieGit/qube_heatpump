@@ -33,9 +33,14 @@
           "show_label_in_name": "Add hub label to entity IDs"
         },
         "data_description": {
-          "show_label_in_name": "\nEnable \"Add hub label\" to append the hub label such as \"qube1\" to entity IDs so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs."
+          "show_label_in_name": ""
         }
       }
+    }
+  },
+  "selector": {
+    "constant": {
+      "show_label_in_name_helper": "Enable \"Add hub label\" to append the hub label such as \"qube1\" to entity IDs so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs."
     }
   }
 }

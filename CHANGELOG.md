@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.46 — 2025-10-20
+- fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
+- test: Keep options flow coverage passing with the new selector field.
+
 ## 2025.10.45 — 2025-10-20
 - fix: Keep the “Add hub label to entity IDs” option in sync with automatic label suffixing in multi-device setups.
 - chore: Nudge the options helper copy onto its own line for clearer checkbox alignment.
