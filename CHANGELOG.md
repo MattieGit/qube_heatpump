@@ -6,6 +6,10 @@ All notable changes to this project are documented in this file. This project us
 - fix: Keep the hub-label helper guidance visible by folding it into the dialog description while preserving checkbox alignment.
 - test: Confirm the streamlined options flow passes without helper selector rows.
 
+## 2025.10.48 — 2025-10-20
+- feat: Provide native sensors for standby power, integrated standby energy, and a combined total energy including standby usage.
+- test: Cover label-aware identifiers and energy integration maths for the new computed sensors.
+
 ## 2025.10.46 — 2025-10-20
 - fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
 - test: Keep options flow coverage passing with the new selector field.
