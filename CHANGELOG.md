@@ -7,6 +7,9 @@ All notable changes to this project are documented in this file. This project us
 - fix: Simplify the options dialog by dropping the unused unit ID field and clarifying that the hub label toggle targets entity IDs.
 - test: Cover multi-hub label enforcement and the streamlined options flow.
 
+## 2025.10.44 — 2025-10-20
+- chore: Reformat the options dialog description to separate guidance from the current IP for readability.
+
 ## 2025.10.42 — 2025-10-13
 - fix: Increase precision for plant setpoint and total energy Modbus sensors for finer readings.
 

@@ -27,7 +27,7 @@
     "step": {
       "init": {
         "title": "Options",
-        "description": "Current IP: {resolved_ip}. Update the host if the heat pump IP changed, and choose whether to append the hub label to entity IDs.",
+        "description": "Update the host if the heat pump IP changed, and choose whether to append the hub label to entity IDs.\n\nCurrent IP: {resolved_ip}.",
         "data": {
           "host": "Host/IP",
           "show_label_in_name": "Add hub label to entity IDs"
