@@ -208,22 +208,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         )
     )
 
-    final_counts = {
-        "sensor": base_counts["sensor"] + extra_counts["sensor"] + 1,
-        "binary_sensor": base_counts["binary_sensor"],
-        "switch": base_counts["switch"],
-    }
-
     info_sensor = QubeInfoSensor(
         coordinator,
         hub,
         apply_label,
         multi_device,
         version,
-        total_counts=final_counts,
+        total_counts=None,
     )
     _add_sensor_entity(info_sensor)
 
+    final_counts = {
+        "sensor": base_counts["sensor"] + extra_counts["sensor"] - sum(
+            1
+            for kind in (
+                "errors_connect",
+                "errors_read",
+                "count_sensors",
+                "count_binary_sensors",
+                "count_switches",
+            )
+        ),
+        "binary_sensor": base_counts["binary_sensor"],
+        "switch": base_counts["switch"],
+    }
+
+    info_sensor._total_counts = final_counts
     counts_holder["value"] = final_counts
 
     async_add_entities(entities)
