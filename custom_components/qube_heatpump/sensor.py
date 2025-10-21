@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
@@ -929,8 +928,6 @@ class TariffEnergyTracker:
         self._last_total: float | None = None
         self._last_reset: datetime = _start_of_month(dt_util.utcnow())
         self._last_token: datetime | None = None
-        self._manual_tariff: Optional[str] = None
-        self._listeners: List[Callable[[], None]] = []
 
     @property
     def current_tariff(self) -> str:
@@ -939,22 +936,6 @@ class TariffEnergyTracker:
     @property
     def last_reset(self) -> datetime:
         return self._last_reset
-
-    def register_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
-        self._listeners.append(listener)
-
-        def _unsubscribe() -> None:
-            with contextlib.suppress(ValueError):
-                self._listeners.remove(listener)
-
-        return _unsubscribe
-
-    def _notify_listeners(self) -> None:
-        for listener in list(self._listeners):
-            try:
-                listener()
-            except Exception:
-                continue
 
     def restore_total(self, tariff: str, value: float, last_reset: datetime | None) -> None:
         if tariff in self._totals:
@@ -970,22 +951,6 @@ class TariffEnergyTracker:
         except (TypeError, ValueError):
             self._last_total = None
 
-    def set_manual_tariff(self, tariff: Optional[str]) -> None:
-        if tariff is None:
-            if self._manual_tariff is None:
-                return
-            self._manual_tariff = None
-        elif tariff in self.tariffs:
-            if tariff == self._manual_tariff:
-                return
-            self._manual_tariff = tariff
-        else:
-            return
-        new_tariff = self._derive_tariff({})
-        if new_tariff != self._current_tariff:
-            self._current_tariff = new_tariff
-            self._notify_listeners()
-
     def _reset_if_needed(self, reference: datetime | None) -> None:
         now = reference or dt_util.utcnow()
         start = _start_of_month(now)
@@ -996,10 +961,7 @@ class TariffEnergyTracker:
 
     def update(self, coordinator_data: dict[str, Any], token: datetime | None) -> None:
         if token is not None and self._last_token is not None and token <= self._last_token:
-            new_tariff = self._derive_tariff(coordinator_data)
-            if new_tariff != self._current_tariff:
-                self._current_tariff = new_tariff
-                self._notify_listeners()
+            self._refresh_current_tariff(coordinator_data)
             return
 
         if token is not None:
@@ -1011,41 +973,28 @@ class TariffEnergyTracker:
         except (TypeError, ValueError):
             base_float = None
 
-        new_tariff = self._derive_tariff(coordinator_data)
-        tariff_changed = new_tariff != self._current_tariff
-        if tariff_changed:
-            self._current_tariff = new_tariff
+        self._refresh_current_tariff(coordinator_data)
 
         if base_float is None:
-            if tariff_changed:
-                self._notify_listeners()
             return
 
         if self._last_total is None:
             self._last_total = base_float
-            if tariff_changed:
-                self._notify_listeners()
             return
 
         delta = base_float - self._last_total
         self._last_total = base_float
         if delta <= 0:
-            if tariff_changed:
-                self._notify_listeners()
             return
 
         reference = token or dt_util.utcnow()
         self._reset_if_needed(reference)
         self._totals[self._current_tariff] += delta
-        self._notify_listeners()
 
-    def _derive_tariff(self, coordinator_data: dict[str, Any]) -> str:
-        if self._manual_tariff in self.tariffs:
-            return self._manual_tariff  # type: ignore[return-value]
+    def _refresh_current_tariff(self, coordinator_data: dict[str, Any]) -> None:
         state = coordinator_data.get(self.binary_key)
         if isinstance(state, bool):
-            return "SWW" if state else "CV"
-        return self._current_tariff
+            self._current_tariff = "SWW" if state else "CV"
 
     def get_total(self, tariff: str) -> float:
         return self._totals.get(tariff, 0.0)
@@ -1090,7 +1039,6 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             except Exception:
                 pass
         self._attr_native_unit_of_measurement = "kWh"
-        self._unsub_tracker: Optional[Callable[[], None]] = None
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -1110,14 +1058,6 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
                     if parsed is not None:
                         last_reset = parsed
             self._tracker.restore_total(self._tariff, value, last_reset)
-        if self._unsub_tracker is None:
-            self._unsub_tracker = self._tracker.register_listener(self._handle_tracker_event)
-
-    async def async_will_remove_from_hass(self) -> None:
-        await super().async_will_remove_from_hass()
-        if self._unsub_tracker:
-            self._unsub_tracker()
-            self._unsub_tracker = None
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1142,8 +1082,3 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         data = self.coordinator.data or {}
         self._tracker.update(data, token)
         super()._handle_coordinator_update()
-
-    def _handle_tracker_event(self) -> None:
-        if self.hass is None:
-            return
-        self.async_write_ha_state()

@@ -24,7 +24,6 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Totaal elektrisch verbruik (incl. standby)** – combines the vendor’s total power counter with the standby integration above.
 - **Elektrisch verbruik CV (maand)** – accumulates the heat pump’s electrical usage while the three-way valve is in CV mode.
 - **Elektrisch verbruik SWW (maand)** – accumulates usage while the valve is in domestic hot water (SWW) mode.
-- **Tarief elektrisch verbruik (select)** – optional manual override letting you pin the tariff to `CV` or `SWW` when automations aren’t available.
 
 ### Status Helpers
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
