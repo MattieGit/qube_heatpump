@@ -219,16 +219,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     _add_sensor_entity(info_sensor)
 
     final_counts = {
-        "sensor": base_counts["sensor"] + extra_counts["sensor"] - sum(
-            1
-            for kind in (
-                "errors_connect",
-                "errors_read",
-                "count_sensors",
-                "count_binary_sensors",
-                "count_switches",
-            )
-        ),
+        "sensor": base_counts["sensor"] + extra_counts["sensor"],
         "binary_sensor": base_counts["binary_sensor"],
         "switch": base_counts["switch"],
     }

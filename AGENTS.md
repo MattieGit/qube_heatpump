@@ -3,6 +3,7 @@
 ## Project Structure & Module Organization
 - Root contains JSON file for HACS integration for Home Assistant with name "qube_heatpump".
 - Documentation for publishing a HACS integration can be found via this link: https://www.hacs.xyz/docs/publish/integration/
+- Keep the manifest `documentation` URL pointing at the project wiki (https://github.com/MattieGit/qube_heatpump/wiki) so HA and HACS surface it.
 - custom_components/ contains the files for the HACS integration
 - Place reusable code in `src/` (e.g., parsers, validators); command-line helpers in `scripts/`.
 - Add tests in `tests/` mirroring `src/` structure (e.g., `tests/test_validate_config.py`).
@@ -76,6 +77,7 @@ This repository contains a HACS custom integration for Home Assistant that integ
 - Options Flow
   - Added an option `show_label_in_name` (“Show hub label in entity names”).
   - Effective only when multiple heat pumps exist; single-device setups keep names unchanged.
+  - Config and options forms should include a short link to the wiki for additional guidance.
 
 ## Release & Versioning
 - Workflow: `.github/workflows/release.yml` creates GitHub Releases on tags matching `20YY.M.N` and marks them as pre-releases.
