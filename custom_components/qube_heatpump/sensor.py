@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
@@ -16,7 +17,7 @@ try:
 except Exception:  # pragma: no cover - fallback for older HA cores
     SensorStateClass = None  # type: ignore[assignment]
 
-from .const import DOMAIN
+from .const import DOMAIN, TARIFF_OPTIONS
 from .hub import EntityDef, WPQubeHub
 
 
@@ -49,8 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     entities: list[SensorEntity] = []
 
-    def _add_sensor_entity(entity: SensorEntity) -> None:
-        extra_counts["sensor"] += 1
+    def _add_sensor_entity(entity: SensorEntity, include_in_sensor_total: bool = True) -> None:
+        if include_in_sensor_total:
+            extra_counts["sensor"] += 1
         entities.append(entity)
 
     counts_holder: Dict[str, Optional[Dict[str, int]]] = {"value": None}
@@ -70,8 +72,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         "count_binary_sensors",
         "count_switches",
     ):
+        include = not kind.startswith("count_") or kind == "count_sensors"
+        if kind in ("count_sensors", "count_binary_sensors", "count_switches"):
+            include = False
         _add_sensor_entity(
-            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind=kind, counts_provider=_get_counts)
+            QubeMetricSensor(
+                coordinator,
+                hub,
+                apply_label,
+                multi_device,
+                version,
+                kind=kind,
+                counts_provider=_get_counts,
+            ),
+            include_in_sensor_total=include,
         )
 
     for ent in hub.entities:
@@ -158,11 +172,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     _add_sensor_entity(standby_energy)
     _add_sensor_entity(total_energy)
 
-    tracker = TariffEnergyTracker(
-        base_key=_energy_unique_id(hub.label, multi_device),
-        binary_key=_binary_unique_id(hub.label, multi_device),
-        tariffs=list(TARIFFS),
-    )
+    tracker = hass.data[DOMAIN][entry.entry_id].get("tariff_tracker")
+    if tracker is None:
+        tracker = TariffEnergyTracker(
+            base_key=_energy_unique_id(hub.label, multi_device),
+            binary_key=_binary_unique_id(hub.label, multi_device),
+            tariffs=list(TARIFF_OPTIONS),
+        )
+        hass.data[DOMAIN][entry.entry_id]["tariff_tracker"] = tracker
     initial_data = coordinator.data or {}
     tracker.set_initial_total(initial_data.get(tracker.base_key))
 
@@ -876,9 +893,8 @@ STANDBY_POWER_WATTS = 17.0
 STANDBY_POWER_UNIQUE_BASE = "qube_standby_power"
 STANDBY_ENERGY_UNIQUE_BASE = "qube_standby_energy"
 TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
-TARIFF_SENSOR_BASE = "qube_energy_tariff"
-TARIFFS = ("CV", "SWW")
 BINARY_TARIFF_UNIQUE_ID = "dout_threewayvlv_val"
+TARIFF_SENSOR_BASE = "qube_energy_tariff"
 
 
 def _start_of_month(dt_value: datetime) -> datetime:
@@ -912,6 +928,8 @@ class TariffEnergyTracker:
         self._last_total: float | None = None
         self._last_reset: datetime = _start_of_month(dt_util.utcnow())
         self._last_token: datetime | None = None
+        self._manual_tariff: Optional[str] = None
+        self._listeners: List[Callable[[], None]] = []
 
     @property
     def current_tariff(self) -> str:
@@ -920,6 +938,22 @@ class TariffEnergyTracker:
     @property
     def last_reset(self) -> datetime:
         return self._last_reset
+
+    def register_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
+        self._listeners.append(listener)
+
+        def _unsubscribe() -> None:
+            with contextlib.suppress(ValueError):
+                self._listeners.remove(listener)
+
+        return _unsubscribe
+
+    def _notify_listeners(self) -> None:
+        for listener in list(self._listeners):
+            try:
+                listener()
+            except Exception:
+                continue
 
     def restore_total(self, tariff: str, value: float, last_reset: datetime | None) -> None:
         if tariff in self._totals:
@@ -935,10 +969,21 @@ class TariffEnergyTracker:
         except (TypeError, ValueError):
             self._last_total = None
 
-    def _refresh_current_tariff(self, coordinator_data: dict[str, Any]) -> None:
-        state = coordinator_data.get(self.binary_key)
-        if isinstance(state, bool):
-            self._current_tariff = "SWW" if state else "CV"
+    def set_manual_tariff(self, tariff: Optional[str]) -> None:
+        if tariff is None:
+            if self._manual_tariff is None:
+                return
+            self._manual_tariff = None
+        elif tariff in self.tariffs:
+            if tariff == self._manual_tariff:
+                return
+            self._manual_tariff = tariff
+        else:
+            return
+        new_tariff = self._derive_tariff({})
+        if new_tariff != self._current_tariff:
+            self._current_tariff = new_tariff
+            self._notify_listeners()
 
     def _reset_if_needed(self, reference: datetime | None) -> None:
         now = reference or dt_util.utcnow()
@@ -950,7 +995,10 @@ class TariffEnergyTracker:
 
     def update(self, coordinator_data: dict[str, Any], token: datetime | None) -> None:
         if token is not None and self._last_token is not None and token <= self._last_token:
-            self._refresh_current_tariff(coordinator_data)
+            new_tariff = self._derive_tariff(coordinator_data)
+            if new_tariff != self._current_tariff:
+                self._current_tariff = new_tariff
+                self._notify_listeners()
             return
 
         if token is not None:
@@ -962,23 +1010,41 @@ class TariffEnergyTracker:
         except (TypeError, ValueError):
             base_float = None
 
-        self._refresh_current_tariff(coordinator_data)
+        new_tariff = self._derive_tariff(coordinator_data)
+        tariff_changed = new_tariff != self._current_tariff
+        if tariff_changed:
+            self._current_tariff = new_tariff
 
         if base_float is None:
+            if tariff_changed:
+                self._notify_listeners()
             return
 
         if self._last_total is None:
             self._last_total = base_float
+            if tariff_changed:
+                self._notify_listeners()
             return
 
         delta = base_float - self._last_total
         self._last_total = base_float
         if delta <= 0:
+            if tariff_changed:
+                self._notify_listeners()
             return
 
         reference = token or dt_util.utcnow()
         self._reset_if_needed(reference)
         self._totals[self._current_tariff] += delta
+        self._notify_listeners()
+
+    def _derive_tariff(self, coordinator_data: dict[str, Any]) -> str:
+        if self._manual_tariff in self.tariffs:
+            return self._manual_tariff  # type: ignore[return-value]
+        state = coordinator_data.get(self.binary_key)
+        if isinstance(state, bool):
+            return "SWW" if state else "CV"
+        return self._current_tariff
 
     def get_total(self, tariff: str) -> float:
         return self._totals.get(tariff, 0.0)
@@ -1023,6 +1089,7 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             except Exception:
                 pass
         self._attr_native_unit_of_measurement = "kWh"
+        self._unsub_tracker: Optional[Callable[[], None]] = None
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -1033,6 +1100,14 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             except (TypeError, ValueError):
                 value = 0.0
             self._tracker.restore_total(self._tariff, value, last_state.last_reset)
+        if self._unsub_tracker is None:
+            self._unsub_tracker = self._tracker.register_listener(self._handle_tracker_event)
+
+    async def async_will_remove_from_hass(self) -> None:
+        await super().async_will_remove_from_hass()
+        if self._unsub_tracker:
+            self._unsub_tracker()
+            self._unsub_tracker = None
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1057,3 +1132,8 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         data = self.coordinator.data or {}
         self._tracker.update(data, token)
         super()._handle_coordinator_update()
+
+    def _handle_tracker_event(self) -> None:
+        if self.hass is None:
+            return
+        self.async_write_ha_state()

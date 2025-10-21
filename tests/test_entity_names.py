@@ -35,6 +35,7 @@ sys.modules.setdefault("pymodbus.exceptions", _exceptions_stub)
 import pytest
 from homeassistant.util import dt as dt_util
 
+from custom_components.qube_heatpump.const import TARIFF_OPTIONS
 from custom_components.qube_heatpump.sensor import (
     QubeInfoSensor,
     QubeIPAddressSensor,
@@ -44,7 +45,6 @@ from custom_components.qube_heatpump.sensor import (
     QubeTariffEnergySensor,
     QubeTotalEnergyIncludingStandbySensor,
     STANDBY_POWER_WATTS,
-    TARIFFS,
     TariffEnergyTracker,
     WPQubeComputedSensor,
     WPQubeSensor,
@@ -340,7 +340,7 @@ async def test_tariff_energy_split(monkeypatch: pytest.MonkeyPatch, hass) -> Non
     base_key = "generalmng_acumulatedpwr"
     binary_key = "dout_threewayvlv_val"
 
-    tracker = TariffEnergyTracker(base_key, binary_key, list(TARIFFS))
+    tracker = TariffEnergyTracker(base_key, binary_key, list(TARIFF_OPTIONS))
     tracker.set_initial_total(100.0)
 
     cv_sensor = QubeTariffEnergySensor(
