@@ -9,6 +9,9 @@ All notable changes to this project are documented in this file. This project us
 ## 2025.10.54 — 2025-10-21
 - fix: Restore CV/SWW monthly energy sensors when Home Assistant no longer exposes `last_reset` on saved states.
 
+## 2025.10.55 — 2025-10-21
+- fix: Remove the manual tariff select entity and rely on automation-driven tracking while keeping diagnostics accurate.
+
 ## 2025.10.52 — 2025-10-21
 - docs: Refresh the README with a concise overview and move deep-dive material into a structured wiki.
 - docs: Document computed sensors, diagnostics tooling, multi-hub behaviour, and error handling in the repository wiki.
