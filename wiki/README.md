@@ -24,7 +24,7 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Totaal elektrisch verbruik (incl. standby)** – combines the vendor’s total power counter with the standby integration above.
 - **Elektrisch verbruik CV (maand)** – accumulates the heat pump’s electrical usage while the three-way valve is in CV mode.
 - **Elektrisch verbruik SWW (maand)** – accumulates usage while the valve is in domestic hot water (SWW) mode.
-- **SG Ready A/B schakelaars** – vendor-defined demand-response inputs; zie [SG Ready-signalen](#sg-ready-signalen) voor de combinaties.
+- **SG Ready A/B schakelaars** – inputs for SG Ready operation; see [SG Ready signals](#sg-ready-signals) for the combinations, as specified by HR Energy.
 
 ### Status Helpers
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
