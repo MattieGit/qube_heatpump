@@ -56,16 +56,16 @@ Two tooling layers are available when something seems off:
 - Diagnostics entities always carry the label in both single- and multi-hub scenarios to make troubleshooting easier.
 - The Options toggle **Add hub label to entity IDs** mirrors the automatic behaviour; when you enable it, labels remain appended even in single-hub environments.
 
-### SG Ready-signalen
+### SG Ready Signals
 
-Onderstaande tabel vertaalt de `SG ready`-ingangen van de warmtepomp. De combinatie van de twee schakelaars bepaalt de status en daarmee de actie die de warmtepomp uitvoert.
+The table below outlines how the heat pump interprets the `SG ready` inputs. Each combination of the two switches maps to a specific status and action.
 
-| SGready A | SGready B | Status        | Actie                                                     |
-|-----------|-----------|---------------|-----------------------------------------------------------|
-| Uit       | Uit       | Geen SGready  | Geen actie, normaal bedrijf                               |
-| Aan       | Uit       | SGready_Blok  | Blokkeer warmtepomp                                       |
-| Aan       | Aan       | SGready_Max   | Legionella eenmalig, Surplus stooklijn, LinQ + 1 K        |
-| Uit       | Aan       | SGready_Plus  | Legionella eenmalig                                       |
+| SGready A | SGready B | Status        | Action                                                     |
+|-----------|-----------|---------------|------------------------------------------------------------|
+| Off       | Off       | Geen SGready  | No action, normal operation                                |
+| On        | Off       | SGready_Blok  | Block the heat pump                                        |
+| On        | On        | SGready_Max   | One-time legionella cycle, surplus heating curve, LinQ + 1 K |
+| Off       | On        | SGready_Plus  | One-time legionella cycle                                  |
 
 ## Error Handling & Recovery
 
