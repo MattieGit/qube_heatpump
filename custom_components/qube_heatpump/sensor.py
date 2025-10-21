@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from homeassistant.components.sensor import RestoreSensor, SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -39,30 +39,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     apply_label = bool(data.get("apply_label_in_name", False))
     multi_device = bool(data.get("multi_device", False))
 
+    base_counts = {
+        "sensor": sum(1 for e in hub.entities if e.platform == "sensor"),
+        "binary_sensor": sum(1 for e in hub.entities if e.platform == "binary_sensor"),
+        "switch": sum(1 for e in hub.entities if e.platform == "switch"),
+    }
+
+    extra_counts = {"sensor": 0, "binary_sensor": 0, "switch": 0}
+
     entities: list[SensorEntity] = []
-    # Add a diagnostic Qube info sensor per device
-    entities.append(QubeInfoSensor(coordinator, hub, apply_label, multi_device, version))
+
+    def _add_sensor_entity(entity: SensorEntity) -> None:
+        extra_counts["sensor"] += 1
+        entities.append(entity)
+
+    counts_holder: Dict[str, Optional[Dict[str, int]]] = {"value": None}
+
+    def _get_counts() -> Optional[Dict[str, int]]:
+        return counts_holder["value"]
+
     # Surface the resolved host IP as its own diagnostic sensor
-    entities.append(QubeIPAddressSensor(coordinator, hub, apply_label, multi_device, version))
+    _add_sensor_entity(QubeIPAddressSensor(coordinator, hub, apply_label, multi_device, version))
 
     # Add key diagnostic metrics as separate sensors so users can mark them as
     # Preferred on the device page for quick visibility.
-    entities.extend(
-        [
-            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="errors_connect"),
-            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="errors_read"),
-            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="count_sensors"),
-            QubeMetricSensor(
-                coordinator, hub, apply_label, multi_device, version, kind="count_binary_sensors"
-            ),
-            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind="count_switches"),
-        ]
-    )
+    for kind in (
+        "errors_connect",
+        "errors_read",
+        "count_sensors",
+        "count_binary_sensors",
+        "count_switches",
+    ):
+        _add_sensor_entity(
+            QubeMetricSensor(coordinator, hub, apply_label, multi_device, version, kind=kind, counts_provider=_get_counts)
+        )
 
     for ent in hub.entities:
         if ent.platform != "sensor":
             continue
-        entities.append(
+        _add_sensor_entity(
             WPQubeSensor(
                 coordinator,
                 hub.host,
@@ -79,7 +94,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # 1) Qube status full (maps numeric status to human-readable string)
     status_src = _find_status_source(hub)
     if status_src is not None:
-        entities.append(
+        _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
@@ -96,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # 2) Qube Driewegklep DHW/CV status (binary sensor address 4)
     drie_src = _find_binary_by_address(hub, 4)
     if drie_src is not None:
-        entities.append(
+        _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
@@ -113,7 +128,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # 3) Qube Vierwegklep verwarmen/koelen status (binary sensor address 2)
     vier_src = _find_binary_by_address(hub, 2)
     if vier_src is not None:
-        entities.append(
+        _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
@@ -139,7 +154,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         standby_sensor=standby_energy,
     )
 
-    entities.extend([standby_power, standby_energy, total_energy])
+    _add_sensor_entity(standby_power)
+    _add_sensor_entity(standby_energy)
+    _add_sensor_entity(total_energy)
 
     tracker = TariffEnergyTracker(
         base_key=_energy_unique_id(hub.label, multi_device),
@@ -149,30 +166,48 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     initial_data = coordinator.data or {}
     tracker.set_initial_total(initial_data.get(tracker.base_key))
 
-    entities.extend(
-        [
-            QubeTariffEnergySensor(
-                coordinator,
-                hub,
-                tracker,
-                tariff="CV",
-                name_suffix="Elektrisch verbruik CV (maand)",
-                show_label=apply_label,
-                multi_device=multi_device,
-                version=version,
-            ),
-            QubeTariffEnergySensor(
-                coordinator,
-                hub,
-                tracker,
-                tariff="SWW",
-                name_suffix="Elektrisch verbruik SWW (maand)",
-                show_label=apply_label,
-                multi_device=multi_device,
-                version=version,
-            ),
-        ]
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            tracker,
+            tariff="CV",
+            name_suffix="Elektrisch verbruik CV (maand)",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
     )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            tracker,
+            tariff="SWW",
+            name_suffix="Elektrisch verbruik SWW (maand)",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+
+    final_counts = {
+        "sensor": base_counts["sensor"] + extra_counts["sensor"] + 1,
+        "binary_sensor": base_counts["binary_sensor"],
+        "switch": base_counts["switch"],
+    }
+
+    info_sensor = QubeInfoSensor(
+        coordinator,
+        hub,
+        apply_label,
+        multi_device,
+        version,
+        total_counts=final_counts,
+    )
+    _add_sensor_entity(info_sensor)
+
+    counts_holder["value"] = final_counts
 
     async_add_entities(entities)
 
@@ -290,12 +325,14 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         show_label: bool,
         multi_device: bool,
         version: str,
+        total_counts: Optional[Dict[str, int]] = None,
     ) -> None:
         super().__init__(coordinator)
         self._hub = hub
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = str(version) if version else "unknown"
+        self._total_counts = total_counts or {}
         label = hub.label or "qube1"
         self._attr_name = "Qube info"
         self._attr_unique_id = (
@@ -323,9 +360,14 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         hub = self._hub
-        sensors = sum(1 for e in hub.entities if e.platform == "sensor")
-        bsens = sum(1 for e in hub.entities if e.platform == "binary_sensor")
-        switches = sum(1 for e in hub.entities if e.platform == "switch")
+        counts = self._total_counts
+        sensors = counts.get("sensor")
+        bsens = counts.get("binary_sensor")
+        switches = counts.get("switch")
+        if sensors is None or bsens is None or switches is None:
+            sensors = sensors if sensors is not None else sum(1 for e in hub.entities if e.platform == "sensor")
+            bsens = bsens if bsens is not None else sum(1 for e in hub.entities if e.platform == "binary_sensor")
+            switches = switches if switches is not None else sum(1 for e in hub.entities if e.platform == "switch")
         return {
             "version": self._version,
             "label": hub.label,
@@ -433,6 +475,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         multi_device: bool,
         version: str,
         kind: str,
+        counts_provider: Optional[Callable[[], Optional[Dict[str, int]]]] = None,
     ) -> None:
         super().__init__(coordinator)
         self._hub = hub
@@ -440,6 +483,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = version
+        self._counts_provider = counts_provider
         label = hub.label or "qube1"
         name = {
             "errors_connect": "Qube connect errors",
@@ -480,10 +524,19 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         if self._kind == "errors_read":
             return getattr(hub, "err_read", None)
         if self._kind == "count_sensors":
+            counts = self._counts_provider() if self._counts_provider else None
+            if counts:
+                return counts.get("sensor", 0)
             return sum(1 for e in hub.entities if e.platform == "sensor")
         if self._kind == "count_binary_sensors":
+            counts = self._counts_provider() if self._counts_provider else None
+            if counts:
+                return counts.get("binary_sensor", 0)
             return sum(1 for e in hub.entities if e.platform == "binary_sensor")
         if self._kind == "count_switches":
+            counts = self._counts_provider() if self._counts_provider else None
+            if counts:
+                return counts.get("switch", 0)
             return sum(1 for e in hub.entities if e.platform == "switch")
         return None
 

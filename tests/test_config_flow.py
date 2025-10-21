@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.helpers import device_registry as dr
+import voluptuous as vol
 
 from custom_components.qube_heatpump.const import (
     CONF_HOST,
@@ -282,3 +283,31 @@ async def test_options_rejects_connection_failure(
     assert result["type"] == "form"
     assert result["errors"][CONF_HOST] == "cannot_connect"
     assert entry.data[CONF_HOST] == "qube.local"
+
+
+@pytest.mark.asyncio
+async def test_config_flow_host_default_first_entry(hass: HomeAssistant) -> None:
+    flow = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_USER},
+    )
+
+    required = next(iter(flow["data_schema"].schema.keys()))
+    default = required.default
+    if callable(default):
+        default = default()
+    assert default == "qube.local"
+
+
+@pytest.mark.asyncio
+async def test_config_flow_host_default_subsequent_entry(hass: HomeAssistant) -> None:
+    existing = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "qube.local"})
+    existing.add_to_hass(hass)
+
+    flow = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_USER},
+    )
+
+    required = next(iter(flow["data_schema"].schema.keys()))
+    assert required.default is vol.UNDEFINED

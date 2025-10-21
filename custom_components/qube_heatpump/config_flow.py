@@ -130,7 +130,10 @@ class WPQubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data={CONF_HOST: host, CONF_PORT: port},
                     )
 
-        schema = vol.Schema({vol.Required(CONF_HOST, default="qube.local"): str})
+        if self._async_current_entries():
+            schema = vol.Schema({vol.Required(CONF_HOST): str})
+        else:
+            schema = vol.Schema({vol.Required(CONF_HOST, default="qube.local"): str})
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     async def async_step_reconfigure(self, entry_data: dict | None = None):
