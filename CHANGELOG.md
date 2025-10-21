@@ -2,33 +2,33 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2025.10.47 — 2025-10-20
-- fix: Keep the hub-label helper guidance visible by folding it into the dialog description while preserving checkbox alignment.
-- test: Confirm the streamlined options flow passes without helper selector rows.
-
-## 2025.10.48 — 2025-10-20
-- feat: Provide native sensors for standby power, integrated standby energy, and a combined total energy including standby usage.
-- test: Cover label-aware identifiers and energy integration maths for the new computed sensors.
-
-## 2025.10.49 — 2025-10-21
-- feat: Track CV vs. SWW consumption with dedicated tariff sensors and rename energy entities for clarity.
-- test: Validate tariff splitting alongside the standby integration logic.
-
-## 2025.10.50 — 2025-10-21
-- feat: Default additional hub setups to an empty host field and expose full entity counts in diagnostics.
-- test: Cover host default behaviour and ensure computed sensors contribute to the diagnostic tallies.
-
-## 2025.10.51 — 2025-10-21
-- fix: Keep diagnostics sensor totals accurate and provide a tariff select so CV/SWW energy stays available.
-- test: Exercise the tariff tracker, select entity, and ensure computed sensors remain counted site-wide.
+## 2025.10.53 — 2025-10-21
+- fix: Link the integration UI and manifest to the new wiki and tighten diagnostic sensor counting.
+- docs: Add internal guidance covering the wiki link to AGENTS.md.
 
 ## 2025.10.52 — 2025-10-21
 - docs: Refresh the README with a concise overview and move deep-dive material into a structured wiki.
 - docs: Document computed sensors, diagnostics tooling, multi-hub behaviour, and error handling in the repository wiki.
 
-## 2025.10.53 — 2025-10-21
-- fix: Link the integration UI and manifest to the new wiki and tighten diagnostic sensor counting.
-- docs: Add internal guidance covering the wiki link to AGENTS.md.
+## 2025.10.51 — 2025-10-21
+- fix: Keep diagnostics sensor totals accurate and provide a tariff select so CV/SWW energy stays available.
+- test: Exercise the tariff tracker, select entity, and ensure computed sensors remain counted site-wide.
+
+## 2025.10.50 — 2025-10-21
+- feat: Default additional hub setups to an empty host field and expose full entity counts in diagnostics.
+- test: Cover host default behaviour and ensure computed sensors contribute to the diagnostic tallies.
+
+## 2025.10.49 — 2025-10-21
+- feat: Track CV vs. SWW consumption with dedicated tariff sensors and rename energy entities for clarity.
+- test: Validate tariff splitting alongside the standby integration logic.
+
+## 2025.10.48 — 2025-10-20
+- feat: Provide native sensors for standby power, integrated standby energy, and a combined total energy including standby usage.
+- test: Cover label-aware identifiers and energy integration maths for the new computed sensors.
+
+## 2025.10.47 — 2025-10-20
+- fix: Keep the hub-label helper guidance visible by folding it into the dialog description while preserving checkbox alignment.
+- test: Confirm the streamlined options flow passes without helper selector rows.
 
 ## 2025.10.46 — 2025-10-20
 - fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
