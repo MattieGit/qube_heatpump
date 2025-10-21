@@ -11,7 +11,7 @@
     "step": {
       "user": {
         "title": "Qube Heatpump",
-        "description": "Enter the heat pump IP or host. Need help? See https://github.com/MattieGit/qube_heatpump/wiki.",
+        "description": "Enter the heat pump IP or host.\nNeed help? See https://github.com/MattieGit/qube_heatpump/tree/main/wiki.",
         "data": {
           "host": "Host/IP"
         }
@@ -27,7 +27,7 @@
     "step": {
       "init": {
         "title": "Options",
-        "description": "Update the host if the heat pump IP changed, and choose whether to append the hub label to entity IDs. Need help? See https://github.com/MattieGit/qube_heatpump/wiki.\n\nEnable \"Add hub label\" to append the hub label such as \"qube1\" to entity IDs so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs.\n\nCurrent IP: {resolved_ip}.",
+        "description": "Update the host if the heat pump IP changed, and choose whether to append the hub label to entity IDs.\nNeed help? See https://github.com/MattieGit/qube_heatpump/tree/main/wiki.\n\nEnable \"Add hub label\" to append the hub label such as \"qube1\" to entity IDs so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs.\n\nCurrent IP: {resolved_ip}.",
         "data": {
           "host": "Host/IP",
           "show_label_in_name": "Add hub label to entity IDs"
