@@ -1100,7 +1100,16 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
                 value = float(last_state.state)
             except (TypeError, ValueError):
                 value = 0.0
-            self._tracker.restore_total(self._tariff, value, last_state.last_reset)
+            last_reset: datetime | None = None
+            if hasattr(last_state, "last_reset"):
+                last_reset = getattr(last_state, "last_reset")
+            if not last_reset:
+                cycle_start = last_state.attributes.get("cycle_start") if last_state.attributes else None
+                if cycle_start:
+                    parsed = dt_util.parse_datetime(str(cycle_start))
+                    if parsed is not None:
+                        last_reset = parsed
+            self._tracker.restore_total(self._tariff, value, last_reset)
         if self._unsub_tracker is None:
             self._unsub_tracker = self._tracker.register_listener(self._handle_tracker_event)
 
