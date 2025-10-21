@@ -10,6 +10,10 @@ All notable changes to this project are documented in this file. This project us
 - feat: Provide native sensors for standby power, integrated standby energy, and a combined total energy including standby usage.
 - test: Cover label-aware identifiers and energy integration maths for the new computed sensors.
 
+## 2025.10.49 — 2025-10-21
+- feat: Track CV vs. SWW consumption with dedicated tariff sensors and rename energy entities for clarity.
+- test: Validate tariff splitting alongside the standby integration logic.
+
 ## 2025.10.46 — 2025-10-20
 - fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
 - test: Keep options flow coverage passing with the new selector field.
