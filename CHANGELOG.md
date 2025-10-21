@@ -6,6 +6,9 @@ All notable changes to this project are documented in this file. This project us
 - fix: Link the integration UI and manifest to the new wiki and tighten diagnostic sensor counting.
 - docs: Add internal guidance covering the wiki link to AGENTS.md.
 
+## 2025.10.54 — 2025-10-21
+- fix: Restore CV/SWW monthly energy sensors when Home Assistant no longer exposes `last_reset` on saved states.
+
 ## 2025.10.52 — 2025-10-21
 - docs: Refresh the README with a concise overview and move deep-dive material into a structured wiki.
 - docs: Document computed sensors, diagnostics tooling, multi-hub behaviour, and error handling in the repository wiki.
