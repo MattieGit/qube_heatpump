@@ -22,6 +22,10 @@ All notable changes to this project are documented in this file. This project us
 - fix: Keep diagnostics sensor totals accurate and provide a tariff select so CV/SWW energy stays available.
 - test: Exercise the tariff tracker, select entity, and ensure computed sensors remain counted site-wide.
 
+## 2025.10.52 — 2025-10-21
+- docs: Refresh the README with a concise overview and move deep-dive material into a structured wiki.
+- docs: Document computed sensors, diagnostics tooling, multi-hub behaviour, and error handling in the repository wiki.
+
 ## 2025.10.46 — 2025-10-20
 - fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
 - test: Keep options flow coverage passing with the new selector field.
