@@ -9,7 +9,7 @@ This integration connects Home Assistant to the Qube heat pump over Modbus/TCP a
 ## Configuration
 1. Go to *Settings → Devices & Services → Integrations*.
 2. Click **Add Integration** and select **Qube Heat Pump**.
-3. Enter the IP/hostname of the heat pump (leave the default `qube.local` only if this is your first Qube).
+3. Enter the IP/hostname of the heat pump. If you are using multiple heat pumps, please always enter an IP address.
 4. The integration auto-discovers all Modbus entities and creates diagnostics sensors; multi-hub setups are handled automatically.
 5. Use the integration *Options* to rename the hub label or toggle label suffixes on entity IDs. Full behavioural details live in the [project wiki](./wiki/README.md).
 
