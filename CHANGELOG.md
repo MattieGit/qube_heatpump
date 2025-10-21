@@ -26,6 +26,10 @@ All notable changes to this project are documented in this file. This project us
 - docs: Refresh the README with a concise overview and move deep-dive material into a structured wiki.
 - docs: Document computed sensors, diagnostics tooling, multi-hub behaviour, and error handling in the repository wiki.
 
+## 2025.10.53 — 2025-10-21
+- fix: Link the integration UI and manifest to the new wiki and tighten diagnostic sensor counting.
+- docs: Add internal guidance covering the wiki link to AGENTS.md.
+
 ## 2025.10.46 — 2025-10-20
 - fix: Render the hub-label helper text as a separate row beneath the checkbox for clearer alignment in the options form.
 - test: Keep options flow coverage passing with the new selector field.
