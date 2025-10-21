@@ -24,6 +24,7 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Totaal elektrisch verbruik (incl. standby)** – combines the vendor’s total power counter with the standby integration above.
 - **Elektrisch verbruik CV (maand)** – accumulates the heat pump’s electrical usage while the three-way valve is in CV mode.
 - **Elektrisch verbruik SWW (maand)** – accumulates usage while the valve is in domestic hot water (SWW) mode.
+- **SG Ready A/B schakelaars** – vendor-defined demand-response inputs; zie [SG Ready-signalen](#sg-ready-signalen) voor de combinaties.
 
 ### Status Helpers
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
@@ -54,6 +55,17 @@ Two tooling layers are available when something seems off:
 - Entity IDs keep their vendor-aligned slugs for a single hub. As soon as multiple hubs are installed the integration automatically appends the label (e.g. `_qube2`) so there are no collisions.
 - Diagnostics entities always carry the label in both single- and multi-hub scenarios to make troubleshooting easier.
 - The Options toggle **Add hub label to entity IDs** mirrors the automatic behaviour; when you enable it, labels remain appended even in single-hub environments.
+
+### SG Ready-signalen
+
+Onderstaande tabel vertaalt de `SG ready`-ingangen van de warmtepomp. De combinatie van de twee schakelaars bepaalt de status en daarmee de actie die de warmtepomp uitvoert.
+
+| SGready A | SGready B | Status        | Actie                                                     |
+|-----------|-----------|---------------|-----------------------------------------------------------|
+| Uit       | Uit       | Geen SGready  | Geen actie, normaal bedrijf                               |
+| Aan       | Uit       | SGready_Blok  | Blokkeer warmtepomp                                       |
+| Aan       | Aan       | SGready_Max   | Legionella eenmalig, Surplus stooklijn, LinQ + 1 K        |
+| Uit       | Aan       | SGready_Plus  | Legionella eenmalig                                       |
 
 ## Error Handling & Recovery
 
