@@ -41,8 +41,11 @@ from custom_components.qube_heatpump.sensor import (
     QubeMetricSensor,
     QubeStandbyEnergySensor,
     QubeStandbyPowerSensor,
+    QubeTariffEnergySensor,
     QubeTotalEnergyIncludingStandbySensor,
     STANDBY_POWER_WATTS,
+    TARIFFS,
+    TariffEnergyTracker,
     WPQubeComputedSensor,
     WPQubeSensor,
 )
@@ -55,6 +58,7 @@ class _DummyCoordinator:
     def __init__(self) -> None:
         self.data: dict[str, object] = {}
         self.last_update_success = True
+        self.last_update_success_time = dt_util.utcnow()
 
     def async_add_listener(self, *_args, **_kwargs):  # pragma: no cover - stubbed
         return lambda: None
@@ -219,6 +223,7 @@ def test_qube_standby_power_object_id(show_label: bool) -> None:
         version="1.0",
     )
 
+    assert sensor.name == "Standby vermogen"
     expected = "qube_standby_power_qube1" if show_label else "qube_standby_power"
     assert getattr(sensor, "_attr_suggested_object_id", None) == expected
 
@@ -233,6 +238,7 @@ def test_qube_standby_energy_object_id(show_label: bool) -> None:
         version="1.0",
     )
 
+    assert sensor.name == "Standby verbruik"
     expected = "qube_standby_energy_qube1" if show_label else "qube_standby_energy"
     assert getattr(sensor, "_attr_suggested_object_id", None) == expected
 
@@ -258,6 +264,7 @@ def test_qube_total_energy_object_id(show_label: bool) -> None:
         standby_sensor=standby,
     )
 
+    assert combined.name == "Totaal elektrisch verbruik (incl. standby)"
     expected = "qube_total_energy_with_standby_qube1" if show_label else "qube_total_energy_with_standby"
     assert getattr(combined, "_attr_suggested_object_id", None) == expected
 
@@ -277,6 +284,7 @@ async def test_standby_energy_integration(monkeypatch: pytest.MonkeyPatch, hass)
 
     later = now + timedelta(hours=1)
     monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: later)
+    coordinator.last_update_success_time = later
 
     sensor._handle_coordinator_update()
 
@@ -313,6 +321,7 @@ async def test_total_energy_combines_base(monkeypatch: pytest.MonkeyPatch, hass)
 
     later = now + timedelta(hours=2)
     monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: later)
+    coordinator.last_update_success_time = later
 
     coordinator.data[base_key] = 12.5
 
@@ -321,6 +330,82 @@ async def test_total_energy_combines_base(monkeypatch: pytest.MonkeyPatch, hass)
 
     expected = 12.5 + (STANDBY_POWER_WATTS / 1000.0) * 2
     assert math.isclose(total.native_value or 0.0, expected, rel_tol=1e-3)
+
+
+@pytest.mark.asyncio
+async def test_tariff_energy_split(monkeypatch: pytest.MonkeyPatch, hass) -> None:
+    coordinator = _DummyCoordinator()
+    hub = _DummyHub()
+
+    base_key = "generalmng_acumulatedpwr"
+    binary_key = "dout_threewayvlv_val"
+
+    tracker = TariffEnergyTracker(base_key, binary_key, list(TARIFFS))
+    tracker.set_initial_total(100.0)
+
+    cv_sensor = QubeTariffEnergySensor(
+        coordinator,
+        hub,
+        tracker,
+        tariff="CV",
+        name_suffix="Elektrisch verbruik CV (maand)",
+        show_label=False,
+        multi_device=False,
+        version="1.0",
+    )
+    cv_sensor.hass = hass
+    cv_sensor.entity_id = "sensor.qube_energy_tariff_cv"
+    await cv_sensor.async_added_to_hass()
+
+    sww_sensor = QubeTariffEnergySensor(
+        coordinator,
+        hub,
+        tracker,
+        tariff="SWW",
+        name_suffix="Elektrisch verbruik SWW (maand)",
+        show_label=False,
+        multi_device=False,
+        version="1.0",
+    )
+    sww_sensor.hass = hass
+    sww_sensor.entity_id = "sensor.qube_energy_tariff_sww"
+    await sww_sensor.async_added_to_hass()
+
+    now = datetime(2025, 1, 1, tzinfo=dt_util.UTC)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: now)
+    coordinator.data[base_key] = 100.0
+    coordinator.data[binary_key] = False
+    coordinator.last_update_success_time = now
+
+    cv_sensor._handle_coordinator_update()
+    sww_sensor._handle_coordinator_update()
+
+    assert cv_sensor.name == "Elektrisch verbruik CV (maand)"
+    assert sww_sensor.name == "Elektrisch verbruik SWW (maand)"
+
+    later = now + timedelta(minutes=30)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: later)
+    coordinator.last_update_success_time = later
+    coordinator.data[base_key] = 102.0
+    coordinator.data[binary_key] = False
+
+    cv_sensor._handle_coordinator_update()
+    sww_sensor._handle_coordinator_update()
+
+    assert math.isclose(cv_sensor.native_value, 2.0, rel_tol=1e-3)
+    assert math.isclose(sww_sensor.native_value, 0.0, rel_tol=1e-3)
+
+    later2 = later + timedelta(minutes=30)
+    monkeypatch.setattr("custom_components.qube_heatpump.sensor.dt_util.utcnow", lambda: later2)
+    coordinator.last_update_success_time = later2
+    coordinator.data[base_key] = 103.5
+    coordinator.data[binary_key] = True
+
+    cv_sensor._handle_coordinator_update()
+    sww_sensor._handle_coordinator_update()
+
+    assert math.isclose(cv_sensor.native_value, 2.0, rel_tol=1e-3)
+    assert math.isclose(sww_sensor.native_value, 1.5, rel_tol=1e-3)
 
 
 @pytest.mark.parametrize("show_label", [False, True])

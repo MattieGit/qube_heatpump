@@ -653,7 +653,7 @@
     state_class: measurement
     unique_id: PlantSetP
 
-  - name: "Totaal Elektrisch verbruik"
+  - name: "Totaal elektrisch verbruik (excl. standby)"
     address: 69
     input_type: input
     data_type: float32
@@ -759,3 +759,15 @@
     command_off: 0
     scan_interval: 10
     unique_id: BMS_SGready_B
+
+# Qube elektriciteitsverbruik splitsen tussen CV en SWW
+  utility_meter:
+    heatpump_energy:
+      name: "Elektrisch verbruik CV/DHW per maand"
+      unique_id: warmtepomp.elektrisch_verbruik_cv_dhw
+      source: sensor.generalmng_acumulatedpwr
+      cycle: monthly
+      tariffs:
+      - CV
+      - SWW
+      always_available: true

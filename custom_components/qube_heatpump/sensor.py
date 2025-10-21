@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, List
 
 from homeassistant.components.sensor import RestoreSensor, SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -140,6 +140,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     )
 
     entities.extend([standby_power, standby_energy, total_energy])
+
+    tracker = TariffEnergyTracker(
+        base_key=_energy_unique_id(hub.label, multi_device),
+        binary_key=_binary_unique_id(hub.label, multi_device),
+        tariffs=list(TARIFFS),
+    )
+    initial_data = coordinator.data or {}
+    tracker.set_initial_total(initial_data.get(tracker.base_key))
+
+    entities.extend(
+        [
+            QubeTariffEnergySensor(
+                coordinator,
+                hub,
+                tracker,
+                tariff="CV",
+                name_suffix="Elektrisch verbruik CV (maand)",
+                show_label=apply_label,
+                multi_device=multi_device,
+                version=version,
+            ),
+            QubeTariffEnergySensor(
+                coordinator,
+                hub,
+                tracker,
+                tariff="SWW",
+                name_suffix="Elektrisch verbruik SWW (maand)",
+                show_label=apply_label,
+                multi_device=multi_device,
+                version=version,
+            ),
+        ]
+    )
 
     async_add_entities(entities)
 
@@ -526,7 +559,7 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = version
-        self._attr_name = "Qube standby power"
+        self._attr_name = "Standby vermogen"
         unique = _append_label(STANDBY_POWER_UNIQUE_BASE, hub.label, multi_device)
         self._attr_unique_id = unique
         suggested = STANDBY_POWER_UNIQUE_BASE
@@ -575,7 +608,7 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._version = version
         self._energy_kwh: float = 0.0
         self._last_update: datetime | None = None
-        self._attr_name = "Qube standby energy"
+        self._attr_name = "Standby verbruik"
         unique = _append_label(STANDBY_ENERGY_UNIQUE_BASE, hub.label, multi_device)
         self._attr_unique_id = unique
         suggested = STANDBY_ENERGY_UNIQUE_BASE
@@ -662,7 +695,7 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self._base_unique_id = base_unique_id
         self._standby_sensor = standby_sensor
         self._total_energy: float | None = None
-        self._attr_name = "Qube total energy (incl. standby)"
+        self._attr_name = "Totaal elektrisch verbruik (incl. standby)"
         unique = _append_label(TOTAL_ENERGY_UNIQUE_BASE, hub.label, multi_device)
         self._attr_unique_id = unique
         suggested = TOTAL_ENERGY_UNIQUE_BASE
@@ -786,3 +819,188 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         suffix = f"_{self._label}" if self._show_label else ""
         desired = f"{self._object_base}{suffix}"
         await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)))
+STANDBY_POWER_WATTS = 17.0
+STANDBY_POWER_UNIQUE_BASE = "qube_standby_power"
+STANDBY_ENERGY_UNIQUE_BASE = "qube_standby_energy"
+TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
+TARIFF_SENSOR_BASE = "qube_energy_tariff"
+TARIFFS = ("CV", "SWW")
+BINARY_TARIFF_UNIQUE_ID = "dout_threewayvlv_val"
+
+
+def _start_of_month(dt_value: datetime) -> datetime:
+    return dt_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _append_label(base: str, label: str | None, multi_device: bool) -> str:
+    if multi_device and label:
+        return f"{base}_{label}"
+    return base
+
+
+def _energy_unique_id(label: str | None, multi_device: bool) -> str:
+    base = "generalmng_acumulatedpwr"
+    return _append_label(base, label, multi_device)
+
+
+def _binary_unique_id(label: str | None, multi_device: bool) -> str:
+    return _append_label(BINARY_TARIFF_UNIQUE_ID, label, multi_device)
+
+
+class TariffEnergyTracker:
+    """Track split energy totals for CV/SWW."""
+
+    def __init__(self, base_key: str, binary_key: str, tariffs: List[str]) -> None:
+        self.base_key = base_key
+        self.binary_key = binary_key
+        self.tariffs = list(tariffs)
+        self._totals: Dict[str, float] = {tariff: 0.0 for tariff in tariffs}
+        self._current_tariff: str = tariffs[0]
+        self._last_total: float | None = None
+        self._last_reset: datetime = _start_of_month(dt_util.utcnow())
+        self._last_token: datetime | None = None
+
+    @property
+    def current_tariff(self) -> str:
+        return self._current_tariff
+
+    @property
+    def last_reset(self) -> datetime:
+        return self._last_reset
+
+    def restore_total(self, tariff: str, value: float, last_reset: datetime | None) -> None:
+        if tariff in self._totals:
+            self._totals[tariff] = max(0.0, value)
+        if last_reset and last_reset > self._last_reset:
+            self._last_reset = last_reset
+
+    def set_initial_total(self, total: float | None) -> None:
+        if total is None:
+            return
+        try:
+            self._last_total = float(total)
+        except (TypeError, ValueError):
+            self._last_total = None
+
+    def _refresh_current_tariff(self, coordinator_data: dict[str, Any]) -> None:
+        state = coordinator_data.get(self.binary_key)
+        if isinstance(state, bool):
+            self._current_tariff = "SWW" if state else "CV"
+
+    def _reset_if_needed(self, reference: datetime | None) -> None:
+        now = reference or dt_util.utcnow()
+        start = _start_of_month(now)
+        if start > self._last_reset:
+            self._last_reset = start
+            for tariff in self._totals:
+                self._totals[tariff] = 0.0
+
+    def update(self, coordinator_data: dict[str, Any], token: datetime | None) -> None:
+        if token is not None and self._last_token is not None and token <= self._last_token:
+            self._refresh_current_tariff(coordinator_data)
+            return
+
+        if token is not None:
+            self._last_token = token
+
+        base_val = coordinator_data.get(self.base_key)
+        try:
+            base_float = float(base_val) if base_val is not None else None
+        except (TypeError, ValueError):
+            base_float = None
+
+        self._refresh_current_tariff(coordinator_data)
+
+        if base_float is None:
+            return
+
+        if self._last_total is None:
+            self._last_total = base_float
+            return
+
+        delta = base_float - self._last_total
+        self._last_total = base_float
+        if delta <= 0:
+            return
+
+        reference = token or dt_util.utcnow()
+        self._reset_if_needed(reference)
+        self._totals[self._current_tariff] += delta
+
+    def get_total(self, tariff: str) -> float:
+        return self._totals.get(tariff, 0.0)
+
+
+class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        tracker: TariffEnergyTracker,
+        tariff: str,
+        name_suffix: str,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._tracker = tracker
+        self._tariff = tariff
+        self._label = hub.label or "qube1"
+        self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
+        self._version = version
+        self._attr_name = name_suffix
+        base = f"{TARIFF_SENSOR_BASE}_{tariff.lower()}"
+        self._attr_unique_id = _append_label(base, hub.label, multi_device)
+        suggested = base
+        if self._show_label:
+            suggested = f"{suggested}_{self._label}"
+        self._attr_suggested_object_id = suggested
+        try:
+            self._attr_device_class = SensorDeviceClass.ENERGY
+        except Exception:
+            self._attr_device_class = None
+        if SensorStateClass:
+            try:
+                self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+            except Exception:
+                pass
+        self._attr_native_unit_of_measurement = "kWh"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state and last_state.state not in (None, "", "unknown", "unavailable"):
+            try:
+                value = float(last_state.state)
+            except (TypeError, ValueError):
+                value = 0.0
+            self._tracker.restore_total(self._tariff, value, last_state.last_reset)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.label or "Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+    @property
+    def native_value(self) -> float:
+        return round(self._tracker.get_total(self._tariff), 3)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:  # type: ignore[override]
+        return {"cycle_start": self._tracker.last_reset.isoformat()}
+
+    def _handle_coordinator_update(self) -> None:
+        token = getattr(self.coordinator, "last_update_success_time", None)
+        data = self.coordinator.data or {}
+        self._tracker.update(data, token)
+        super()._handle_coordinator_update()
