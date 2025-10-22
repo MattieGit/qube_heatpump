@@ -1,0 +1,125 @@
+# Example Lovelace dashboard for the Qube Heatpump integration.
+# Copy this into a manual dashboard or use it as inspiration for sections/cards.
+# If you run multiple heat pumps, append the hub label (e.g. _qube1) to the
+# entity IDs below so they match your registry entries.
+
+title: Qube Heatpump Overview
+views:
+  - title: Qube Heatpump
+    path: qube_heatpump
+    icon: mdi:heat-pump
+    cards:
+      - type: entities
+        title: Controls
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - switch.bms_demand
+          - switch.bms_summerwinter
+          - switch.tapw_timeprogram_bms_forced
+          - switch.antilegionella_frcstart_ant
+          - switch.en_plantsetp_compens
+          - switch.surplus_pv
+          - switch.bms_sgready_a
+          - switch.bms_sgready_b
+          - button.qube_reload
+
+      - type: entities
+        title: Alarm sensors
+        state_color: true
+        entities:
+          - binary_sensor.glbal
+          - binary_sensor.usralrms
+          - binary_sensor.coolingalrms
+          - binary_sensor.heatingalrms
+          - binary_sensor.srsalrm
+          - binary_sensor.alarmmng_al_pwrplus
+          - binary_sensor.alarmmng_al_workinghour
+          - binary_sensor.alrm_flw
+          - binary_sensor.al_maxtime_antileg_active
+          - binary_sensor.al_maxtime_dhw_active
+          - binary_sensor.al_dewpoint_active
+
+      - type: entities
+        title: Operating hours sensors
+        entities:
+          - sensor.workinghours_dhw_hrsret
+          - sensor.workinghours_heat_hrsret
+          - sensor.workinghours_cool_hrsret
+          - sensor.workinghours_heater1_hrs
+          - sensor.workinghours_heater2_hrs
+          - sensor.workinghours_heater3_hrs
+
+      - type: entities
+        title: Temperature and setpoints
+        entities:
+          - sensor.roomtemp
+          - sensor.outtemp
+          - sensor.tapw_temp
+          - sensor.supplytemp
+          - sensor.rettemp
+          - sensor.srcintemp
+          - sensor.srcouttemp
+          - sensor.thermostat_heatsetp_day
+          - sensor.thermostat_heatsetp_night
+          - sensor.heatsetp_1
+          - sensor.coolsetp_1
+          - sensor.dhw_setp
+
+      - type: entities
+        title: Power and energy sensors
+        entities:
+          - sensor.generalmng_eletricpwr
+          - sensor.generalmng_acumulatedpwr
+          - sensor.generalmng_acumulatedthermic
+          - sensor.qube_total_energy_with_standby
+          - sensor.qube_standby_power
+          - sensor.qube_standby_energy
+          - sensor.qube_energy_tariff_cv
+          - sensor.qube_energy_tariff_sww
+
+      - type: entities
+        title: Heat pump performance
+        entities:
+          - sensor.bldc_evd_powerplus_info_pump
+          - sensor.flow
+          - sensor.comppwrreq
+          - sensor.dhw_regreq
+          - sensor.tapw_timeprogram_dt_bms
+          - sensor.plantsetp
+          - sensor.regsetp
+          - sensor.generalmng_thermic_pwr
+          - sensor.modbus_roomtemp
+          - sensor.status_warmtepomp
+          - sensor.qube_driewegklep_dhw_cv_status
+          - sensor.qube_vierwegklep_verwarmen_koelen_status
+
+      - type: entities
+        title: Binary inputs and states
+        state_color: true
+        entities:
+          - binary_sensor.dout_srcpmp_val
+          - binary_sensor.dout_usrpmp_val
+          - binary_sensor.dout_bufferpmp_val
+          - binary_sensor.dout_fourwayvlv_val
+          - binary_sensor.dout_threewayvlv_val
+          - binary_sensor.dout_heaterstep1_val
+          - binary_sensor.dout_heaterstep2_val
+          - binary_sensor.dout_heaterstep3_val
+          - binary_sensor.roomprb_en
+          - binary_sensor.plantdemand
+          - binary_sensor.req_antileg_1
+          - binary_sensor.daynightmode
+          - binary_sensor.dewpoint
+          - binary_sensor.srcflw
+
+      - type: entities
+        title: Diagnostics and status
+        entities:
+          - sensor.qube_info
+          - sensor.qube_ip_address
+          - sensor.qube_metric_errors_connect
+          - sensor.qube_metric_errors_read
+          - sensor.qube_metric_count_sensors
+          - sensor.qube_metric_count_binary_sensors
+          - sensor.qube_metric_count_switches
