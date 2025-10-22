@@ -6,9 +6,9 @@ This folder contains ready-to-use Lovelace YAML snippets that showcase the Qube 
 
 1. In Home Assistant, go to **Settings → Dashboards** and create a new dashboard (or pick an existing manual dashboard). Enable the **Sections** layout (Home Assistant 2024.8 or newer) so the view supports headings and grids.
 2. Open the dashboard, click the three-dot menu in the top-right, and choose **Edit dashboard**.
-3. If prompted, switch the dashboard to **YAML mode**.
+3. Choose **Edit in YAML**. For sections dashboards created via the UI this YAML editor expects the root keys `title:` and `sections:` (no `views:` block).
 4. Replace the dashboard YAML with the contents of `dashboard_qube_overview.yaml`.
-5. Save the changes.
+5. Save the changes and reload the dashboard page.
 
 ## Adjusting entity IDs
 
