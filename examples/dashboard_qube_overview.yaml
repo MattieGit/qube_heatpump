@@ -1,74 +1,95 @@
-# Example Lovelace dashboard for the Qube Heatpump integration.
+# Example Lovelace dashboard for the Qube Heatpump integration (Sections layout).
 # Copy this into a manual dashboard or use it as a starting point.
 # If you run multiple heat pumps, append the hub label (e.g. _qube1) to the
 # entity IDs below so they match your registry entries.
 
 title: Qube Heatpump Overview
 views:
-  - type: sections
-    title: Qube Heatpump
+  - title: Qube Heatpump
     path: qube_heatpump
-    icon: mdi:heat-pump
-    badges:
-      - type: entity
-        entity: sensor.qube_info
-      - type: entity
-        entity: sensor.qube_metric_errors_connect
-        color: red
-      - type: entity
-        entity: sensor.qube_metric_errors_read
-        color: orange
+    type: sections
     sections:
-      - cards:
+      - type: grid
+        cards:
           - type: heading
             heading: Controls
             icon: mdi:tune-variant
-          - type: entities
-            show_header_toggle: false
-            state_color: true
-            entities:
-              - switch.bms_demand
-              - switch.bms_summerwinter
-              - switch.tapw_timeprogram_bms_forced
-              - switch.antilegionella_frcstart_ant
-              - switch.en_plantsetp_compens
-              - switch.surplus_pv
-              - switch.bms_sgready_a
-              - switch.bms_sgready_b
-              - entity: button.qube_reload
-                name: Reload integration
+          - type: tile
+            entity: switch.bms_demand
+          - type: tile
+            entity: switch.bms_summerwinter
+          - type: tile
+            entity: switch.tapw_timeprogram_bms_forced
+          - type: tile
+            entity: switch.antilegionella_frcstart_ant
+          - type: tile
+            entity: switch.en_plantsetp_compens
+          - type: tile
+            entity: switch.surplus_pv
+          - type: tile
+            entity: switch.bms_sgready_a
+          - type: tile
+            entity: switch.bms_sgready_b
+          - type: tile
+            entity: button.qube_reload
+            name: Reload integration
 
-      - cards:
+      - type: grid
+        cards:
           - type: heading
             heading: Alarm sensors
             icon: mdi:alarm-light
-          - type: entities
-            state_color: true
-            entities:
-              - binary_sensor.glbal
-              - binary_sensor.usralrms
-              - binary_sensor.coolingalrms
-              - binary_sensor.heatingalrms
-              - binary_sensor.srsalrm
-              - binary_sensor.alarmmng_al_pwrplus
-              - binary_sensor.alarmmng_al_workinghour
-              - binary_sensor.alrm_flw
-              - binary_sensor.al_maxtime_antileg_active
-              - binary_sensor.al_maxtime_dhw_active
-              - binary_sensor.al_dewpoint_active
+          - type: tile
+            entity: binary_sensor.glbal
+            color: red
+          - type: tile
+            entity: binary_sensor.usralrms
+            color: red
+          - type: tile
+            entity: binary_sensor.coolingalrms
+            color: red
+          - type: tile
+            entity: binary_sensor.heatingalrms
+            color: red
+          - type: tile
+            entity: binary_sensor.srsalrm
+            color: red
+          - type: tile
+            entity: binary_sensor.alarmmng_al_pwrplus
+            color: red
+          - type: tile
+            entity: binary_sensor.alarmmng_al_workinghour
+            color: red
+          - type: tile
+            entity: binary_sensor.alrm_flw
+            color: red
+          - type: tile
+            entity: binary_sensor.al_maxtime_antileg_active
+            color: red
+          - type: tile
+            entity: binary_sensor.al_maxtime_dhw_active
+            color: red
+          - type: tile
+            entity: binary_sensor.al_dewpoint_active
+            color: red
 
-      - cards:
+      - type: grid
+        cards:
           - type: heading
             heading: Operating hours
             icon: mdi:clock-time-four-outline
-          - type: entities
-            entities:
-              - sensor.workinghours_dhw_hrsret
-              - sensor.workinghours_heat_hrsret
-              - sensor.workinghours_cool_hrsret
-              - sensor.workinghours_heater1_hrs
-              - sensor.workinghours_heater2_hrs
-              - sensor.workinghours_heater3_hrs
+          - type: tile
+            entity: sensor.workinghours_dhw_hrsret
+          - type: tile
+            entity: sensor.workinghours_heat_hrsret
+          - type: tile
+            entity: sensor.workinghours_cool_hrsret
+          - type: tile
+            entity: sensor.workinghours_heater1_hrs
+          - type: tile
+            entity: sensor.workinghours_heater2_hrs
+          - type: tile
+            entity: sensor.workinghours_heater3_hrs
 
       - type: grid
         cards:
@@ -141,7 +162,7 @@ views:
             name: DHW demand
           - type: tile
             entity: sensor.tapw_timeprogram_dt_bms
-            name: Tapwater ΔT
+            name: Tapwater delta T
           - type: tile
             entity: sensor.plantsetp
             name: Plant setpoint
@@ -164,38 +185,56 @@ views:
             entity: sensor.qube_vierwegklep_verwarmen_koelen_status
             name: Vierwegklep status
 
-      - cards:
+      - type: grid
+        cards:
           - type: heading
             heading: Binary inputs & states
             icon: mdi:toggle-switch-variant
-          - type: entities
-            state_color: true
-            entities:
-              - binary_sensor.dout_srcpmp_val
-              - binary_sensor.dout_usrpmp_val
-              - binary_sensor.dout_bufferpmp_val
-              - binary_sensor.dout_fourwayvlv_val
-              - binary_sensor.dout_threewayvlv_val
-              - binary_sensor.dout_heaterstep1_val
-              - binary_sensor.dout_heaterstep2_val
-              - binary_sensor.dout_heaterstep3_val
-              - binary_sensor.roomprb_en
-              - binary_sensor.plantdemand
-              - binary_sensor.req_antileg_1
-              - binary_sensor.daynightmode
-              - binary_sensor.dewpoint
-              - binary_sensor.srcflw
+          - type: tile
+            entity: binary_sensor.dout_srcpmp_val
+          - type: tile
+            entity: binary_sensor.dout_usrpmp_val
+          - type: tile
+            entity: binary_sensor.dout_bufferpmp_val
+          - type: tile
+            entity: binary_sensor.dout_fourwayvlv_val
+          - type: tile
+            entity: binary_sensor.dout_threewayvlv_val
+          - type: tile
+            entity: binary_sensor.dout_heaterstep1_val
+          - type: tile
+            entity: binary_sensor.dout_heaterstep2_val
+          - type: tile
+            entity: binary_sensor.dout_heaterstep3_val
+          - type: tile
+            entity: binary_sensor.roomprb_en
+          - type: tile
+            entity: binary_sensor.plantdemand
+          - type: tile
+            entity: binary_sensor.req_antileg_1
+          - type: tile
+            entity: binary_sensor.daynightmode
+          - type: tile
+            entity: binary_sensor.dewpoint
+          - type: tile
+            entity: binary_sensor.srcflw
 
-      - cards:
+      - type: grid
+        cards:
           - type: heading
             heading: Diagnostics & status
             icon: mdi:information
-          - type: entities
-            entities:
-              - sensor.qube_info
-              - sensor.qube_ip_address
-              - sensor.qube_metric_errors_connect
-              - sensor.qube_metric_errors_read
-              - sensor.qube_metric_count_sensors
-              - sensor.qube_metric_count_binary_sensors
-              - sensor.qube_metric_count_switches
+          - type: tile
+            entity: sensor.qube_info
+          - type: tile
+            entity: sensor.qube_ip_address
+          - type: tile
+            entity: sensor.qube_metric_errors_connect
+          - type: tile
+            entity: sensor.qube_metric_errors_read
+          - type: tile
+            entity: sensor.qube_metric_count_sensors
+          - type: tile
+            entity: sensor.qube_metric_count_binary_sensors
+          - type: tile
+            entity: sensor.qube_metric_count_switches
