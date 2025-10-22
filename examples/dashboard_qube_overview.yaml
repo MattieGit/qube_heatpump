@@ -8,6 +8,39 @@ sections:
   - type: grid
     cards:
       - type: heading
+        heading: System snapshot
+        icon: mdi:home-thermometer
+      - type: picture-elements
+        image: /local/qube_heatpump_dashboard.png
+        elements:
+          - type: state-label
+            entity: sensor.dhw_temp
+            style:
+              top: 70%
+              left: 78%
+              color: "#ffffff"
+              font-size: 18px
+              font-weight: 600
+              text-shadow: "1px 1px 4px rgba(0, 0, 0, 0.8)"
+              background: "rgba(0, 0, 0, 0.45)"
+              border-radius: 8px
+              padding: 6px 10px
+          - type: state-label
+            entity: sensor.status_warmtepomp
+            style:
+              top: 40%
+              left: 32%
+              color: "#ffffff"
+              font-size: 18px
+              font-weight: 600
+              text-shadow: "1px 1px 4px rgba(0, 0, 0, 0.8)"
+              background: "rgba(44, 82, 130, 0.6)"
+              border-radius: 8px
+              padding: 6px 10px
+
+  - type: grid
+    cards:
+      - type: heading
         heading: Controls
         icon: mdi:tune-variant
       - type: tile
