@@ -97,7 +97,7 @@ sections:
       - type: tile
         entity: sensor.outtemp
       - type: tile
-        entity: sensor.tapw_temp
+        entity: sensor.dhw_temp
       - type: tile
         entity: sensor.supplytemp
       - type: tile
@@ -129,15 +129,15 @@ sections:
       - type: tile
         entity: sensor.generalmng_acumulatedthermic
       - type: tile
-        entity: sensor.qube_total_energy_with_standby
+        entity: sensor.qube_total_energy_incl_standby
       - type: tile
         entity: sensor.qube_standby_power
       - type: tile
         entity: sensor.qube_standby_energy
       - type: tile
-        entity: sensor.qube_energy_tariff_cv
+        entity: sensor.elektrisch_verbruik_cv_maand
       - type: tile
-        entity: sensor.qube_energy_tariff_sww
+        entity: sensor.elektrisch_verbruik_sww_maand
 
   - type: grid
     cards:
