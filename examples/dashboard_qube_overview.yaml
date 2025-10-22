@@ -26,9 +26,6 @@ sections:
         entity: switch.bms_sgready_a
       - type: tile
         entity: switch.bms_sgready_b
-      - type: button
-        entity: button.qube_reload
-        name: Reload integration
 
   - type: grid
     cards:
