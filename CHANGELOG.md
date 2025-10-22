@@ -2,15 +2,19 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2025.10.53 — 2025-10-21
-- fix: Link the integration UI and manifest to the new wiki and tighten diagnostic sensor counting.
-- docs: Add internal guidance covering the wiki link to AGENTS.md.
+## 2025.10.56 — 2025-10-22
+- feat: Auto-create a helper group that aggregates all Qube alarm binary sensors for dashboard filtering.
+- docs: Expand the example dashboard with a system snapshot picture card and refreshed image asset.
+
+## 2025.10.55 — 2025-10-21
+- fix: Remove the manual tariff select entity and rely on automation-driven tracking while keeping diagnostics accurate.
 
 ## 2025.10.54 — 2025-10-21
 - fix: Restore CV/SWW monthly energy sensors when Home Assistant no longer exposes `last_reset` on saved states.
 
-## 2025.10.55 — 2025-10-21
-- fix: Remove the manual tariff select entity and rely on automation-driven tracking while keeping diagnostics accurate.
+## 2025.10.53 — 2025-10-21
+- fix: Link the integration UI and manifest to the new wiki and tighten diagnostic sensor counting.
+- docs: Add internal guidance covering the wiki link to AGENTS.md.
 
 ## 2025.10.52 — 2025-10-21
 - docs: Refresh the README with a concise overview and move deep-dive material into a structured wiki.
