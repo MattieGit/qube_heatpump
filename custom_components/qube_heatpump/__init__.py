@@ -264,6 +264,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
     )
 
+    alarm_group_object_id = _alarm_group_object_id(label, multi_device)
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "hub": hub,
         "coordinator": coordinator,
@@ -271,6 +273,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "apply_label_in_name": apply_label_in_name,
         "version": version,
         "multi_device": multi_device,
+        "alarm_group_object_id": alarm_group_object_id,
     }
 
     try:
@@ -320,6 +323,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    async def _async_sync_alarm_group() -> None:
+        ent_reg = er.async_get(hass)
+        entity_ids: list[str] = []
+        for ent in hub.entities:
+            if not _is_alarm_entity(ent):
+                continue
+            reg_entity_id = ent_reg.async_get_entity_id(ent.platform, DOMAIN, ent.unique_id)
+            if reg_entity_id:
+                entity_ids.append(reg_entity_id)
+        if not entity_ids:
+            return
+        name = "Qube alarm sensors"
+        if multi_device:
+            name = f"Qube alarm sensors ({label})"
+        service_data = {
+            "object_id": alarm_group_object_id,
+            "name": name,
+            "icon": "mdi:alarm-light",
+            "entities": sorted(set(entity_ids)),
+            "mode": "any",
+        }
+        try:
+            await hass.services.async_call("group", "set", service_data, blocking=True)
+        except Exception as exc:  # pragma: no cover - service not available
+            _LOGGER.debug("Unable to create/update alarm group: %s", exc)
+
+    await _async_sync_alarm_group()
     return True
 
 
@@ -328,6 +359,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     if data and (hub := data.get("hub")):
         await hub.async_close()
+    object_id = data.get("alarm_group_object_id") if data else None
+    if object_id:
+        try:
+            await hass.services.async_call(
+                "group",
+                "remove",
+                {"object_id": object_id},
+                blocking=True,
+            )
+        except Exception:  # pragma: no cover - service not available
+            _LOGGER.debug("Unable to remove alarm group %s", object_id)
     return unload_ok
 
 
@@ -335,6 +377,23 @@ def _entity_key(ent: "EntityDef") -> str:
     if ent.unique_id:
         return ent.unique_id
     return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
+
+
+def _is_alarm_entity(ent: "EntityDef") -> bool:
+    if getattr(ent, "platform", None) != "binary_sensor":
+        return False
+    name = (getattr(ent, "name", "") or "").lower()
+    if "alarm" in name:
+        return True
+    vendor = (getattr(ent, "vendor_id", "") or "").lower()
+    return vendor.startswith("al")
+
+
+def _alarm_group_object_id(label: str | None, multi_device: bool) -> str:
+    base = "qube_alarm_sensors"
+    if multi_device and label:
+        base = f"{base}_{label}"
+    return base
 
 
 try:
