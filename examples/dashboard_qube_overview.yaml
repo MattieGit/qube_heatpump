@@ -32,39 +32,24 @@ sections:
       - type: heading
         heading: Alarm sensors
         icon: mdi:alarm-light
-      - type: tile
-        entity: binary_sensor.glbal
-        color: red
-      - type: tile
-        entity: binary_sensor.usralrms
-        color: red
-      - type: tile
-        entity: binary_sensor.coolingalrms
-        color: red
-      - type: tile
-        entity: binary_sensor.heatingalrms
-        color: red
-      - type: tile
-        entity: binary_sensor.srsalrm
-        color: red
-      - type: tile
-        entity: binary_sensor.alarmmng_al_pwrplus
-        color: red
-      - type: tile
-        entity: binary_sensor.alarmmng_al_workinghour
-        color: red
-      - type: tile
-        entity: binary_sensor.alrm_flw
-        color: red
-      - type: tile
-        entity: binary_sensor.al_maxtime_antileg_active
-        color: red
-      - type: tile
-        entity: binary_sensor.al_maxtime_dhw_active
-        color: red
-      - type: tile
-        entity: binary_sensor.al_dewpoint_active
-        color: red
+      - type: entity-filter
+        show_empty: false
+        state_filter:
+          - "on"
+        card:
+          type: entities
+        entities:
+          - binary_sensor.glbal
+          - binary_sensor.usralrms
+          - binary_sensor.coolingalrms
+          - binary_sensor.heatingalrms
+          - binary_sensor.srsalrm
+          - binary_sensor.alarmmng_al_pwrplus
+          - binary_sensor.alarmmng_al_workinghour
+          - binary_sensor.alrm_flw
+          - binary_sensor.al_maxtime_antileg_active
+          - binary_sensor.al_maxtime_dhw_active
+          - binary_sensor.al_dewpoint_active
 
   - type: grid
     cards:
