@@ -89,6 +89,21 @@ sections:
           - binary_sensor.al_dewpoint_active
 
   - type: grid
+    visibility:
+      - condition: state
+        entity: group.qube_alarm_sensors
+        state: "off"
+    cards:
+      - type: heading
+        heading: Alarm sensors
+        icon: mdi:alarm-light
+      - type: tile
+        entity: group.qube_alarm_sensors
+        name: No active alarms
+        icon: mdi:alarm-off
+        color: green
+
+  - type: grid
     cards:
       - type: heading
         heading: Operating hours
