@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.loader import async_get_integration, async_get_loaded_integration
 
@@ -333,7 +334,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             reg_entity_id = ent_reg.async_get_entity_id(ent.platform, DOMAIN, ent.unique_id)
             if reg_entity_id:
                 entity_ids.append(reg_entity_id)
+        await async_setup_component(hass, "group", {})
         if not entity_ids:
+            try:
+                await hass.services.async_call(
+                    "group",
+                    "remove",
+                    {"object_id": alarm_group_object_id},
+                    blocking=True,
+                )
+            except Exception:
+                _LOGGER.debug("Unable to clean up empty alarm group %s", alarm_group_object_id)
             return
         name = "Qube alarm sensors"
         if multi_device:
@@ -343,7 +354,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "name": name,
             "icon": "mdi:alarm-light",
             "entities": sorted(set(entity_ids)),
-            "mode": "any",
+            "all": False,
         }
         try:
             await hass.services.async_call("group", "set", service_data, blocking=True)

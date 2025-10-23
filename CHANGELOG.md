@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.57 — 2025-10-22
+- fix: Ensure the alarm helper group uses supported service fields and initialise the group integration before creation.
+
 ## 2025.10.56 — 2025-10-22
 - feat: Auto-create a helper group that aggregates all Qube alarm binary sensors for dashboard filtering.
 - docs: Expand the example dashboard with a system snapshot picture card and refreshed image asset.
