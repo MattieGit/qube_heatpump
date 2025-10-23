@@ -63,7 +63,7 @@ sections:
   - type: grid
     visibility:
       - condition: state
-        entity: group.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors
         state: "on"
     cards:
       - type: heading
@@ -91,14 +91,14 @@ sections:
   - type: grid
     visibility:
       - condition: state
-        entity: group.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors
         state: "off"
     cards:
       - type: heading
         heading: Alarm sensors
         icon: mdi:alarm-light
       - type: tile
-        entity: group.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors
         name: No active alarms
         icon: mdi:alarm-off
         color: green

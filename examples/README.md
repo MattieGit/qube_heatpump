@@ -19,3 +19,5 @@ The example uses the default entity IDs created by the Qube integration. If you:
 - Renamed entities manually, update the YAML to match your preferred IDs.
 
 Once saved, the dashboard shows a System snapshot picture card (with state labels overlaying the included photo), followed by Controls and the grouped sensor sections (alarms, operating hours, temperature/setpoints, power/energy, performance metrics, binary inputs, and diagnostics).
+
+The integration also exposes `binary_sensor.qube_alarm_sensors`, which mirrors whether any alarm binary sensor is active; the example dashboard uses this helper for conditional visibility.

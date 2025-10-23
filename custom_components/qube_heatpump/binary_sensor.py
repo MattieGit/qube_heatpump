@@ -4,7 +4,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -25,10 +25,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     multi_device = bool(data.get("multi_device", False))
 
     entities: list[BinarySensorEntity] = []
+    alarm_entities: list[EntityDef] = []
     for ent in hub.entities:
         if ent.platform != "binary_sensor":
             continue
         entities.append(WPQubeBinarySensor(coordinator, hub, apply_label, multi_device, ent))
+        if _is_alarm_entity(ent):
+            alarm_entities.append(ent)
+
+    if alarm_entities:
+        entities.append(
+            QubeAlarmStatusBinarySensor(
+                coordinator,
+                hub,
+                apply_label,
+                multi_device,
+                alarm_entities,
+            )
+        )
 
     async_add_entities(entities)
 
@@ -108,5 +122,76 @@ class WPQubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
 
 
+class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        show_label: bool,
+        multi_device: bool,
+        alarm_entities: list[EntityDef],
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._label = hub.label or "qube1"
+        self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
+        self._tied_entities = list(alarm_entities)
+        base_unique = "qube_alarm_sensors_state"
+        self._attr_unique_id = (
+            f"{base_unique}_{self._label}" if self._multi_device else base_unique
+        )
+        self._attr_name = "Qube alarm sensors active"
+        self._attr_icon = "mdi:alarm-light"
+        self._keys = [_entity_state_key(ent) for ent in alarm_entities]
+        self._attr_suggested_object_id = "qube_alarm_sensors"
+        if self._show_label:
+            self._attr_suggested_object_id = f"qube_alarm_sensors_{self._label}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=(self._hub.label or "Qube Heatpump"),
+            manufacturer="Qube",
+            model="Heatpump",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        data = self.coordinator.data or {}
+        for key in self._keys:
+            val = data.get(key)
+            if isinstance(val, bool) and val:
+                return True
+        return False
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired = self._attr_suggested_object_id
+        if desired:
+            await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(desired))
+
+
 def _slugify(text: str) -> str:
     return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
+
+
+def _is_alarm_entity(ent: EntityDef) -> bool:
+    if ent.platform != "binary_sensor":
+        return False
+    name = (ent.name or "").lower()
+    if "alarm" in name:
+        return True
+    vendor = (ent.vendor_id or "").lower()
+    return vendor.startswith("al")
+
+
+def _entity_state_key(ent: EntityDef) -> str:
+    if ent.unique_id:
+        return ent.unique_id
+    suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
+    return f"binary_sensor_{suffix}"
