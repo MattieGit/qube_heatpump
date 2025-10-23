@@ -61,6 +61,10 @@ sections:
         entity: switch.bms_sgready_b
 
   - type: grid
+    visibility:
+      - condition: state
+        entity: group.qube_alarm_sensors
+        state: "on"
     cards:
       - type: heading
         heading: Alarm sensors
