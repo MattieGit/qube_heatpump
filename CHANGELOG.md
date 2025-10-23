@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.58 — 2025-10-22
+- feat: Surface `binary_sensor.qube_alarm_sensors` so dashboards can react to alarm status without group entity limitations.
+- docs: Update the example dashboard visibility conditions to use the new helper sensor.
+
 ## 2025.10.57 — 2025-10-22
 - fix: Ensure the alarm helper group uses supported service fields and initialise the group integration before creation.
 
