@@ -58,7 +58,7 @@ Two tooling layers are available when something seems off:
 
 ### SG Ready Signals
 
-The table below outlines how the heat pump interprets the `SG ready` inputs. Each combination of the two switches maps to a specific status and action.
+The table below outlines how the heat pump interprets the `SG ready` inputs. Each combination of the two switches maps to a specific status and action. A one-time legionella cycle means that the anti-legionella cycle will be executed only once a day, even when SG Ready Plus or Max will be activated multiple times during the day.
 
 | SGready A | SGready B | Status        | Action                                                     |
 |-----------|-----------|---------------|------------------------------------------------------------|
