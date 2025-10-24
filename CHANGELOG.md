@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.59 — 2025-10-22
+- feat: Expose Modbus demand/tapwater coils (addresses 67 and 173) as switches and surface them in the dashboard sample.
+- fix: Increase the Linq room temperature sensor precision to 0.1 °C for clearer readings.
+
 ## 2025.10.58 — 2025-10-22
 - feat: Surface `binary_sensor.qube_alarm_sensors` so dashboards can react to alarm status without group entity limitations.
 - docs: Update the example dashboard visibility conditions to use the new helper sensor.

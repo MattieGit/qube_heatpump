@@ -680,7 +680,7 @@
     input_type: input
     data_type: float32
     scan_interval: 10
-    precision: 0
+    precision: 1
     device_class: temperature
     unit_of_measurement: "°C"
     state_class: measurement
@@ -759,6 +759,22 @@
     command_off: 0
     scan_interval: 10
     unique_id: BMS_SGready_B
+
+  - name: "Modbus Demand" #To trigger demand via Modbus, instead of via Linq
+    address: 67
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+    unique_id: Modbus_Demand
+
+  - name: "Modbus Tapwater" #To trigger tapwater heating via Modbus, instead of via Linq
+    address: 173
+    write_type: coil
+    command_on: 1
+    command_off: 0
+    scan_interval: 10
+    unique_id: TapW_TimeProgram_DHWSetP_NoLinQ
 
 # Qube elektriciteitsverbruik splitsen tussen CV en SWW
   utility_meter:
