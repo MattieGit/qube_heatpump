@@ -55,8 +55,6 @@ sections:
         entity: switch.bms_sgready_b
       - type: tile
         entity: switch.modbus_demand
-      - type: tile
-        entity: switch.tapw_timeprogram_dhwsetp_nolinq
   - type: grid
     visibility:
       - condition: state

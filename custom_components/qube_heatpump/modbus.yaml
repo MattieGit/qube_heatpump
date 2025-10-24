@@ -779,13 +779,6 @@
     scan_interval: 10
     unique_id: Modbus_Demand
 
-  - name: "Modbus Tapwater" #To trigger tapwater heating via Modbus, instead of via Linq
-    address: 173
-    write_type: holding
-    data_type: float32
-    scan_interval: 10
-    unique_id: TapW_TimeProgram_DHWSetP_NoLinQ
-
 # Qube elektriciteitsverbruik splitsen tussen CV en SWW
   utility_meter:
     heatpump_energy:

@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.62 — 2025-10-22
+- fix: Remove the Modbus tapwater trigger switch and treat its register as a standard sensor so it behaves like other DHW setpoint readings.
+- docs: Drop the switch from the dashboard example controls.
+
 ## 2025.10.61 — 2025-10-22
 - fix: Treat the Modbus tapwater trigger register as float32 and encode/decode 32-bit values when toggling from Home Assistant.
 
