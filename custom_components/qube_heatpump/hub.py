@@ -184,8 +184,9 @@ class WPQubeHub:
                 return bool(getattr(rr, "bits", [False])[0])
 
             if write_type in ("holding", "holding_register", "register", "holdingregister"):
+                count = 2 if ent.data_type == "float32" else 1
                 try:
-                    rr = await self._call("read_holding_registers", address=ent.address, count=1)
+                    rr = await self._call("read_holding_registers", address=ent.address, count=count)
                 except ModbusException:
                     fallback_addr = ent.address - 1
                     if fallback_addr < 0:
@@ -195,13 +196,18 @@ class WPQubeHub:
                         ent.address,
                         fallback_addr,
                     )
-                    rr = await self._call("read_holding_registers", address=fallback_addr, count=1)
+                    rr = await self._call("read_holding_registers", address=fallback_addr, count=count)
 
                 regs = getattr(rr, "registers", None)
                 if not regs:
                     return None
                 try:
-                    return bool(int(regs[0]))
+                    if ent.data_type == "float32" and len(regs) >= 2:
+                        raw = struct.pack(">HH", int(regs[0]) & 0xFFFF, int(regs[1]) & 0xFFFF)
+                        val = struct.unpack(">f", raw)[0]
+                    else:
+                        val = int(regs[0])
+                    return bool(val)
                 except Exception:
                     return None
 
@@ -296,7 +302,13 @@ class WPQubeHub:
                 await self._call("write_coil", address=ent.address, value=value)
                 return
             if write_type in ("holding", "holding_register", "register", "holdingregister"):
-                await self._call("write_register", address=ent.address, value=value)
+                if ent.data_type == "float32":
+                    raw = struct.pack(">f", float(value))
+                    hi = int.from_bytes(raw[:2], "big")
+                    lo = int.from_bytes(raw[2:], "big")
+                    await self._call("write_registers", address=ent.address, values=[hi, lo])
+                else:
+                    await self._call("write_register", address=ent.address, value=value)
                 return
         except ModbusException:
             fallback_addr = ent.address - 1
@@ -308,7 +320,13 @@ class WPQubeHub:
                     await self._call("write_coil", address=fallback_addr, value=value)
                     return
                 if write_type in ("holding", "holding_register", "register", "holdingregister"):
-                    await self._call("write_register", address=fallback_addr, value=value)
+                    if ent.data_type == "float32":
+                        raw = struct.pack(">f", float(value))
+                        hi = int.from_bytes(raw[:2], "big")
+                        lo = int.from_bytes(raw[2:], "big")
+                        await self._call("write_registers", address=fallback_addr, values=[hi, lo])
+                    else:
+                        await self._call("write_register", address=fallback_addr, value=value)
                     return
             raise
 

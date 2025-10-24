@@ -11,5 +11,5 @@
   "issue_tracker": "https://github.com/MattieGit/wp-qube/issues",
   "loggers": ["qube"],
   "requirements": ["pymodbus>=3.9.0,<4"],
-  "version": "2025.10.60"
+  "version": "2025.10.61"
 }

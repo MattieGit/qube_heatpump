@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.61 — 2025-10-22
+- fix: Treat the Modbus tapwater trigger register as float32 and encode/decode 32-bit values when toggling from Home Assistant.
+
 ## 2025.10.60 — 2025-10-22
 - feat: Allow Modbus switches backed by holding registers (register write/read) and map tapwater trigger to the new register.
 - fix: Treat switch register reads as booleans with fallback addressing, so register-backed controls stay in sync.
