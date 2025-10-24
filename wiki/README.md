@@ -67,6 +67,10 @@ The table below outlines how the heat pump interprets the `SG ready` inputs. Eac
 | On        | On        | SGready_Max   | One-time legionella cycle, surplus heating curve, LinQ + 1 K |
 | Off       | On        | SGready_Plus  | One-time legionella cycle                                  |
 
+![Qube Linq thermostat configuration](../assets/qube_heatpump_settings.png)
+
+When you trigger Qube demand or DHW start via the Modbus coil switches (addresses `67` and `173` exposed as `switch.modbus_demand` and `switch.tapw_timeprogram_dhwsetp_nolinq`), disable the Linq thermostat options for room temperature and domestic hot water on the heat pump controller. Leaving those Linq options enabled alongside the Modbus coils can lead to conflicting control: the coils should take ownership of those functions while activated.
+
 ## Error Handling & Recovery
 
 - The integration uses exponential backoff on connection failures so the logs remain readable and the device isn’t hammered while offline.
