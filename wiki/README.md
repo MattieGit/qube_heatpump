@@ -71,6 +71,16 @@ The table below outlines how the heat pump interprets the `SG ready` inputs. Eac
 
 When you trigger Qube demand or DHW start via the Modbus coil switches (addresses `67` and `173` exposed as `switch.modbus_demand` and `switch.tapw_timeprogram_dhwsetp_nolinq`), disable the Linq thermostat options for room temperature and domestic hot water on the heat pump controller. Leaving those Linq options enabled alongside the Modbus coils can lead to conflicting control: the coils should take ownership of those functions while activated. The `Modbus_Demand` switch is ideal for driving the heat pump from a virtual thermostat or automation—once enabled, the Linq thermostat is no longer responsible for issuing space-heating demand; your automation decides when to request heat.
 
+To set the Modbus tapwater setpoint directly, call the integration service `qube_heatpump.write_register` and supply the DHW register address (`173`) as a float, for example:
+
+```yaml
+action: qube_heatpump.write_register
+data:
+  address: 173
+  value: 49
+  data_type: float32
+```
+
 ## Error Handling & Recovery
 
 - The integration uses exponential backoff on connection failures so the logs remain readable and the device isn’t hammered while offline.
