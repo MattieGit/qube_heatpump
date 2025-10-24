@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.65 — 2025-10-22
+- fix: Copy the incoming service data before validation to avoid ReadOnlyDict errors in the write_register service.
+
 ## 2025.10.64 — 2025-10-22
 - fix: Ensure the write_register service handles validated data by copying the schema output before use.
 

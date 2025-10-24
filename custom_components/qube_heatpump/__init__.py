@@ -353,8 +353,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     async def _async_write_register(call):
-        validated = write_register_schema(call.data)
-        data = dict(validated)
+        data = dict(call.data)
+        data = write_register_schema(data)
         target = _resolve_entry(data.get("entry_id"), data.get("label"))
         if target is None:
             _LOGGER.error(
