@@ -178,9 +178,34 @@ class WPQubeHub:
             return bool(getattr(rr, "bits", [False])[0])
 
         if ent.platform == "switch":
-            # Read coil state to reflect actual device state
-            rr = await self._call("read_coils", address=ent.address, count=1)
-            return bool(getattr(rr, "bits", [False])[0])
+            write_type = (ent.write_type or "coil").lower()
+            if write_type in ("coil", "coils"):
+                rr = await self._call("read_coils", address=ent.address, count=1)
+                return bool(getattr(rr, "bits", [False])[0])
+
+            if write_type in ("holding", "holding_register", "register", "holdingregister"):
+                try:
+                    rr = await self._call("read_holding_registers", address=ent.address, count=1)
+                except ModbusException:
+                    fallback_addr = ent.address - 1
+                    if fallback_addr < 0:
+                        raise
+                    logging.getLogger(__name__).info(
+                        "Modbus holding read failed @ %s, retrying @ %s (fallback)",
+                        ent.address,
+                        fallback_addr,
+                    )
+                    rr = await self._call("read_holding_registers", address=fallback_addr, count=1)
+
+                regs = getattr(rr, "registers", None)
+                if not regs:
+                    return None
+                try:
+                    return bool(int(regs[0]))
+                except Exception:
+                    return None
+
+            raise ModbusException(f"Unsupported switch write_type: {write_type}")
 
         # sensor
         count = 1
@@ -264,5 +289,27 @@ class WPQubeHub:
     async def async_write_switch(self, ent: EntityDef, on: bool) -> None:
         if self._client is None:
             raise ModbusException("Client not connected")
-        # Only coil writes are defined in the YAML
-        await self._call("write_coil", address=ent.address, value=1 if on else 0)
+        value = 1 if on else 0
+        write_type = (ent.write_type or "coil").lower()
+        try:
+            if write_type in ("coil", "coils"):
+                await self._call("write_coil", address=ent.address, value=value)
+                return
+            if write_type in ("holding", "holding_register", "register", "holdingregister"):
+                await self._call("write_register", address=ent.address, value=value)
+                return
+        except ModbusException:
+            fallback_addr = ent.address - 1
+            if fallback_addr >= 0:
+                logging.getLogger(__name__).info(
+                    "Modbus write failed @ %s, retrying @ %s (fallback)", ent.address, fallback_addr
+                )
+                if write_type in ("coil", "coils"):
+                    await self._call("write_coil", address=fallback_addr, value=value)
+                    return
+                if write_type in ("holding", "holding_register", "register", "holdingregister"):
+                    await self._call("write_register", address=fallback_addr, value=value)
+                    return
+            raise
+
+        raise ModbusException(f"Unsupported switch write_type: {write_type}")

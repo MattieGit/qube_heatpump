@@ -338,6 +338,17 @@
     state_class: measurement
     unique_id: Regulation_BufferSetP_Max
 
+  - name: "Modbus Tapwater Setpoint" #Set DHW setpoint via Modbus
+    address: 173
+    write_type: holding
+    data_type: float32
+    scan_interval: 10
+    precision: 1
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    unique_id: TapW_TimeProgram_DHWSetP_NoLinQ
+
   - name: "Percentage sturing User (CV) pomp"
     address: 4
     input_type: input
@@ -770,9 +781,8 @@
 
   - name: "Modbus Tapwater" #To trigger tapwater heating via Modbus, instead of via Linq
     address: 173
-    write_type: coil
-    command_on: 1
-    command_off: 0
+    write_type: holding
+    data_type: uint16
     scan_interval: 10
     unique_id: TapW_TimeProgram_DHWSetP_NoLinQ
 

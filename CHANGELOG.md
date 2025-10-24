@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.60 — 2025-10-22
+- feat: Allow Modbus switches backed by holding registers (register write/read) and map tapwater trigger to the new register.
+- fix: Treat switch register reads as booleans with fallback addressing, so register-backed controls stay in sync.
+
 ## 2025.10.59 — 2025-10-22
 - feat: Expose Modbus demand/tapwater coils (addresses 67 and 173) as switches and surface them in the dashboard sample.
 - fix: Increase the Linq room temperature sensor precision to 0.1 °C for clearer readings.
