@@ -322,6 +322,78 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         schema=vol.Schema({vol.Optional("entry_id"): str}),
     )
 
+    def _resolve_entry(entry_id: str | None, label_value: str | None) -> ConfigEntry | None:
+        if entry_id:
+            return hass.config_entries.async_get_entry(entry_id)
+        if label_value:
+            for cfg in hass.config_entries.async_entries(DOMAIN):
+                cfg_data = hass.data.get(DOMAIN, {}).get(cfg.entry_id)
+                if not cfg_data:
+                    continue
+                cfg_label = cfg_data.get("label") or getattr(cfg_data.get("hub"), "label", None)
+                if cfg_label == label_value:
+                    return cfg
+        loaded_entries = [
+            cfg
+            for cfg in hass.config_entries.async_entries(DOMAIN)
+            if hass.data.get(DOMAIN, {}).get(cfg.entry_id)
+        ]
+        if len(loaded_entries) == 1:
+            return loaded_entries[0]
+        return None
+
+    write_register_schema = vol.Schema(
+        {
+            vol.Required("address"): vol.Coerce(int),
+            vol.Required("value"): vol.Coerce(float),
+            vol.Optional("data_type", default="uint16"): vol.In({"uint16", "int16", "float32"}),
+            vol.Optional("entry_id"): str,
+            vol.Optional("label"): str,
+        }
+    )
+
+    async def _async_write_register(call):
+        data = write_register_schema(call.data)
+        target = _resolve_entry(data.get("entry_id"), data.get("label"))
+        if target is None:
+            _LOGGER.error(
+                "write_register: unable to resolve integration entry; specify entry_id or label"
+            )
+            return
+        target_data = hass.data.get(DOMAIN, {}).get(target.entry_id)
+        if not target_data:
+            _LOGGER.error("write_register: integration entry %s is not loaded", target.entry_id)
+            return
+        hub_target = target_data.get("hub")
+        if hub_target is None:
+            _LOGGER.error("write_register: no hub available for entry %s", target.entry_id)
+            return
+        await hub_target.async_connect()
+        data_type = str(data["data_type"]).lower()
+
+        try:
+            await hub_target.async_write_register(
+                data["address"],
+                data["value"],
+                data_type,
+            )
+        except Exception as exc:
+            _LOGGER.error(
+                "write_register: failed to write address %s (%s)", data["address"], exc
+            )
+            raise
+        coordinator_target = target_data.get("coordinator")
+        if coordinator_target is not None:
+            await coordinator_target.async_request_refresh()
+
+    if not hass.services.has_service(DOMAIN, "write_register"):
+        hass.services.async_register(
+            DOMAIN,
+            "write_register",
+            _async_write_register,
+            schema=write_register_schema,
+        )
+
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

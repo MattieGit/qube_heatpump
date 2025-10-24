@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.63 — 2025-10-22
+- feat: Expose a write_register service to set holding registers (uint16/int16/float32) directly via Home Assistant.
+- feat: Add generic register write helper in the hub so future switches/services can reuse it.
+
 ## 2025.10.62 — 2025-10-22
 - fix: Remove the Modbus tapwater trigger switch and treat its register as a standard sensor so it behaves like other DHW setpoint readings.
 - docs: Drop the switch from the dashboard example controls.

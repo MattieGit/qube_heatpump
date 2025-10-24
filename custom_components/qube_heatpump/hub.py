@@ -184,7 +184,8 @@ class WPQubeHub:
                 return bool(getattr(rr, "bits", [False])[0])
 
             if write_type in ("holding", "holding_register", "register", "holdingregister"):
-                count = 2 if ent.data_type == "float32" else 1
+                data_type = (ent.data_type or "uint16").lower()
+                count = 2 if data_type == "float32" else 1
                 try:
                     rr = await self._call("read_holding_registers", address=ent.address, count=count)
                 except ModbusException:
@@ -202,7 +203,7 @@ class WPQubeHub:
                 if not regs:
                     return None
                 try:
-                    if ent.data_type == "float32" and len(regs) >= 2:
+                    if data_type == "float32" and len(regs) >= 2:
                         raw = struct.pack(">HH", int(regs[0]) & 0xFFFF, int(regs[1]) & 0xFFFF)
                         val = struct.unpack(">f", raw)[0]
                     else:
@@ -292,6 +293,50 @@ class WPQubeHub:
 
         return val
 
+    async def async_write_register(self, address: int, value: float, data_type: str = "uint16") -> None:
+        if self._client is None:
+            raise ModbusException("Client not connected")
+
+        data_type = (data_type or "uint16").lower()
+
+        async def _write(addr: int) -> None:
+            if data_type in ("float32", "float"):
+                raw = struct.pack(">f", float(value))
+                hi = int.from_bytes(raw[:2], "big")
+                lo = int.from_bytes(raw[2:], "big")
+                await self._call("write_registers", address=addr, values=[hi & 0xFFFF, lo & 0xFFFF])
+                return
+
+            if data_type in ("int16", "int"):
+                int_val = int(round(float(value)))
+                if not -32768 <= int_val <= 32767:
+                    raise ModbusException("int16 value out of range")
+                if int_val < 0:
+                    int_val = (1 << 16) + int_val
+                await self._call("write_register", address=addr, value=int_val & 0xFFFF)
+                return
+
+            if data_type in ("uint16", "uint"):
+                int_val = int(round(float(value)))
+                if not 0 <= int_val <= 0xFFFF:
+                    raise ModbusException("uint16 value out of range")
+                await self._call("write_register", address=addr, value=int_val & 0xFFFF)
+                return
+
+            raise ModbusException(f"Unsupported data_type for register write: {data_type}")
+
+        try:
+            await _write(address)
+            return
+        except ModbusException:
+            fallback_addr = address - 1
+            if fallback_addr < 0:
+                raise
+            logging.getLogger(__name__).info(
+                "Modbus register write failed @ %s, retrying @ %s (fallback)", address, fallback_addr
+            )
+            await _write(fallback_addr)
+
     async def async_write_switch(self, ent: EntityDef, on: bool) -> None:
         if self._client is None:
             raise ModbusException("Client not connected")
@@ -302,13 +347,7 @@ class WPQubeHub:
                 await self._call("write_coil", address=ent.address, value=value)
                 return
             if write_type in ("holding", "holding_register", "register", "holdingregister"):
-                if ent.data_type == "float32":
-                    raw = struct.pack(">f", float(value))
-                    hi = int.from_bytes(raw[:2], "big")
-                    lo = int.from_bytes(raw[2:], "big")
-                    await self._call("write_registers", address=ent.address, values=[hi, lo])
-                else:
-                    await self._call("write_register", address=ent.address, value=value)
+                await self.async_write_register(ent.address, value, ent.data_type or "uint16")
                 return
         except ModbusException:
             fallback_addr = ent.address - 1
@@ -320,13 +359,7 @@ class WPQubeHub:
                     await self._call("write_coil", address=fallback_addr, value=value)
                     return
                 if write_type in ("holding", "holding_register", "register", "holdingregister"):
-                    if ent.data_type == "float32":
-                        raw = struct.pack(">f", float(value))
-                        hi = int.from_bytes(raw[:2], "big")
-                        lo = int.from_bytes(raw[2:], "big")
-                        await self._call("write_registers", address=fallback_addr, values=[hi, lo])
-                    else:
-                        await self._call("write_register", address=fallback_addr, value=value)
+                    await self.async_write_register(fallback_addr, value, ent.data_type or "uint16")
                     return
             raise
 
