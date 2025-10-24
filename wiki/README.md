@@ -69,7 +69,7 @@ The table below outlines how the heat pump interprets the `SG ready` inputs. Eac
 
 ![Qube Linq thermostat configuration](../assets/qube_heatpump_settings.png)
 
-When you trigger Qube demand or DHW start via the Modbus coil switches (addresses `67` and `173` exposed as `switch.modbus_demand` and `switch.tapw_timeprogram_dhwsetp_nolinq`), disable the Linq thermostat options for room temperature and domestic hot water on the heat pump controller. Leaving those Linq options enabled alongside the Modbus coils can lead to conflicting control: the coils should take ownership of those functions while activated.
+When you trigger Qube demand or DHW start via the Modbus coil switches (addresses `67` and `173` exposed as `switch.modbus_demand` and `switch.tapw_timeprogram_dhwsetp_nolinq`), disable the Linq thermostat options for room temperature and domestic hot water on the heat pump controller. Leaving those Linq options enabled alongside the Modbus coils can lead to conflicting control: the coils should take ownership of those functions while activated. The `Modbus_Demand` switch is ideal for driving the heat pump from a virtual thermostat or automation—once enabled, the Linq thermostat is no longer responsible for issuing space-heating demand; your automation decides when to request heat.
 
 ## Error Handling & Recovery
 
