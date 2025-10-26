@@ -235,6 +235,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hub.async_resolve_ip()
         await hub.async_connect()
         results: dict[str, Any] = {}
+        entry_store = hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {})
+        monotonic_cache: dict[str, Any] = entry_store.setdefault("monotonic_totals", {})
         warn_count = 0
         warn_cap = 5
         for ent in hub.entities:
@@ -252,7 +254,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     )
                     warn_count += 1
                 continue
-            results[_entity_key(ent)] = value
+            key = _entity_key(ent)
+            if (
+                ent.state_class == "total_increasing"
+                and isinstance(value, (int, float))
+            ):
+                last_value = monotonic_cache.get(key)
+                if isinstance(last_value, (int, float)) and value < (last_value - 1e-6):
+                    value = last_value
+                else:
+                    monotonic_cache[key] = value
+            results[key] = value
         if warn_count > warn_cap:
             _LOGGER.debug("Additional read failures suppressed in this cycle")
         return results

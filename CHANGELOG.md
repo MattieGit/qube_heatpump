@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.66 — 2025-10-26
+- fix: Clamp total_increasing sensors so multi-device setups never report a lower reading due to rounding jitter.
+
 ## 2025.10.65 — 2025-10-22
 - fix: Copy the incoming service data before validation to avoid ReadOnlyDict errors in the write_register service.
 
