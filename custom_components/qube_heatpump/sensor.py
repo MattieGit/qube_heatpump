@@ -121,14 +121,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             )
         )
 
-    # 2) Qube Driewegklep DHW/CV status (binary sensor address 4)
+    # 2) Qube Driewegklep SSW/CV status (binary sensor address 4)
     drie_src = _find_binary_by_address(hub, 4)
     if drie_src is not None:
         _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
-                name="Qube Driewegklep DHW/CV status",
+                name="Qube Driewegklep SSW/CV status",
                 unique_suffix="driewegklep_dhw_cv",
                 kind="drieweg",
                 source=drie_src,

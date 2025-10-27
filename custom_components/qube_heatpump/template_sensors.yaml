@@ -17,7 +17,7 @@
 
 
 # DHW stands for Domestic Hot Water, valve will switch between DHV and CV (central heating)        
-  - name: Qube Driewegklep DHW/CV status
+  - name: Qube Driewegklep SSW/CV status
     unique_id: warmtepomp.driewegklep_dhw_cv_string
     state: >
         {% if   is_state('binary_sensor.wp_qube_uitgang_driewegafsluiter_cv_tapwater_2', 'on')  %} DHW

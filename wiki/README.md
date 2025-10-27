@@ -28,7 +28,7 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 
 ### Status Helpers
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
-- **Qube Driewegklep DHW/CV status** – tracks whether the three-way valve is in DHW or CV mode.
+- **Qube Driewegklep SSW/CV status** – tracks whether the three-way valve is in DHW or CV mode.
 - **Qube Vierwegklep verwarmen/koelen status** – reports whether the four-way valve is set for heating or cooling.
 
 ## Diagnostics Toolkit
