@@ -350,7 +350,7 @@
     state_class: measurement
     unique_id: Regulation_BufferSetP_Max
 
-  - name: "Modbus Tapwater Setpoint" #Set DHW setpoint via Modbus
+  - name: "User-defined setpoint tapwater" #Set DHW setpoint via Modbus
     address: 173
     write_type: holding
     data_type: float32
@@ -759,7 +759,7 @@
     scan_interval: 10
     unique_id: BMS_SGready_B
 
-  - name: "Modbus Demand" #To trigger demand via Modbus, instead of via Linq
+  - name: "Activeer warmtevraag Qube" #To trigger demand via Modbus, instead of via Linq
     address: 67
     write_type: coil
     command_on: 1
