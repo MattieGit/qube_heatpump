@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from datetime import timedelta
 from pathlib import Path
@@ -23,6 +24,9 @@ from .const import (
     CONF_UNIT_ID,
     CONF_LABEL,
     CONF_SHOW_LABEL_IN_NAME,
+    CONF_FRIENDLY_NAME_LANGUAGE,
+    DEFAULT_FRIENDLY_NAME_LANGUAGE,
+    SUPPORTED_FRIENDLY_NAME_LANGUAGES,
 )
 
 if TYPE_CHECKING:
@@ -47,20 +51,46 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         with path.open("r", encoding="utf-8") as handle:
             return yaml.safe_load(handle)
 
+    def _load_name_translations(language: str) -> dict[str, str]:
+        translations_dir = Path(__file__).parent / "translations"
+        path = translations_dir / f"entity_names.{language}.json"
+        if not path.exists():
+            return {}
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                content = json.load(handle)
+        except FileNotFoundError:
+            return {}
+        except Exception as exc:  # pragma: no cover - defensive log
+            _LOGGER.warning("Failed to load name translations for %s: %s", language, exc)
+            return {}
+        if not isinstance(content, dict):
+            return {}
+        return {str(key).lower(): str(value) for key, value in content.items() if isinstance(value, str)}
+
     raw_spec = await hass.async_add_executor_job(_load_yaml, yaml_path)
     spec = raw_spec[0] if isinstance(raw_spec, list) and raw_spec else raw_spec
     spec = dict(spec)
     spec["host"] = host
     spec["port"] = port
+    options = dict(entry.options)
+    options_changed = False
 
-    unit_id = int(entry.options.get(CONF_UNIT_ID, spec.get("unit_id", 1)))
+    friendly_lang = options.get(CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE)
+    if friendly_lang not in SUPPORTED_FRIENDLY_NAME_LANGUAGES:
+        friendly_lang = DEFAULT_FRIENDLY_NAME_LANGUAGE
+    if options.get(CONF_FRIENDLY_NAME_LANGUAGE) != friendly_lang:
+        options[CONF_FRIENDLY_NAME_LANGUAGE] = friendly_lang
+        options_changed = True
+
+    unit_id = int(options.get(CONF_UNIT_ID, spec.get("unit_id", 1)))
 
     existing_entries = [
         e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id
     ]
     multi_device = len(existing_entries) >= 1
 
-    label = entry.options.get(CONF_LABEL)
+    label = options.get(CONF_LABEL)
     if not label:
         used_labels = {
             e.options.get(CONF_LABEL) for e in existing_entries if e.options.get(CONF_LABEL)
@@ -69,23 +99,46 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         while f"qube{idx}" in used_labels:
             idx += 1
         label = f"qube{idx}"
-        new_options = dict(entry.options)
-        new_options[CONF_LABEL] = label
-        hass.config_entries.async_update_entry(entry, options=new_options)
+        options[CONF_LABEL] = label
+        options_changed = True
+
+    show_label_option = bool(options.get(CONF_SHOW_LABEL_IN_NAME, False))
+    if multi_device and not show_label_option:
+        options[CONF_SHOW_LABEL_IN_NAME] = True
+        show_label_option = True
+        options_changed = True
+
+    if options_changed:
+        hass.config_entries.async_update_entry(entry, options=options)
 
     hub = WPQubeHub(hass, host, port, unit_id, label)
+    name_translations = _load_name_translations(friendly_lang)
+    hub.set_name_translations(friendly_lang, name_translations)
     await hub.async_resolve_ip()
+
+    def _lookup_translation(*keys: str | None) -> str | None:
+        for key in keys:
+            if not key:
+                continue
+            hit = name_translations.get(str(key).lower())
+            if hit:
+                return hit
+        return None
 
     def _compute_display_name(
         platform: str,
         address: int,
         provided: Any,
         vendor_id: str | None,
+        translation_key: str | None = None,
     ) -> str:
-        if isinstance(provided, str):
-            cleaned = provided.strip()
-            if cleaned:
-                return cleaned
+        provided_clean = provided.strip() if isinstance(provided, str) else None
+        candidate_slug = _slugify(provided_clean) if provided_clean else None
+        translated = _lookup_translation(vendor_id, translation_key, candidate_slug)
+        if translated:
+            return translated
+        if provided_clean:
+            return provided_clean
         if vendor_id:
             return vendor_id
         return f"{platform} {address}"
@@ -117,7 +170,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             vendor_id = str(vendor_id_raw).strip() if vendor_id_raw else None
             vendor_id_norm = vendor_id.lower() if vendor_id else None
             unique_id = _unique_id_for(platform, item, vendor_id_norm)
-            display_name = _compute_display_name(platform, address, item.get("name"), vendor_id)
+            display_name = _compute_display_name(
+                platform,
+                address,
+                item.get("name"),
+                vendor_id_norm,
+                item.get("translation_key"),
+            )
             device_class = item.get("device_class")
             state_class = item.get("state_class")
             if isinstance(device_class, str) and device_class.lower() == "enum":
@@ -208,13 +267,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if integration and getattr(integration, "version", None):
         version = str(integration.version)
 
-    show_label_option = bool(entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
-    if multi_device and not show_label_option:
-        updated_options = dict(entry.options)
-        updated_options[CONF_SHOW_LABEL_IN_NAME] = True
-        hass.config_entries.async_update_entry(entry, options=updated_options)
-        show_label_option = True
-
     if multi_device:
         for other_entry in existing_entries:
             if not bool(other_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)):
@@ -287,6 +339,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "version": version,
         "multi_device": multi_device,
         "alarm_group_object_id": alarm_group_object_id,
+        "friendly_name_language": friendly_lang,
+        "name_translations": name_translations,
     }
 
     try:

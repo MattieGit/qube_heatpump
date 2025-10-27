@@ -12,7 +12,9 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.qube_heatpump import async_unload_entry
 from custom_components.qube_heatpump.const import (
     CONF_HOST,
+    CONF_FRIENDLY_NAME_LANGUAGE,
     CONF_SHOW_LABEL_IN_NAME,
+    DEFAULT_FRIENDLY_NAME_LANGUAGE,
     DOMAIN,
     PLATFORMS,
 )
@@ -46,12 +48,50 @@ async def test_async_setup_entry_registers_integration(hass: HomeAssistant, monk
     assert DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]
     stored = hass.data[DOMAIN][entry.entry_id]
     assert stored["label"] == "qube1"
+    assert stored["friendly_name_language"] == DEFAULT_FRIENDLY_NAME_LANGUAGE
+    assert entry.options[CONF_FRIENDLY_NAME_LANGUAGE] == DEFAULT_FRIENDLY_NAME_LANGUAGE
     manifest = json.loads((Path("custom_components/qube_heatpump/manifest.json")).read_text())
     assert stored["version"] == manifest.get("version")
 
     forward_mock.assert_called_once_with(entry, PLATFORMS)
     first_refresh_mock.assert_called_once()
     assert hass.services.has_service(DOMAIN, "reconfigure")
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_respects_language_option(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.55"},
+        options={CONF_FRIENDLY_NAME_LANGUAGE: "en"},
+    )
+    entry.add_to_hass(hass)
+
+    forward_mock = AsyncMock(return_value=None)
+    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
+
+    first_refresh_mock = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
+        first_refresh_mock,
+    )
+
+    monkeypatch.setattr(
+        "homeassistant.setup.async_setup_component",
+        AsyncMock(return_value=True),
+    )
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    stored = hass.data[DOMAIN][entry.entry_id]
+    assert stored["friendly_name_language"] == "en"
+    hub = stored["hub"]
+    assert hub.friendly_language == "en"
+    translated = hub.translate_name("status_warmtepomp", "Status warmtepomp")
+    assert translated == "Heat pump status"
 
 
 @pytest.mark.asyncio

@@ -144,7 +144,10 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_unique_id = (
             f"{base_unique}_{self._label}" if self._multi_device else base_unique
         )
-        self._attr_name = "Qube alarm sensors active"
+        self._attr_name = hub.translate_name(
+            "qube_alarm_sensors_active",
+            "Qube alarm sensors active",
+        )
         self._attr_icon = "mdi:alarm-light"
         self._keys = [_entity_state_key(ent) for ent in alarm_entities]
         self._attr_suggested_object_id = "qube_alarm_sensors"

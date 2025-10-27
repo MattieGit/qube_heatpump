@@ -23,6 +23,9 @@ from .const import (
     CONF_UNIT_ID,
     CONF_LABEL,
     CONF_SHOW_LABEL_IN_NAME,
+    CONF_FRIENDLY_NAME_LANGUAGE,
+    DEFAULT_FRIENDLY_NAME_LANGUAGE,
+    SUPPORTED_FRIENDLY_NAME_LANGUAGES,
 )
 
 async def _async_resolve_host(host: str) -> str | None:
@@ -214,6 +217,11 @@ class OptionsFlowHandler(OptionsFlow):
             self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
         )
         current_label_option = bool(self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False))
+        current_language = str(
+            self._entry.options.get(CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE)
+        )
+        if current_language not in SUPPORTED_FRIENDLY_NAME_LANGUAGES:
+            current_language = DEFAULT_FRIENDLY_NAME_LANGUAGE
 
         hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         resolved_ip = None
@@ -227,6 +235,11 @@ class OptionsFlowHandler(OptionsFlow):
             user_input = dict(user_input)
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
             show_label = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
+            new_language = str(
+                user_input.get(CONF_FRIENDLY_NAME_LANGUAGE, current_language)
+            )
+            if new_language not in SUPPORTED_FRIENDLY_NAME_LANGUAGES:
+                new_language = DEFAULT_FRIENDLY_NAME_LANGUAGE
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -252,6 +265,7 @@ class OptionsFlowHandler(OptionsFlow):
                 opts = dict(self._entry.options)
                 opts.pop(CONF_UNIT_ID, None)
                 opts[CONF_SHOW_LABEL_IN_NAME] = show_label
+                opts[CONF_FRIENDLY_NAME_LANGUAGE] = new_language
 
                 update_kwargs: dict[str, Any] = {"options": opts}
                 if host_changed:
@@ -277,6 +291,10 @@ class OptionsFlowHandler(OptionsFlow):
             {
                 vol.Required(CONF_HOST, default=current_host): str,
                 vol.Optional(CONF_SHOW_LABEL_IN_NAME, default=current_label_option): bool,
+                vol.Optional(
+                    CONF_FRIENDLY_NAME_LANGUAGE,
+                    default=current_language,
+                ): vol.In(SUPPORTED_FRIENDLY_NAME_LANGUAGES),
             }
         )
 

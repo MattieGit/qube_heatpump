@@ -55,6 +55,7 @@ Two tooling layers are available when something seems off:
 - Entity IDs keep their vendor-aligned slugs for a single hub. As soon as multiple hubs are installed the integration automatically appends the label (e.g. `_qube2`) so there are no collisions.
 - Diagnostics entities always carry the label in both single- and multi-hub scenarios to make troubleshooting easier.
 - The Options toggle **Add hub label to entity IDs** mirrors the automatic behaviour; when you enable it, labels remain appended even in single-hub environments.
+- Use the **Friendly name language** selector to toggle between Dutch and English entity names. Saving the option reloads the integration automatically so the new names appear without extra steps.
 
 ### SG Ready Signals
 

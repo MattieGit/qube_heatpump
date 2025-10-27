@@ -1,4 +1,24 @@
 {
-  "wp_qube_gemeten_flow": "Measured flow",
-  "wp_qube_aanvoertemperatuur_cv": "Supply temperature (CH)"
+  "bms_demand": "Activate heat demand",
+  "elektrisch_verbruik_cv_maand": "Electric usage CH (monthly)",
+  "elektrisch_verbruik_sww_maand": "Electric usage DHW (monthly)",
+  "modbus_demand": "Activate Qube heat demand",
+  "qube_alarm_sensors_active": "Qube alarm sensors active",
+  "qube_driewegklep_ssw_cv_status": "Qube three-way valve DHW/CH status",
+  "qube_info": "Qube info",
+  "qube_ip_address": "Qube IP address",
+  "qube_metric_count_binary_sensors": "Qube binary sensor count",
+  "qube_metric_count_sensors": "Qube sensor count",
+  "qube_metric_count_switches": "Qube switch count",
+  "qube_metric_errors_connect": "Qube connect errors",
+  "qube_metric_errors_read": "Qube read errors",
+  "qube_reload": "Reload",
+  "qube_vierwegklep_verwarmen_koelen_status": "Qube four-way valve heat/cool status",
+  "standby_verbruik": "Standby energy",
+  "standby_vermogen": "Standby power",
+  "status_warmtepomp": "Heat pump status",
+  "surplus_pv": "Surplus PV active",
+  "totaal_elektrisch_verbruik_incl_standby": "Total electric usage (incl. standby)",
+  "wp_qube_aanvoertemperatuur_cv": "Supply temperature (CH)",
+  "wp_qube_gemeten_flow": "Measured flow"
 }

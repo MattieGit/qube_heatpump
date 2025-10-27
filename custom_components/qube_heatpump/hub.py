@@ -15,6 +15,10 @@ from pymodbus.exceptions import ModbusException
 from homeassistant.core import HomeAssistant
 
 
+def _slugify(text: str) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in str(text)).strip("_").lower()
+
+
 @dataclass
 class EntityDef:
     platform: str
@@ -52,6 +56,8 @@ class WPQubeHub:
         self._err_connect: int = 0
         self._err_read: int = 0
         self._resolved_ip: str | None = None
+        self._friendly_language: str = "nl"
+        self._name_translations: dict[str, str] = {}
 
     @property
     def host(self) -> str:
@@ -68,6 +74,29 @@ class WPQubeHub:
     @property
     def resolved_ip(self) -> str | None:
         return self._resolved_ip
+    @property
+    def friendly_language(self) -> str:
+        return self._friendly_language
+
+    @property
+    def name_translations(self) -> dict[str, str]:
+        return self._name_translations
+
+    def set_name_translations(self, language: str, mapping: dict[str, str] | None) -> None:
+        self._friendly_language = language
+        self._name_translations = {str(k).lower(): str(v) for k, v in (mapping or {}).items()}
+
+    def translate_name(self, key: str | None, fallback: str) -> str:
+        if key:
+            hit = self._name_translations.get(str(key).lower())
+            if hit:
+                return hit
+        slug = _slugify(fallback) if fallback else None
+        if slug:
+            hit = self._name_translations.get(slug)
+            if hit:
+                return hit
+        return fallback
 
     async def async_resolve_ip(self) -> None:
         """Resolve the host to a concrete IP address for diagnostics."""

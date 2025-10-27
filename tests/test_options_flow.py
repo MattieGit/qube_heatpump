@@ -9,6 +9,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import (
+    CONF_FRIENDLY_NAME_LANGUAGE,
     CONF_SHOW_LABEL_IN_NAME,
     CONF_UNIT_ID,
     DOMAIN,
@@ -41,11 +42,13 @@ async def test_options_flow_updates_options(hass):
         user_input={
             CONF_HOST: entry.data[CONF_HOST],
             CONF_SHOW_LABEL_IN_NAME: True,
+            CONF_FRIENDLY_NAME_LANGUAGE: "en",
         },
     )
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_SHOW_LABEL_IN_NAME] is True
+    assert entry.options[CONF_FRIENDLY_NAME_LANGUAGE] == "en"
     assert CONF_UNIT_ID not in entry.options
 
     await hass.async_block_till_done()

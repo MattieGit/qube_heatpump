@@ -73,6 +73,10 @@ class _DummyHub:
         self.err_connect = 0
         self.err_read = 0
         self.resolved_ip = "192.0.2.10"
+        self._translations: dict[str, str] = {}
+
+    def translate_name(self, _key: str | None, fallback: str) -> str:
+        return fallback
 
 
 def _base_entity(

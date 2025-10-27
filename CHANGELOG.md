@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.68 — 2025-10-27
+- feat: Add an options-flow selector to switch entity-friendly names between Dutch and English with automatic reload.
+- feat: Apply translation-aware friendly names across computed metrics, diagnostics, and helper entities.
+
 ## 2025.10.67 — 2025-10-27
 - feat: Convert the warm demand and surplus PV coils to binary sensors so they surface as read-only status indicators with new naming.
 - fix: Drop the obsolete heat/cool demand inversion switch and allow binary sensors to read from coils/registers for broader Modbus compatibility.

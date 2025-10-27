@@ -49,6 +49,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     entities: list[SensorEntity] = []
 
+    def _translated(name: str, key: str | None = None) -> str:
+        return hub.translate_name(key, name)
+
     def _add_sensor_entity(entity: SensorEntity, include_in_sensor_total: bool = True) -> None:
         if include_in_sensor_total:
             extra_counts["sensor"] += 1
@@ -107,51 +110,57 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # 1) Qube status full (maps numeric status to human-readable string)
     status_src = _find_status_source(hub)
     if status_src is not None:
+        status_name = _translated("Status warmtepomp")
         _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
-                name="Status warmtepomp",
+                name=status_name,
                 unique_suffix="status_full",
                 kind="status",
                 source=status_src,
                 show_label=apply_label,
                 multi_device=multi_device,
                 version=version,
+                object_base=_slugify("Status warmtepomp"),
             )
         )
 
     # 2) Qube Driewegklep SSW/CV status (binary sensor address 4)
     drie_src = _find_binary_by_address(hub, 4)
     if drie_src is not None:
+        drie_name = _translated("Qube Driewegklep SSW/CV status")
         _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
-                name="Qube Driewegklep SSW/CV status",
+                name=drie_name,
                 unique_suffix="driewegklep_dhw_cv",
                 kind="drieweg",
                 source=drie_src,
                 show_label=apply_label,
                 multi_device=multi_device,
                 version=version,
+                object_base=_slugify("Qube Driewegklep SSW/CV status"),
             )
         )
 
     # 3) Qube Vierwegklep verwarmen/koelen status (binary sensor address 2)
     vier_src = _find_binary_by_address(hub, 2)
     if vier_src is not None:
+        vier_name = _translated("Qube Vierwegklep verwarmen/koelen status")
         _add_sensor_entity(
             WPQubeComputedSensor(
                 coordinator,
                 hub,
-                name="Qube Vierwegklep verwarmen/koelen status",
+                name=vier_name,
                 unique_suffix="vierwegklep_verwarmen_koelen",
                 kind="vierweg",
                 source=vier_src,
                 show_label=apply_label,
                 multi_device=multi_device,
                 version=version,
+                object_base=_slugify("Qube Vierwegklep verwarmen/koelen status"),
             )
         )
 
@@ -188,7 +197,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             hub,
             tracker,
             tariff="CV",
-            name_suffix="Elektrisch verbruik CV (maand)",
+            name_suffix=_translated("Elektrisch verbruik CV (maand)"),
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -200,7 +209,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             hub,
             tracker,
             tariff="SWW",
-            name_suffix="Elektrisch verbruik SWW (maand)",
+            name_suffix=_translated("Elektrisch verbruik SWW (maand)"),
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -351,7 +360,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         self._version = str(version) if version else "unknown"
         self._total_counts = total_counts or {}
         label = hub.label or "qube1"
-        self._attr_name = "Qube info"
+        self._attr_name = hub.translate_name("qube_info", "Qube info")
         self._attr_unique_id = (
             f"qube_info_sensor_{label}" if self._multi_device else "qube_info_sensor"
         )
@@ -444,7 +453,7 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         label = hub.label or "qube1"
-        base_name = "Qube IP address"
+        base_name = hub.translate_name("qube_ip_address", "Qube IP address")
         self._attr_name = base_name
         base_uid = "qube_ip_address"
         self._attr_unique_id = f"{base_uid}_{label}" if self._multi_device else base_uid
@@ -502,14 +511,14 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._version = version
         self._counts_provider = counts_provider
         label = hub.label or "qube1"
-        name = {
+        fallback_name = {
             "errors_connect": "Qube connect errors",
             "errors_read": "Qube read errors",
             "count_sensors": "Qube sensor count",
             "count_binary_sensors": "Qube binary sensor count",
             "count_switches": "Qube switch count",
-        }.get(kind, kind)
-        self._attr_name = name
+        }.get(kind, kind.replace("_", " "))
+        self._attr_name = hub.translate_name(f"qube_metric_{kind}", fallback_name)
         base_uid = f"qube_metric_{kind}"
         self._attr_unique_id = f"{base_uid}_{label}" if self._multi_device else base_uid
         self._attr_suggested_object_id = _slugify(base_uid)
@@ -629,7 +638,7 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = version
-        self._attr_name = "Standby vermogen"
+        self._attr_name = hub.translate_name("standby_vermogen", "Standby vermogen")
         unique = _append_label(STANDBY_POWER_UNIQUE_BASE, hub.label, multi_device)
         self._attr_unique_id = unique
         suggested = STANDBY_POWER_UNIQUE_BASE
@@ -678,7 +687,7 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._version = version
         self._energy_kwh: float = 0.0
         self._last_update: datetime | None = None
-        self._attr_name = "Standby verbruik"
+        self._attr_name = hub.translate_name("standby_verbruik", "Standby verbruik")
         unique = _append_label(STANDBY_ENERGY_UNIQUE_BASE, hub.label, multi_device)
         self._attr_unique_id = unique
         suggested = STANDBY_ENERGY_UNIQUE_BASE
@@ -765,7 +774,10 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self._base_unique_id = base_unique_id
         self._standby_sensor = standby_sensor
         self._total_energy: float | None = None
-        self._attr_name = "Totaal elektrisch verbruik (incl. standby)"
+        self._attr_name = hub.translate_name(
+            "totaal_elektrisch_verbruik_incl_standby",
+            "Totaal elektrisch verbruik (incl. standby)",
+        )
         unique = _append_label(TOTAL_ENERGY_UNIQUE_BASE, hub.label, multi_device)
         self._attr_unique_id = unique
         suggested = TOTAL_ENERGY_UNIQUE_BASE
@@ -825,6 +837,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         show_label: bool,
         multi_device: bool,
         version: str,
+        object_base: str | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._hub = hub
@@ -835,7 +848,7 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._label = hub.label or "qube1"
-        self._object_base = _slugify(name)
+        self._object_base = _slugify(object_base) if object_base else _slugify(name)
         self._attr_name = name
         base_unique = f"wp_qube_{unique_suffix}"
         self._attr_unique_id = (
