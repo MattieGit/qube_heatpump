@@ -173,7 +173,25 @@ class WPQubeHub:
             raise ModbusException("Client not connected")
 
         if ent.platform == "binary_sensor":
-            # Expect discrete inputs
+            input_type = (ent.input_type or "discrete_input").lower()
+            if input_type in ("discrete_input", "discrete", "discreteinputs", "discreteinput"):
+                rr = await self._call("read_discrete_inputs", address=ent.address, count=1)
+                return bool(getattr(rr, "bits", [False])[0])
+            if input_type in ("coil", "coils"):
+                rr = await self._call("read_coils", address=ent.address, count=1)
+                return bool(getattr(rr, "bits", [False])[0])
+            if input_type in ("holding", "holding_register", "register", "holdingregister"):
+                rr = await self._call("read_holding_registers", address=ent.address, count=1)
+                regs = getattr(rr, "registers", None)
+                if not regs:
+                    return None
+                return bool(int(regs[0]) & 0xFFFF)
+            if input_type in ("input", "input_register", "inputregister"):
+                rr = await self._call("read_input_registers", address=ent.address, count=1)
+                regs = getattr(rr, "registers", None)
+                if not regs:
+                    return None
+                return bool(int(regs[0]) & 0xFFFF)
             rr = await self._call("read_discrete_inputs", address=ent.address, count=1)
             return bool(getattr(rr, "bits", [False])[0])
 

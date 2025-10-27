@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.67 — 2025-10-27
+- feat: Convert the warm demand and surplus PV coils to binary sensors so they surface as read-only status indicators with new naming.
+- fix: Drop the obsolete heat/cool demand inversion switch and allow binary sensors to read from coils/registers for broader Modbus compatibility.
+
 ## 2025.10.66 — 2025-10-26
 - fix: Clamp total_increasing sensors so multi-device setups never report a lower reading due to rounding jitter.
 

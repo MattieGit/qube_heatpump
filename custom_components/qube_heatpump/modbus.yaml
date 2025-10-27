@@ -216,6 +216,18 @@
     scan_interval: 10
     unique_id: Req_ANTILEG_1
 
+  - name: "Warmtevraag actief"
+    address: 19
+    input_type: coil
+    scan_interval: 10
+    unique_id: BMS_Demand
+
+  - name: "Surplus PV actief" #Verhoogt ruimte setpoint Linq met 1K
+    address: 64
+    input_type: coil
+    scan_interval: 10
+    unique_id: Surplus_PV
+
   sensors:
   - name: "Setpoint ruimte CV dag"
     address: 27
@@ -699,14 +711,6 @@
 
   switches:
 
-  - name: "Activeer warmtevraag"
-    address: 19
-    write_type: coil
-    command_on: 1
-    command_off: 0
-    scan_interval: 10
-    unique_id: BMS_Demand
-
   - name: "Schakel zomerbedrijf in (koeling)"
     address: 22
     write_type: coil
@@ -738,22 +742,6 @@
     command_off: 0
     scan_interval: 10
     unique_id: En_PlantSetP_Compens
-
-  - name: "Omdraaien logica warmte-koelvraag"
-    address: 63
-    write_type: coil
-    command_on: 1
-    command_off: 0
-    scan_interval: 10
-    unique_id: Din_Demand
-
-  - name: "Surplus PV" #Verhoogt ruimte setpoint Linq met 1K
-    address: 64
-    write_type: coil
-    command_on: 1
-    command_off: 0
-    scan_interval: 10
-    unique_id: Surplus_PV
 
   - name: "SG Ready A" #SG Ready sturing
     address: 65
