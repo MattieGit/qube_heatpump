@@ -38,8 +38,6 @@ sections:
         heading: Controls
         icon: mdi:tune-variant
       - type: tile
-        entity: switch.bms_demand
-      - type: tile
         entity: switch.bms_summerwinter
       - type: tile
         entity: switch.tapw_timeprogram_bms_forced
@@ -48,13 +46,20 @@ sections:
       - type: tile
         entity: switch.en_plantsetp_compens
       - type: tile
-        entity: switch.surplus_pv
-      - type: tile
         entity: switch.bms_sgready_a
       - type: tile
         entity: switch.bms_sgready_b
       - type: tile
         entity: switch.modbus_demand
+  - type: grid
+    cards:
+      - type: heading
+        heading: Demand status
+        icon: mdi:chart-line-variant
+      - type: tile
+        entity: binary_sensor.bms_demand
+      - type: tile
+        entity: binary_sensor.surplus_pv
   - type: grid
     visibility:
       - condition: state
