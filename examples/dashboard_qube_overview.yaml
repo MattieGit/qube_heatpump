@@ -11,8 +11,8 @@ sections:
           - type: state-label
             entity: sensor.dhw_temp
             style:
-              top: 70%
-              left: 78%
+              top: 58%
+              left: 83%
               color: "#ffffff"
               font-size: 18px
               font-weight: 600
@@ -23,8 +23,8 @@ sections:
           - type: state-label
             entity: sensor.status_warmtepomp
             style:
-              top: 40%
-              left: 32%
+              top: 10%
+              left: 10%
               color: "#ffffff"
               font-size: 18px
               font-weight: 600
