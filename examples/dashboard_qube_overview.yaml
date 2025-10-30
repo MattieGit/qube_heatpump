@@ -26,8 +26,8 @@ sections:
           - type: state-label
             entity: sensor.status_warmtepomp
             style:
-              top: 8%
-              left: 10%
+              top: 7%
+              left: 15%
               color: "#ffffff"
               font-size: 14px
               font-weight: 600
