@@ -1,5 +1,5 @@
 DOMAIN = "qube_heatpump"
-PLATFORMS = ["sensor", "binary_sensor", "switch", "button"]
+PLATFORMS = ["sensor", "binary_sensor", "switch", "button", "select"]
 
 TARIFF_OPTIONS = ("CV", "SWW")
 

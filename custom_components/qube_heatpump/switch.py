@@ -4,7 +4,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -60,6 +60,10 @@ class WPQubeSwitch(CoordinatorEntity, SwitchEntity):
         self._ent = ent
         self._hub = hub
         self._show_label = bool(show_label)
+        vendor_id = (ent.vendor_id or "").lower()
+        if vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
+            self._attr_entity_registry_visible_default = False
+            self._attr_entity_category = EntityCategory.CONFIG
         self._attr_name = ent.name
         if ent.unique_id:
             self._attr_unique_id = ent.unique_id

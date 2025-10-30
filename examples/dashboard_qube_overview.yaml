@@ -140,9 +140,10 @@ sections:
       - type: tile
         entity: switch.en_plantsetp_compens
       - type: tile
-        entity: switch.bms_sgready_a
-      - type: tile
-        entity: switch.bms_sgready_b
+        entity: select.sgready_mode
+        name: SG Ready mode
+        features:
+          - type: select-options
       - type: tile
         entity: switch.modbus_demand
   - type: grid

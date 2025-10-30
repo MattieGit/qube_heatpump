@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.10.69 — 2025-10-30
+- feat: Surface an SG Ready mode select that keeps the underlying Modbus coils in sync.
+- chore: Hide the legacy SG Ready coil switches by default and treat them as configuration helpers.
+- docs: Update the dashboard sample and guidance to use the consolidated SG Ready control.
+
 ## 2025.10.68 — 2025-10-27
 - feat: Add an options-flow selector to switch entity-friendly names between Dutch and English with automatic reload.
 - feat: Apply translation-aware friendly names across computed metrics, diagnostics, and helper entities.

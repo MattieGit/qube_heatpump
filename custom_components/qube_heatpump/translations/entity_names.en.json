@@ -14,6 +14,7 @@
   "bms_demand": "Activate heat demand",
   "bms_sgready_a": "SG Ready A",
   "bms_sgready_b": "SG Ready B",
+  "sgready_mode": "SG Ready mode",
   "bms_summerwinter": "Switch to summer operation (ccoling)",
   "boostersecurity": "Digital input booster activated",
   "bufferprb_en": "Buffer sensor activated",

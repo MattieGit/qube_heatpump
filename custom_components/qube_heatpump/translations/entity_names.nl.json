@@ -14,6 +14,7 @@
   "bms_demand": "Warmtevraag actief",
   "bms_sgready_a": "SG Ready A",
   "bms_sgready_b": "SG Ready B",
+  "sgready_mode": "SG Ready modus",
   "bms_summerwinter": "Schakel zomerbedrijf in (koeling)",
   "boostersecurity": "Digitale ingang booster geactiveerd",
   "bufferprb_en": "Bufferopnemer is geactiveerd",
