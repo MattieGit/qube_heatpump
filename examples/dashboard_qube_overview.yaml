@@ -20,8 +20,8 @@ sections:
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
               padding: 4px 6px
-            prefix: "DHW "
-            title: "Domestic hot water temperature"
+            prefix: "SWW "
+            title: "Sanitair warm water"
             tap_action:
               action: more-info
           - type: state-label
@@ -65,7 +65,7 @@ sections:
               border-radius: 6px
               padding: 4px 6px
             prefix: "ROOM "
-            title: "Linq room temperature"
+            title: "Ruimte temp."
             tap_action:
               action: more-info
   - type: grid
