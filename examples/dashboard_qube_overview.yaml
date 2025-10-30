@@ -64,8 +64,8 @@ sections:
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
               padding: 4px 6px
-            prefix: "ROOM "
-            title: "Ruimte temp."
+            prefix: "Ruimte "
+            title: "Ruimte-temperatuur"
             tap_action:
               action: more-info
   - type: grid
