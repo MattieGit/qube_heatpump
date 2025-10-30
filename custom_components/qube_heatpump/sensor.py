@@ -878,21 +878,25 @@ class WPQubeComputedSensor(CoordinatorEntity, SensorEntity):
             if self._kind == "status":
                 code = int(val)
                 if code in (1, 14, 18):
-                    return "Standby"
-                return {
-                    2: "Alarm",
-                    6: "Keyboard off",
-                    8: "Compressor start up",
-                    9: "Compressor shutdown",
-                    15: "Cooling",
-                    16: "Heating",
-                    17: "Start fail",
-                    22: "Heating DHW",
-                }.get(code, "Unknown state")
+                    text = "Standby"
+                else:
+                    text = {
+                        2: "Alarm",
+                        6: "Keyboard off",
+                        8: "Compressor start up",
+                        9: "Compressor shutdown",
+                        15: "Cooling",
+                        16: "Heating",
+                        17: "Start fail",
+                        22: "Heating DHW",
+                    }.get(code, "Unknown state")
+                return self._hub.translate_name(f"status_value_{_slugify(text)}", text)
             if self._kind == "drieweg":
-                return "DHW" if bool(val) else "CV"
+                text = "DHW" if bool(val) else "CV"
+                return self._hub.translate_name(f"status_value_{_slugify(text)}", text)
             if self._kind == "vierweg":
-                return "Verwarmen" if bool(val) else "Koelen"
+                text = "Verwarmen" if bool(val) else "Koelen"
+                return self._hub.translate_name(f"status_value_{_slugify(text)}", text)
         except Exception:
             return None
         return None
