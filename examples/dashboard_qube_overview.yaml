@@ -10,7 +10,6 @@ sections:
         elements:
           - type: state-label
             entity: sensor.dhw_temp
-            attribute: unit_of_measurement
             style:
               top: 58%
               left: 83%
@@ -21,9 +20,10 @@ sections:
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
               padding: 4px 6px
-            text: |
-              DHW
-              [[ {state} ]]
+            prefix: "DHW "
+            title: "Domestic hot water temperature"
+            tap_action:
+              action: more-info
           - type: state-label
             entity: sensor.status_warmtepomp
             style:
@@ -48,9 +48,10 @@ sections:
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
               padding: 4px 6px
-            text: |
-              CV SET
-              [[ {state} ]]
+            prefix: "CV "
+            title: "Central heating setpoint"
+            tap_action:
+              action: more-info
           - type: state-label
             entity: sensor.modbus_roomtemp
             style:
@@ -63,9 +64,10 @@ sections:
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
               padding: 4px 6px
-            text: |
-              ROOM
-              [[ {state} ]]
+            prefix: "ROOM "
+            title: "Linq room temperature"
+            tap_action:
+              action: more-info
   - type: grid
     cards:
       - type: heading
