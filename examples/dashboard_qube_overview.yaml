@@ -10,16 +10,20 @@ sections:
         elements:
           - type: state-label
             entity: sensor.dhw_temp
+            attribute: unit_of_measurement
             style:
               top: 58%
               left: 83%
               color: "#ffffff"
-              font-size: 18px
+              font-size: 9px
               font-weight: 600
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
-              border-radius: 8px
-              padding: 6px 10px
+              border-radius: 6px
+              padding: 4px 6px
+            text: |
+              DHW
+              [[ {state} ]]
           - type: state-label
             entity: sensor.status_warmtepomp
             style:
@@ -32,6 +36,36 @@ sections:
               background: rgba(44, 82, 130, 0.6)
               border-radius: 8px
               padding: 6px 10px
+          - type: state-label
+            entity: sensor.thermostat_heatsetp_day
+            style:
+              top: 68%
+              left: 40%
+              color: "#ffffff"
+              font-size: 9px
+              font-weight: 600
+              text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
+              background: rgba(0, 0, 0, 0.45)
+              border-radius: 6px
+              padding: 4px 6px
+            text: |
+              CV SET
+              [[ {state} ]]
+          - type: state-label
+            entity: sensor.modbus_roomtemp
+            style:
+              top: 90%
+              left: 88%
+              color: "#ffffff"
+              font-size: 9px
+              font-weight: 600
+              text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
+              background: rgba(0, 0, 0, 0.45)
+              border-radius: 6px
+              padding: 4px 6px
+            text: |
+              ROOM
+              [[ {state} ]]
   - type: grid
     cards:
       - type: heading
