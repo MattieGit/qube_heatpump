@@ -19,7 +19,7 @@ sections:
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
         background: rgba(0, 0, 0, 0.45)
         border-radius: 6px
-        padding: 4px 6px
+        padding: 2px 4px
       prefix: 'SWW '
       title: Sanitair warm water
       tap_action:
@@ -37,22 +37,6 @@ sections:
         border-radius: 8px
         padding: 6px 10px
     - type: state-label
-      entity: sensor.thermostat_heatsetp_day
-      style:
-        top: 45%
-        left: 55%
-        color: '#ffffff'
-        font-size: 9px
-        font-weight: 600
-        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
-        background: rgba(0, 0, 0, 0.45)
-        border-radius: 6px
-        padding: 4px 6px
-      prefix: 'CV '
-      title: Central heating setpoint
-      tap_action:
-        action: more-info
-    - type: state-label
       entity: sensor.outtemp
       style:
         top: 40%
@@ -63,7 +47,7 @@ sections:
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
         background: rgba(0, 0, 0, 0.45)
         border-radius: 6px
-        padding: 4px 6px
+        padding: 2px 4px
       prefix: 'Buiten '
       title: Buitentemperatuur
       tap_action:
@@ -79,7 +63,7 @@ sections:
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
         background: rgba(0, 0, 0, 0.45)
         border-radius: 6px
-        padding: 4px 6px
+        padding: 2px 4px
       prefix: 'Ruimte '
       title: Ruimte-temperatuur
       tap_action:
@@ -95,7 +79,7 @@ sections:
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
         background: rgba(0, 0, 0, 0.45)
         border-radius: 6px
-        padding: 4px 6px
+        padding: 2px 4px
       prefix: 'Temp. vanaf dak '
       title: Temperatuur bron vanaf dak
       tap_action:
@@ -111,9 +95,41 @@ sections:
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
         background: rgba(0, 0, 0, 0.45)
         border-radius: 6px
-        padding: 4px 6px
+        padding: 2px 4px
       prefix: 'Temp. naar dak '
       title: Temperatuur bron naar dak
+      tap_action:
+        action: more-info
+    - type: state-label
+      entity: sensor.supplytemp
+      style:
+        top: 55%
+        left: 55%
+        color: '#ffffff'
+        font-size: 9px
+        font-weight: 600
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
+        background: rgba(0, 0, 0, 0.45)
+        border-radius: 6px
+        padding: 2px 4px
+      prefix: 'Aanvoer CV '
+      title: Aanvoertemperatuur CV
+      tap_action:
+        action: more-info
+    - type: state-label
+      entity: sensor.rettemp
+      style:
+        top: 65%
+        left: 55%
+        color: '#ffffff'
+        font-size: 9px
+        font-weight: 600
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
+        background: rgba(0, 0, 0, 0.45)
+        border-radius: 6px
+        padding: 2px 4px
+      prefix: 'Retour CV '
+      title: Retourtemperatuur CV
       tap_action:
         action: more-info
 - type: grid
