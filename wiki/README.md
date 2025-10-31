@@ -2,9 +2,10 @@
 
 ## Table of Contents
 1. [Computed & Derived Entities](#computed--derived-entities)
-2. [Diagnostics Toolkit](#diagnostics-toolkit)
-3. [Multi-Hub Behaviour](#multi-hub-behaviour)
-4. [Error Handling & Recovery](#error-handling--recovery)
+2. [Dashboard Controls](#dashboard-controls)
+3. [Error Handling & Recovery](#error-handling--recovery)
+4. [Diagnostics Toolkit](#diagnostics-toolkit)
+5. [Multi-Hub Behaviour](#multi-hub-behaviour)
 
 ---
 
@@ -24,12 +25,28 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Totaal elektrisch verbruik (incl. standby)** – combines the vendor’s total power counter with the standby integration above.
 - **Elektrisch verbruik CV (maand)** – accumulates the heat pump’s electrical usage while the three-way valve is in CV mode.
 - **Elektrisch verbruik SWW (maand)** – accumulates usage while the valve is in domestic hot water (SWW) mode.
-- **SG Ready A/B switches** – inputs for SG Ready operation; see [SG Ready signals](#sg-ready-signals) for the combinations, as specified by HR Energy.
+- **SG Ready mode select** – exposes the consolidated `select.sgready_mode` entity. Choosing *Off*, *Block*, *Plus*, or *Max* automatically positions the underlying SG Ready A/B coils; the original coil switches remain available (but hidden) for advanced automation.
+- **Stooklijn vrijgeven** – toggles the heating curve. When *On*, the pump follows the weather-compensated curve; when *Off*, it falls back to a fixed space-heating setpoint.
 
 ### Status Helpers
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
 - **Qube Driewegklep SSW/CV status** – tracks whether the three-way valve is in DHW or CV mode.
 - **Qube Vierwegklep verwarmen/koelen status** – reports whether the four-way valve is set for heating or cooling.
+
+## Dashboard Controls
+
+The sample dashboard in `examples/dashboard_qube_overview.yaml` (and the screenshot bundled under `assets/`) surfaces the most common control entities:
+
+- **SG Ready mode (`select.sgready_mode`)** – pick *Off*, *Block*, *Plus*, or *Max* instead of juggling the two coil switches. The integration writes the correct SG Ready A/B combination immediately; manual automations can still target the hidden coils directly if needed.
+- **Stooklijn vrijgeven (`switch.en_plantsetp_compens`)** – enables the heating curve when set to *On*. Turning it *Off* drives the unit with a fixed space-heating setpoint, which is useful when you want to run on manual temperatures for troubleshooting or holiday schedules.
+- **Other tiles** – demand triggers (e.g., `switch.modbus_demand`), DHW boosts, and seasonal toggles are exposed as tiles so operators do not need to dive into Modbus-specific panels. Tailor the YAML to match your entity IDs if you rename them.
+
+## Error Handling & Recovery
+
+- The integration uses exponential backoff on connection failures so the logs remain readable and the device isn’t hammered while offline.
+- Every read has a short timeout; on failure we increment the diagnostic counters and try again next cycle.
+- Entities are surfaced through Home Assistant’s `DataUpdateCoordinator`. If the pump is offline, entities report `unavailable` until Modbus connectivity returns.
+- When you operate multiple hubs, the coordinator for each hub runs independently: an outage on one pump does not block updates for the others.
 
 ## Diagnostics Toolkit
 
@@ -61,12 +78,12 @@ Two tooling layers are available when something seems off:
 
 The table below outlines how the heat pump interprets the `SG ready` inputs. Each combination of the two switches maps to a specific status and action. A one-time legionella cycle means that the anti-legionella cycle will be executed only once a day, even when SG Ready Plus or Max will be activated multiple times during the day.
 
-| SGready A | SGready B | Status        | Action                                                     |
-|-----------|-----------|---------------|------------------------------------------------------------|
-| Off       | Off       | Geen SGready  | No action, normal operation                                |
-| On        | Off       | SGready_Blok  | Block the heat pump                                        |
-| On        | On        | SGready_Max   | One-time legionella cycle, surplus heating curve, LinQ + 1 K |
-| Off       | On        | SGready_Plus  | One-time legionella cycle                                  |
+| SGready A | SGready B | Status         | Action                                                                 |
+|-----------|-----------|----------------|------------------------------------------------------------------------|
+| Off       | Off       | SGReady Off    | No action, normal operation                                            |
+| On        | Off       | SGReady Block  | Block heat pump operation                                              |
+| Off       | On        | SGReady Plus   | Regular heating curve, room temperature +1 K, tapwater day mode        |
+| On        | On        | SGReady Max    | Anti-legionella program once, surplus heating curve, room temperature +1 K |
 
 ![Qube Linq thermostat configuration](../assets/qube_heatpump_settings.png)
 
@@ -81,10 +98,3 @@ data:
   value: 49
   data_type: float32
 ```
-
-## Error Handling & Recovery
-
-- The integration uses exponential backoff on connection failures so the logs remain readable and the device isn’t hammered while offline.
-- Every read has a short timeout; on failure we increment the diagnostic counters and try again next cycle.
-- Entities are surfaced through Home Assistant’s `DataUpdateCoordinator`. If the pump is offline, entities report `unavailable` until Modbus connectivity returns.
-- When you operate multiple hubs, the coordinator for each hub runs independently: an outage on one pump does not block updates for the others.
