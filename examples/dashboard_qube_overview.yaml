@@ -9,25 +9,12 @@ sections:
         image: /local/qube_heatpump_dashboard.png
         elements:
           - type: state-label
-            entity: sensor.dhw_temp
-            style:
-              top: 35%
-              left: 70%
-              color: "#ffffff"
-              font-size: 9px
-              font-weight: 600
-              text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
-              background: rgba(0, 0, 0, 0.45)
-              border-radius: 6px
-            prefix: "SWW "
-            title: Sanitair warm water
-            tap_action:
-              action: more-info
-          - type: state-label
             entity: sensor.status_warmtepomp
             style:
-              top: 7%
-              left: 15%
+              position: absolute
+              transform: translate(0,0)
+              top: 0px
+              left: 0px
               color: "#ffffff"
               font-size: 14px
               font-weight: 600
@@ -38,8 +25,10 @@ sections:
           - type: state-label
             entity: sensor.outtemp
             style:
-              top: 25%
-              left: 5%
+              position: absolute
+              transform: translate(0,0)
+              top: 50px
+              left: 0px
               color: "#ffffff"
               font-size: 9px
               font-weight: 600
@@ -54,8 +43,10 @@ sections:
           - type: state-label
             entity: sensor.modbus_roomtemp
             style:
-              top: 93%
-              left: 88%
+              position: absolute
+              transform: translate(0,0)
+              top: 244px
+              right: 0px
               color: "#ffffff"
               font-size: 9px
               font-weight: 600
@@ -69,8 +60,10 @@ sections:
           - type: state-label
             entity: sensor.srcintemp
             style:
-              top: 93%
-              left: 12%
+              position: absolute
+              transform: translate(0,0)
+              top: 244px
+              left: 0px
               color: "#ffffff"
               font-size: 9px
               font-weight: 600
@@ -84,8 +77,10 @@ sections:
           - type: state-label
             entity: sensor.srcouttemp
             style:
-              top: 93%
-              left: 37%
+              position: absolute
+              transform: translate(0,0)
+              top: 244px
+              left: 115px
               color: "#ffffff"
               font-size: 9px
               font-weight: 600
@@ -99,8 +94,10 @@ sections:
           - type: state-label
             entity: sensor.supplytemp
             style:
-              top: 55%
-              left: 55%
+              position: absolute
+              transform: translate(0,0)
+              top: 120px
+              left: 220px
               color: "#ffffff"
               font-size: 9px
               font-weight: 600
@@ -114,8 +111,10 @@ sections:
           - type: state-label
             entity: sensor.rettemp
             style:
-              top: 68%
-              left: 55%
+              position: absolute
+              transform: translate(0,0)
+              top: 150px
+              left: 220px
               color: "#ffffff"
               font-size: 9px
               font-weight: 600
@@ -124,6 +123,21 @@ sections:
               border-radius: 6px
             prefix: "Retour CV "
             title: Retourtemperatuur CV
+            tap_action:
+              action: more-info
+          - type: state-label
+            entity: sensor.dhw_temp
+            style:
+              top: 35%
+              left: 70%
+              color: "#ffffff"
+              font-size: 9px
+              font-weight: 600
+              text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
+              background: rgba(0, 0, 0, 0.45)
+              border-radius: 6px
+            prefix: "SWW "
+            title: Sanitair warm water
             tap_action:
               action: more-info
   - type: grid
