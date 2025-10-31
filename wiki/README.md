@@ -21,7 +21,7 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Elektrisch verbruik CV (maand)** – accumulates the heat pump’s electrical usage while the three-way valve is in CV mode.
 - **Elektrisch verbruik SWW (maand)** – accumulates usage while the valve is in domestic hot water (SWW) mode.
 - **SG Ready mode select** – exposes the consolidated `select.sgready_mode` entity. Choosing *Off*, *Block*, *Plus*, or *Max* automatically positions the underlying SG Ready A/B coils; the original coil switches remain available (but hidden) for advanced automation.
-- **Stooklijn vrijgeven** – toggles the heating curve. When *On*, the pump follows the weather-compensated curve; when *Off*, it falls back to a fixed space-heating setpoint.
+- **Stooklijn vrijgeven** – toggles the heating curve. When *On*, the pump follows the weather-compensated curve; when *Off*, it falls back to a fixed room-heating setpoint.
 
 ### Status Helpers
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
@@ -47,7 +47,7 @@ The table below outlines how the heat pump interprets the `SG ready` inputs. Eac
 
 ![Qube Linq thermostat configuration](../assets/qube_heatpump_settings.png)
 
-When you trigger Qube demand or DHW start via the Modbus coil switches (addresses `67` and `173` exposed as `switch.modbus_demand` and `switch.tapw_timeprogram_dhwsetp_nolinq`), disable the Linq thermostat options for room temperature and domestic hot water on the heat pump controller. Leaving those Linq options enabled alongside the Modbus coils can lead to conflicting control: the coils should take ownership of those functions while activated. The `Modbus_Demand` switch is ideal for driving the heat pump from a virtual thermostat or automation—once enabled, the Linq thermostat is no longer responsible for issuing space-heating demand; your automation decides when to request heat.
+When you trigger Qube demand or DHW start via the Modbus coil switches (addresses `67` and `173` exposed as `switch.modbus_demand` and `switch.tapw_timeprogram_dhwsetp_nolinq`), disable the Linq thermostat options for room temperature and domestic hot water on the heat pump controller. Leaving those Linq options enabled alongside the Modbus coils can lead to conflicting control: the coils should take ownership of those functions while activated. The `Modbus_Demand` switch is ideal for driving the heat pump from a virtual thermostat or automation—once enabled, the Linq thermostat is no longer responsible for issuing room-heating demand; your automation decides when to request heat.
 
 To set the Modbus tapwater setpoint directly, call the integration service `qube_heatpump.write_register` and supply the DHW register address (`173`) as a float, for example:
 
@@ -64,7 +64,7 @@ data:
 The sample dashboard in `examples/dashboard_qube_overview.yaml` (and the screenshot bundled under `assets/`) surfaces the most common control entities:
 
 - **SG Ready mode (`select.sgready_mode`)** – pick *Off*, *Block*, *Plus*, or *Max* instead of juggling the two coil switches. The integration writes the correct SG Ready A/B combination immediately; manual automations can still target the hidden coils directly if needed.
-- **Stooklijn vrijgeven (`switch.en_plantsetp_compens`)** – enables the heating curve when set to *On*. Turning it *Off* drives the unit with a fixed space-heating setpoint, which is useful when you want to run on manual temperatures for troubleshooting or holiday schedules.
+- **Stooklijn vrijgeven (`switch.en_plantsetp_compens`)** – enables the heating curve when set to *On*. Turning it *Off* drives the unit with a fixed room-heating setpoint, which is useful when you want to run on manual temperatures for troubleshooting or holiday schedules.
 - **Other tiles** – demand triggers (e.g., `switch.modbus_demand`), DHW boosts, and seasonal toggles are exposed as tiles so operators do not need to dive into Modbus-specific panels. Tailor the YAML to match your entity IDs if you rename them.
 
 ## Error Handling & Recovery
