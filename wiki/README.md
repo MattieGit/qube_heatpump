@@ -13,12 +13,6 @@
 
 Beyond the raw Modbus registers, the integration exposes several helper entities that make day-to-day monitoring easier:
 
-### Diagnostic Sensors
-- **Qube info** – summarises firmware version, hub label, host/IP, and total entity counts.
-- **Qube connect/read errors** – incrementing counters that help identify Modbus stability issues.
-- **Qube sensor/binary sensor/switch count** – live totals so you can confirm everything is still registered for the hub.
-- **Qube IP address** – resolved IP in case the device is addressed by hostname.
-
 ### Energy & Power
 - **Standby vermogen** – fixed 17 W standby power reported as a sensor.
 - **Standby verbruik** – integrates standby power over time (kWh) so long recordings include the “idle” cost.
@@ -32,6 +26,12 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Status warmtepomp** – decodes the unit-status register to a human-readable state (Heating, Cooling, Standby, etc.).
 - **Qube Driewegklep SSW/CV status** – tracks whether the three-way valve is in DHW or CV mode.
 - **Qube Vierwegklep verwarmen/koelen status** – reports whether the four-way valve is set for heating or cooling.
+
+### Diagnostic Sensors
+- **Qube info** – summarises firmware version, hub label, host/IP, and total entity counts.
+- **Qube connect/read errors** – incrementing counters that help identify Modbus stability issues.
+- **Qube sensor/binary sensor/switch count** – live totals so you can confirm everything is still registered for the hub.
+- **Qube IP address** – resolved IP in case the device is addressed by hostname.
 
 ## Dashboard Controls
 
