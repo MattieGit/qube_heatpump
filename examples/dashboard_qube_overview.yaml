@@ -45,7 +45,7 @@ sections:
             style:
               position: absolute
               transform: translate(0,0)
-              top: 244px
+              top: 256px
               right: 0px
               color: "#ffffff"
               font-size: 9px
@@ -62,7 +62,7 @@ sections:
             style:
               position: absolute
               transform: translate(0,0)
-              top: 244px
+              top: 256px
               left: 0px
               color: "#ffffff"
               font-size: 9px
@@ -79,7 +79,7 @@ sections:
             style:
               position: absolute
               transform: translate(0,0)
-              top: 244px
+              top: 256px
               left: 115px
               color: "#ffffff"
               font-size: 9px
@@ -372,6 +372,6 @@ sections:
         entity: sensor.qube_metric_count_binary_sensors
       - type: tile
         entity: sensor.qube_metric_count_switches
-cards: []
+cards:
 type: sections
 max_columns: 2
