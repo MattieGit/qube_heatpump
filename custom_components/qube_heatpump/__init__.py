@@ -112,7 +112,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, options=options)
 
     hub = WPQubeHub(hass, host, port, unit_id, label)
-    name_translations = _load_name_translations(friendly_lang)
+    name_translations = await hass.async_add_executor_job(
+        _load_name_translations, friendly_lang
+    )
     hub.set_name_translations(friendly_lang, name_translations)
     await hub.async_resolve_ip()
 
