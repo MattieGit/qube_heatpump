@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2025.10.70 — 2025-11-01
+## 2025.11.1 — 2025-11-01
 - fix: Load translation files via the executor to avoid blocking I/O warnings in Home Assistant 2025.10+.
 
 ## 2025.10.69 — 2025-10-30
