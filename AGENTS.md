@@ -138,6 +138,7 @@ This repository contains a HACS custom integration for Home Assistant that integ
 - Create a tag that matches the workflow pattern (e.g., `git tag 2025.9.84 && git push origin --tags`).
 - GitHub Actions workflow will publish a pre-release automatically.
 - Follow Conventional Commits in PRs/commits for clarity.
+- Use Calendar Versioning (`YYYY.MM.patch`) for releases (e.g., `2025.11.1`); tag and manifest version must remain in sync.
 
 ## Development Notes
 - YAML style: two-space indent; lower_snake_case keys; comments above fields.
