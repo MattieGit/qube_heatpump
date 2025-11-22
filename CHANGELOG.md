@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.11.3 — 2025-11-22
+- chore: Re-issue the pre-release after updating GitHub publishing credentials; no functional code changes.
+
 ## 2025.11.1 — 2025-11-01
 - fix: Load translation files via the executor to avoid blocking I/O warnings in Home Assistant 2025.10+.
 
