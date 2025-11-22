@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -309,6 +310,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     warn_count += 1
                 continue
             key = _entity_key(ent)
+            if isinstance(value, (int, float)) and not math.isfinite(float(value)):
+                if warn_count < warn_cap:
+                    _LOGGER.warning(
+                        "Non-finite value (%s) for %s %s@%s; treating as unavailable",
+                        value,
+                        ent.platform,
+                        ent.input_type or ent.write_type or "register",
+                        ent.address,
+                    )
+                    warn_count += 1
+                results[key] = None
+                continue
             if (
                 ent.state_class == "total_increasing"
                 and isinstance(value, (int, float))
