@@ -37,6 +37,21 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
+def _is_working_hours_entity(ent: "EntityDef") -> bool:
+    """Detect Bedrijfsuren/working hours counters that should never decrease."""
+
+    try:
+        name = str(ent.name or "").strip().lower()
+        vendor = str(ent.vendor_id or "").strip().lower()
+    except Exception:
+        return False
+    if name.startswith("bedrijfsuren"):
+        return True
+    if vendor.startswith("workinghours"):
+        return True
+    return False
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .hub import WPQubeHub, EntityDef  # Lazy import to avoid optional deps
     import yaml
@@ -326,6 +341,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ent.state_class == "total_increasing"
                 and isinstance(value, (int, float))
             ):
+                last_value = monotonic_cache.get(key)
+                if isinstance(last_value, (int, float)) and value < (last_value - 1e-6):
+                    value = last_value
+                else:
+                    monotonic_cache[key] = value
+            elif _is_working_hours_entity(ent) and isinstance(value, (int, float)):
                 last_value = monotonic_cache.get(key)
                 if isinstance(last_value, (int, float)) and value < (last_value - 1e-6):
                     value = last_value

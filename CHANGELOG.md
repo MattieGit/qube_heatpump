@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.12.1 — 2025-12-17
+- fix: Keep working-hours (Bedrijfsuren) sensors monotonic so transient zero reads never drop counters.
+- fix: Convert BLDC EVD pump speed from RPS to RPM by scaling the Modbus value by 60.
+
 ## 2025.11.3 — 2025-11-22
 - chore: Re-issue the pre-release after updating GitHub publishing credentials; no functional code changes.
 

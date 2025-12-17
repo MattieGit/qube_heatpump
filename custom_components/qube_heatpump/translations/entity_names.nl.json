@@ -58,7 +58,7 @@
   "plantprb_en": "Plantsensor is geactiveerd",
   "plantsetp": "Setpoint plantregeling",
   "qube_alarm_sensors_active": "Qube alarm sensors actief",
-  "qube_driewegklep_ssw_cv_status": "Qube three-way valve SSW/CV status",
+  "qube_driewegklep_ssw_cv_status": "Qube driewegklep SSW/CV status",
   "qube_info": "Qube info",
   "qube_ip_address": "Qube IP addres",
   "qube_metric_count_binary_sensors": "Qube aantal binaire sensors",

@@ -570,6 +570,7 @@
     input_type: input
     data_type: float32
     scan_interval: 10
+    scale: 60
     precision: 0
     unit_of_measurement: "rpm"
     state_class: measurement
