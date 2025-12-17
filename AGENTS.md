@@ -39,6 +39,7 @@
 ## Agent-Specific Instructions
 - Keep edits minimal and focused; avoid renaming or moving files unless necessary.
 - Obey this guide’s structure for any new files; validate YAML before opening a PR.
+- Use SSH for Git operations (remote: `git@github.com:MattieGit/qube_heatpump.git`) instead of HTTPS when pushing.
 
 ---
 
