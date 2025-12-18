@@ -52,6 +52,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     def _translated(name: str, key: str | None = None) -> str:
         return hub.translate_name(key, name)
 
+    def _computed_object_base(name: str, use_prefix: bool) -> str:
+        """Return the computed sensor object_id base, optionally stripping the qube_ prefix."""
+
+        slug = _slugify(name)
+        if use_prefix:
+            return slug
+        if slug.startswith("qube_"):
+            return slug[len("qube_"):]
+        return slug
+
     def _add_sensor_entity(entity: SensorEntity, include_in_sensor_total: bool = True) -> None:
         if include_in_sensor_total:
             extra_counts["sensor"] += 1
@@ -122,7 +132,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 show_label=apply_label,
                 multi_device=multi_device,
                 version=version,
-                object_base=_slugify("Status warmtepomp"),
+                object_base=_computed_object_base("Status warmtepomp", apply_label),
             )
         )
 
@@ -141,7 +151,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 show_label=apply_label,
                 multi_device=multi_device,
                 version=version,
-                object_base=_slugify("Qube Driewegklep SSW/CV status"),
+                object_base=_computed_object_base("Qube Driewegklep SSW/CV status", apply_label),
             )
         )
 
@@ -160,7 +170,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 show_label=apply_label,
                 multi_device=multi_device,
                 version=version,
-                object_base=_slugify("Qube Vierwegklep verwarmen/koelen status"),
+                object_base=_computed_object_base("Qube Vierwegklep verwarmen/koelen status", apply_label),
             )
         )
 

@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.12.2 — 2025-12-18
+- fix: Align computed sensor entity IDs with the “Add hub label to entity IDs” option so the `qube_` prefix is only kept when the option (or multi-device) requires it.
+
 ## 2025.12.1 — 2025-12-17
 - fix: Keep working-hours (Bedrijfsuren) sensors monotonic so transient zero reads never drop counters.
 - fix: Convert BLDC EVD pump speed from RPS to RPM by scaling the Modbus value by 60.
