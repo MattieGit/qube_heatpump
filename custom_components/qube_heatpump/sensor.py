@@ -212,6 +212,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         hass.data[DOMAIN][entry.entry_id]["thermic_tariff_tracker"] = thermic_tracker
     thermic_tracker.set_initial_total(initial_data.get(thermic_tracker.base_key))
 
+    # Daily trackers for SCOP (reset each day).
+    daily_electric_tracker = hass.data[DOMAIN][entry.entry_id].get("daily_tariff_tracker")
+    if daily_electric_tracker is None:
+        daily_electric_tracker = TariffEnergyTracker(
+            base_key=_energy_unique_id(hub.label, multi_device),
+            binary_key=_binary_unique_id(hub.label, multi_device),
+            tariffs=list(TARIFF_OPTIONS),
+            reset_period="day",
+        )
+        hass.data[DOMAIN][entry.entry_id]["daily_tariff_tracker"] = daily_electric_tracker
+    daily_electric_tracker.set_initial_total(initial_data.get(daily_electric_tracker.base_key))
+
+    daily_thermic_tracker = hass.data[DOMAIN][entry.entry_id].get("daily_thermic_tariff_tracker")
+    if daily_thermic_tracker is None:
+        daily_thermic_tracker = TariffEnergyTracker(
+            base_key=_thermic_energy_unique_id(hub.label, multi_device),
+            binary_key=_binary_unique_id(hub.label, multi_device),
+            tariffs=list(TARIFF_OPTIONS),
+            reset_period="day",
+        )
+        hass.data[DOMAIN][entry.entry_id]["daily_thermic_tariff_tracker"] = daily_thermic_tracker
+    daily_thermic_tracker.set_initial_total(initial_data.get(daily_thermic_tracker.base_key))
+
     _add_sensor_entity(
         QubeTariffEnergySensor(
             coordinator,
@@ -306,6 +329,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             name=_translated("SCOP SWW (maand)", "scop_sww_maand"),
             unique_base=SCOP_SWW_UNIQUE_BASE,
             object_base="scop_sww_maand",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+
+    # Daily SCOP (thermic / electric), overall and per tariff.
+    _add_sensor_entity(
+        QubeSCOPSensor(
+            coordinator,
+            hub,
+            electric_tracker=daily_electric_tracker,
+            thermic_tracker=daily_thermic_tracker,
+            scope="total",
+            name=_translated("SCOP (dag)", "scop_dag"),
+            unique_base=SCOP_TOTAL_DAILY_UNIQUE_BASE,
+            object_base="scop_dag",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+    _add_sensor_entity(
+        QubeSCOPSensor(
+            coordinator,
+            hub,
+            electric_tracker=daily_electric_tracker,
+            thermic_tracker=daily_thermic_tracker,
+            scope="CV",
+            name=_translated("SCOP CV (dag)", "scop_cv_dag"),
+            unique_base=SCOP_CV_DAILY_UNIQUE_BASE,
+            object_base="scop_cv_dag",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+    _add_sensor_entity(
+        QubeSCOPSensor(
+            coordinator,
+            hub,
+            electric_tracker=daily_electric_tracker,
+            thermic_tracker=daily_thermic_tracker,
+            scope="SWW",
+            name=_translated("SCOP SWW (dag)", "scop_sww_dag"),
+            unique_base=SCOP_SWW_DAILY_UNIQUE_BASE,
+            object_base="scop_sww_dag",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -1012,10 +1082,17 @@ THERMIC_TARIFF_SENSOR_BASE = "qube_thermic_energy_tariff"
 SCOP_TOTAL_UNIQUE_BASE = "qube_scop_monthly"
 SCOP_CV_UNIQUE_BASE = "qube_scop_cv_monthly"
 SCOP_SWW_UNIQUE_BASE = "qube_scop_sww_monthly"
+SCOP_TOTAL_DAILY_UNIQUE_BASE = "qube_scop_daily"
+SCOP_CV_DAILY_UNIQUE_BASE = "qube_scop_cv_daily"
+SCOP_SWW_DAILY_UNIQUE_BASE = "qube_scop_sww_daily"
 
 
 def _start_of_month(dt_value: datetime) -> datetime:
     return dt_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _start_of_day(dt_value: datetime) -> datetime:
+    return dt_value.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def _append_label(base: str, label: str | None, multi_device: bool) -> str:
@@ -1041,14 +1118,21 @@ def _binary_unique_id(label: str | None, multi_device: bool) -> str:
 class TariffEnergyTracker:
     """Track split energy totals for CV/SWW."""
 
-    def __init__(self, base_key: str, binary_key: str, tariffs: List[str]) -> None:
+    def __init__(
+        self,
+        base_key: str,
+        binary_key: str,
+        tariffs: List[str],
+        reset_period: str = "month",
+    ) -> None:
         self.base_key = base_key
         self.binary_key = binary_key
         self.tariffs = list(tariffs)
         self._totals: Dict[str, float] = {tariff: 0.0 for tariff in tariffs}
         self._current_tariff: str = tariffs[0]
         self._last_total: float | None = None
-        self._last_reset: datetime = _start_of_month(dt_util.utcnow())
+        self._reset_period = reset_period
+        self._last_reset: datetime = self._cycle_start(dt_util.utcnow())
         self._last_token: datetime | None = None
 
     @property
@@ -1073,9 +1157,14 @@ class TariffEnergyTracker:
         except (TypeError, ValueError):
             self._last_total = None
 
+    def _cycle_start(self, dt_value: datetime) -> datetime:
+        if self._reset_period == "day":
+            return _start_of_day(dt_value)
+        return _start_of_month(dt_value)
+
     def _reset_if_needed(self, reference: datetime | None) -> None:
         now = reference or dt_util.utcnow()
-        start = _start_of_month(now)
+        start = self._cycle_start(now)
         if start > self._last_reset:
             self._last_reset = start
             for tariff in self._totals:
