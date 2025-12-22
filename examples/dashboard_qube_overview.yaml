@@ -315,10 +315,10 @@ sections:
         entity: sensor.status_warmtepomp
         name: Status warmtepomp
       - type: tile
-        entity: sensor.qube_driewegklep_dhw_cv_status
+        entity: sensor.driewegklep_dhw_cv_status
         name: Driewegklep status
       - type: tile
-        entity: sensor.qube_vierwegklep_verwarmen_koelen_status
+        entity: sensor.vierwegklep_verwarmen_koelen_status
         name: Vierwegklep status
   - type: grid
     cards:
