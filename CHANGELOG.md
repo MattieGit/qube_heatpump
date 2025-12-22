@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.12.5 — 2025-12-18
+- feat: Add monthly SCOP sensors (total, CH, DHW) derived from thermic/electric energy totals.
+
 ## 2025.12.4 — 2025-12-18
 - fix: Add translations for the thermic monthly energy sensors (CH/DHW).
 

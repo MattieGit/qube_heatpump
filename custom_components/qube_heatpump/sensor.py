@@ -265,6 +265,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         )
     )
 
+    # Monthly SCOP (thermic / electric), overall and per tariff.
+    _add_sensor_entity(
+        QubeSCOPSensor(
+            coordinator,
+            hub,
+            electric_tracker=tracker,
+            thermic_tracker=thermic_tracker,
+            scope="total",
+            name=_translated("SCOP (maand)", "scop_maand"),
+            unique_base=SCOP_TOTAL_UNIQUE_BASE,
+            object_base="scop_maand",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+    _add_sensor_entity(
+        QubeSCOPSensor(
+            coordinator,
+            hub,
+            electric_tracker=tracker,
+            thermic_tracker=thermic_tracker,
+            scope="CV",
+            name=_translated("SCOP CV (maand)", "scop_cv_maand"),
+            unique_base=SCOP_CV_UNIQUE_BASE,
+            object_base="scop_cv_maand",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+    _add_sensor_entity(
+        QubeSCOPSensor(
+            coordinator,
+            hub,
+            electric_tracker=tracker,
+            thermic_tracker=thermic_tracker,
+            scope="SWW",
+            name=_translated("SCOP SWW (maand)", "scop_sww_maand"),
+            unique_base=SCOP_SWW_UNIQUE_BASE,
+            object_base="scop_sww_maand",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+        )
+    )
+
     info_sensor = QubeInfoSensor(
         coordinator,
         hub,
@@ -962,6 +1009,9 @@ TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
 BINARY_TARIFF_UNIQUE_ID = "dout_threewayvlv_val"
 TARIFF_SENSOR_BASE = "qube_energy_tariff"
 THERMIC_TARIFF_SENSOR_BASE = "qube_thermic_energy_tariff"
+SCOP_TOTAL_UNIQUE_BASE = "qube_scop_monthly"
+SCOP_CV_UNIQUE_BASE = "qube_scop_cv_monthly"
+SCOP_SWW_UNIQUE_BASE = "qube_scop_sww_monthly"
 
 
 def _start_of_month(dt_value: datetime) -> datetime:
@@ -1156,4 +1206,81 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         token = getattr(self.coordinator, "last_update_success_time", None)
         data = self.coordinator.data or {}
         self._tracker.update(data, token)
+        super()._handle_coordinator_update()
+
+
+class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        electric_tracker: TariffEnergyTracker,
+        thermic_tracker: TariffEnergyTracker,
+        scope: str,
+        name: str,
+        unique_base: str,
+        object_base: str,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._electric = electric_tracker
+        self._thermic = thermic_tracker
+        self._scope = scope
+        self._label = hub.label or "qube1"
+        self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
+        self._version = version
+        self._attr_name = name
+        base_uid = unique_base
+        if self._multi_device and self._label:
+            base_uid = f"{base_uid}_{self._label}"
+        self._attr_unique_id = base_uid
+        suggested = object_base
+        if self._show_label:
+            suggested = f"{suggested}_{self._label}"
+        self._attr_suggested_object_id = suggested
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.label or "Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+    def _current_totals(self) -> tuple[float | None, float | None]:
+        if self._scope == "total":
+            elec = sum(self._electric.get_total(t) for t in self._electric.tariffs)
+            therm = sum(self._thermic.get_total(t) for t in self._thermic.tariffs)
+            return elec, therm
+        elec = self._electric.get_total(self._scope)
+        therm = self._thermic.get_total(self._scope)
+        return elec, therm
+
+    @property
+    def native_value(self) -> float | None:
+        elec, therm = self._current_totals()
+        if elec is None or therm is None:
+            return None
+        try:
+            elec_f = float(elec)
+            therm_f = float(therm)
+        except (TypeError, ValueError):
+            return None
+        if elec_f <= 0:
+            return None
+        return round(therm_f / elec_f, 3)
+
+    def _handle_coordinator_update(self) -> None:
+        token = getattr(self.coordinator, "last_update_success_time", None)
+        data = self.coordinator.data or {}
+        self._electric.update(data, token)
+        self._thermic.update(data, token)
         super()._handle_coordinator_update()
