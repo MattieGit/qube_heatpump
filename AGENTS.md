@@ -40,6 +40,7 @@
 - Keep edits minimal and focused; avoid renaming or moving files unless necessary.
 - Obey this guide’s structure for any new files; validate YAML before opening a PR.
 - Use SSH for Git operations (remote: `git@github.com:MattieGit/qube_heatpump.git`) instead of HTTPS when pushing.
+- When adding or changing any user-facing names (entities, sensors, switches, buttons, diagnostics), update the translations in `custom_components/qube_heatpump/translations/` (both `entity_names.en.json` and `entity_names.nl.json`) to keep the UI consistent.
 
 ---
 
