@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.12.3 — 2025-12-18
+- feat: Add monthly thermic energy sensors split by CV/SWW based on `generalmng_acumulatedthermic` and tariff state.
+
 ## 2025.12.2 — 2025-12-18
 - fix: Align computed sensor entity IDs with the “Add hub label to entity IDs” option so the `qube_` prefix is only kept when the option (or multi-device) requires it.
 

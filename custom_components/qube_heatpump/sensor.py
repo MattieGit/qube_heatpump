@@ -201,6 +201,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     initial_data = coordinator.data or {}
     tracker.set_initial_total(initial_data.get(tracker.base_key))
 
+    # Track thermic energy per tariff (CV/SWW) in parallel.
+    thermic_tracker = hass.data[DOMAIN][entry.entry_id].get("thermic_tariff_tracker")
+    if thermic_tracker is None:
+        thermic_tracker = TariffEnergyTracker(
+            base_key=_thermic_energy_unique_id(hub.label, multi_device),
+            binary_key=_binary_unique_id(hub.label, multi_device),
+            tariffs=list(TARIFF_OPTIONS),
+        )
+        hass.data[DOMAIN][entry.entry_id]["thermic_tariff_tracker"] = thermic_tracker
+    thermic_tracker.set_initial_total(initial_data.get(thermic_tracker.base_key))
+
     _add_sensor_entity(
         QubeTariffEnergySensor(
             coordinator,
@@ -223,6 +234,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
+        )
+    )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            thermic_tracker,
+            tariff="CV",
+            name_suffix=_translated("Thermisch verbruik CV (maand)"),
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique=THERMIC_TARIFF_SENSOR_BASE,
+            object_base=THERMIC_TARIFF_SENSOR_BASE,
+        )
+    )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            thermic_tracker,
+            tariff="SWW",
+            name_suffix=_translated("Thermisch verbruik SWW (maand)"),
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique=THERMIC_TARIFF_SENSOR_BASE,
+            object_base=THERMIC_TARIFF_SENSOR_BASE,
         )
     )
 
@@ -922,6 +961,7 @@ STANDBY_ENERGY_UNIQUE_BASE = "qube_standby_energy"
 TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
 BINARY_TARIFF_UNIQUE_ID = "dout_threewayvlv_val"
 TARIFF_SENSOR_BASE = "qube_energy_tariff"
+THERMIC_TARIFF_SENSOR_BASE = "qube_thermic_energy_tariff"
 
 
 def _start_of_month(dt_value: datetime) -> datetime:
@@ -936,6 +976,11 @@ def _append_label(base: str, label: str | None, multi_device: bool) -> str:
 
 def _energy_unique_id(label: str | None, multi_device: bool) -> str:
     base = "generalmng_acumulatedpwr"
+    return _append_label(base, label, multi_device)
+
+
+def _thermic_energy_unique_id(label: str | None, multi_device: bool) -> str:
+    base = "generalmng_acumulatedthermic"
     return _append_label(base, label, multi_device)
 
 
@@ -1040,6 +1085,8 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         show_label: bool,
         multi_device: bool,
         version: str,
+        base_unique: str | None = None,
+        object_base: str | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._hub = hub
@@ -1050,9 +1097,10 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         self._attr_name = name_suffix
-        base = f"{TARIFF_SENSOR_BASE}_{tariff.lower()}"
-        self._attr_unique_id = _append_label(base, hub.label, multi_device)
-        suggested = base
+        base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
+        self._attr_unique_id = _append_label(base_uid, hub.label, multi_device)
+        suggested_base = object_base or base_uid
+        suggested = suggested_base
         if self._show_label:
             suggested = f"{suggested}_{self._label}"
         self._attr_suggested_object_id = suggested
