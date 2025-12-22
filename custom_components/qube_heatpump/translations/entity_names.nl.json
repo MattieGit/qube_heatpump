@@ -37,6 +37,8 @@
   "dout_usrpmp_val": "Voeding User pomp",
   "elektrisch_verbruik_cv_maand": "Elektrisch verbruik CV (per maand)",
   "elektrisch_verbruik_sww_maand": "Elektrisch verbruik SSW (per maand)",
+  "thermisch_verbruik_cv_maand": "Thermisch verbruik CV (per maand)",
+  "thermisch_verbruik_sww_maand": "Thermisch verbruik SSW (per maand)",
   "en_dhwpid": "Tapwater regelaar vrijgegeven",
   "en_plantsetp_compens": "Stooklijn vrijgeven",
   "flow": "Gemeten flow",

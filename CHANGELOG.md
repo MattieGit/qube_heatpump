@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2025.12.4 — 2025-12-18
+- fix: Add translations for the thermic monthly energy sensors (CH/DHW).
+
 ## 2025.12.3 — 2025-12-18
 - feat: Add monthly thermic energy sensors split by CV/SWW based on `generalmng_acumulatedthermic` and tariff state.
 
