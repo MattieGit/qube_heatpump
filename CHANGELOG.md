@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.12.5 — 2025-12-18
 - feat: Add monthly SCOP sensors (total, CH, DHW) derived from thermic/electric energy totals.
+- note: SCOP sensors start at 0/unknown until new month-to-date data is collected; historical months are not backfilled.
 
 ## 2025.12.4 — 2025-12-18
 - fix: Add translations for the thermic monthly energy sensors (CH/DHW).

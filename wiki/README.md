@@ -20,6 +20,7 @@ Beyond the raw Modbus registers, the integration exposes several helper entities
 - **Totaal elektrisch verbruik (incl. standby)** – combines the vendor’s total power counter with the standby integration above.
 - **Elektrisch verbruik CV (maand)** – accumulates the heat pump’s electrical usage while the three-way valve is in CV mode.
 - **Elektrisch verbruik SWW (maand)** – accumulates usage while the valve is in domestic hot water (SWW) mode.
+- **SCOP (maand) / SCOP CV / SCOP SWW** – monthly COP ratios using the thermic totals divided by electric totals. These start at `0`/`unknown` until new data arrives after installation or reload; they do not backfill historical months.
 - **SG Ready mode select** – exposes the consolidated `select.sgready_mode` entity. Choosing *Off*, *Block*, *Plus*, or *Max* automatically positions the underlying SG Ready A/B coils; the original coil switches remain available (but hidden) for advanced automation.
 - **Stooklijn vrijgeven** – toggles the heating curve. When *On*, the pump follows the weather-compensated curve; when *Off*, it falls back to a fixed room-heating setpoint.
 
