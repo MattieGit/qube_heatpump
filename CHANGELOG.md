@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file. This project us
 
 ## 2025.12.6 — 2025-12-18
 - feat: Add daily SCOP sensors (total, CH, DHW) that reset each day and use thermic/electric daily totals.
+- note: Daily SCOP starts as 0/unknown until new post-midnight energy deltas arrive; no historical backfill is applied.
 
 ## 2025.12.4 — 2025-12-18
 - fix: Add translations for the thermic monthly energy sensors (CH/DHW).
