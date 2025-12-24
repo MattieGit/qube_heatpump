@@ -1333,6 +1333,13 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         if self._show_label:
             suggested = f"{suggested}_{self._label}"
         self._attr_suggested_object_id = suggested
+        self._attr_suggested_display_precision = 1
+        self._attr_native_unit_of_measurement = "CoP"
+        if SensorStateClass:
+            try:
+                self._attr_state_class = SensorStateClass.TOTAL
+            except Exception:
+                pass
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1365,7 +1372,7 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
             return None
         if elec_f <= 0:
             return None
-        return round(therm_f / elec_f, 3)
+        return round(therm_f / elec_f, 1)
 
     def _handle_coordinator_update(self) -> None:
         token = getattr(self.coordinator, "last_update_success_time", None)
