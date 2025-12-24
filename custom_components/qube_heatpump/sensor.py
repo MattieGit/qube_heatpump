@@ -260,6 +260,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         )
     )
     _add_sensor_entity(
+        QubeTariffTotalEnergySensor(
+            coordinator,
+            hub,
+            thermic_tracker,
+            name_suffix=_translated("Thermisch verbruik (maand)"),
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique=THERMIC_TOTAL_MONTHLY_UNIQUE_BASE,
+            object_base="thermisch_verbruik_maand",
+        )
+    )
+    _add_sensor_entity(
         QubeTariffEnergySensor(
             coordinator,
             hub,
@@ -1079,12 +1092,15 @@ TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
 BINARY_TARIFF_UNIQUE_ID = "dout_threewayvlv_val"
 TARIFF_SENSOR_BASE = "qube_energy_tariff"
 THERMIC_TARIFF_SENSOR_BASE = "qube_thermic_energy_tariff"
+THERMIC_TOTAL_MONTHLY_UNIQUE_BASE = "qube_thermic_energy_monthly"
 SCOP_TOTAL_UNIQUE_BASE = "qube_scop_monthly"
 SCOP_CV_UNIQUE_BASE = "qube_scop_cv_monthly"
 SCOP_SWW_UNIQUE_BASE = "qube_scop_sww_monthly"
 SCOP_TOTAL_DAILY_UNIQUE_BASE = "qube_scop_daily"
 SCOP_CV_DAILY_UNIQUE_BASE = "qube_scop_cv_daily"
 SCOP_SWW_DAILY_UNIQUE_BASE = "qube_scop_sww_daily"
+# Drop transient SCOP spikes above this threshold to avoid chart pollution.
+SCOP_MAX_EXPECTED = 10.0
 
 
 def _start_of_month(dt_value: datetime) -> datetime:
@@ -1298,6 +1314,70 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         super()._handle_coordinator_update()
 
 
+class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator,
+        hub: WPQubeHub,
+        tracker: TariffEnergyTracker,
+        name_suffix: str,
+        show_label: bool,
+        multi_device: bool,
+        version: str,
+        base_unique: str,
+        object_base: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hub = hub
+        self._tracker = tracker
+        self._label = hub.label or "qube1"
+        self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
+        self._version = version
+        self._attr_name = name_suffix
+        self._attr_unique_id = _append_label(base_unique, hub.label, multi_device)
+        suggested = object_base
+        if self._show_label:
+            suggested = f"{suggested}_{self._label}"
+        self._attr_suggested_object_id = suggested
+        try:
+            self._attr_device_class = SensorDeviceClass.ENERGY
+        except Exception:
+            self._attr_device_class = None
+        if SensorStateClass:
+            try:
+                self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+            except Exception:
+                pass
+        self._attr_native_unit_of_measurement = "kWh"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.label or "Qube Heatpump",
+            manufacturer="Qube",
+            model="Heatpump",
+            sw_version=self._version,
+        )
+
+    @property
+    def native_value(self) -> float:
+        return round(sum(self._tracker.get_total(t) for t in self._tracker.tariffs), 3)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:  # type: ignore[override]
+        return {"cycle_start": self._tracker.last_reset.isoformat()}
+
+    def _handle_coordinator_update(self) -> None:
+        token = getattr(self.coordinator, "last_update_success_time", None)
+        data = self.coordinator.data or {}
+        self._tracker.update(data, token)
+        super()._handle_coordinator_update()
+
+
 class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
     _attr_should_poll = False
 
@@ -1372,7 +1452,10 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
             return None
         if elec_f <= 0:
             return None
-        return round(therm_f / elec_f, 1)
+        scop = therm_f / elec_f
+        if scop < 0 or scop > SCOP_MAX_EXPECTED:
+            return None
+        return round(scop, 1)
 
     def _handle_coordinator_update(self) -> None:
         token = getattr(self.coordinator, "last_update_success_time", None)

@@ -37,6 +37,7 @@
   "dout_usrpmp_val": "Supply user pump",
   "elektrisch_verbruik_cv_maand": "Electric usage CH (monthly)",
   "elektrisch_verbruik_sww_maand": "Electric usage DHW (monthly)",
+  "thermisch_verbruik_maand": "Thermic usage (monthly)",
   "thermisch_verbruik_cv_maand": "Thermic usage CH (monthly)",
   "thermisch_verbruik_sww_maand": "Thermic usage DHW (monthly)",
   "en_dhwpid": "Domestic Hot Water activated",
