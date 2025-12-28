@@ -1405,6 +1405,7 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         self._attr_name = name
+        self._object_base = object_base
         base_uid = unique_base
         if self._multi_device and self._label:
             base_uid = f"{base_uid}_{self._label}"
@@ -1420,6 +1421,13 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
                 self._attr_state_class = SensorStateClass.TOTAL
             except Exception:
                 pass
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired = self._object_base
+        if self._show_label:
+            desired = f"{desired}_{self._label}"
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)))
 
     @property
     def device_info(self) -> DeviceInfo:
