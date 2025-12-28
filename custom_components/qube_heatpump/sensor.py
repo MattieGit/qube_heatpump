@@ -264,12 +264,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             coordinator,
             hub,
             thermic_tracker,
-            name_suffix=_translated("Thermisch verbruik (maand)"),
+            name_suffix=_translated("Thermische opbrengst (maand)", "thermische_opbrengst_maand"),
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TOTAL_MONTHLY_UNIQUE_BASE,
-            object_base="thermisch_verbruik_maand",
+            object_base="thermische_opbrengst_maand",
         )
     )
     _add_sensor_entity(
@@ -278,7 +278,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             hub,
             thermic_tracker,
             tariff="CV",
-            name_suffix=_translated("Thermisch verbruik CV (maand)"),
+            name_suffix=_translated(
+                "Thermische opbrengst CV (maand)",
+                "thermische_opbrengst_cv_maand",
+            ),
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -292,7 +295,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             hub,
             thermic_tracker,
             tariff="SWW",
-            name_suffix=_translated("Thermisch verbruik SWW (maand)"),
+            name_suffix=_translated(
+                "Thermische opbrengst SWW (maand)",
+                "thermische_opbrengst_sww_maand",
+            ),
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
