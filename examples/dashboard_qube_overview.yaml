@@ -272,9 +272,13 @@ sections:
       - type: tile
         entity: sensor.qube_total_energy_incl_standby
       - type: tile
-        entity: sensor.qube_standby_power
+        entity: sensor.standby_verbruik
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: sensor.qube_standby_energy
+        entity: sensor.standby_energy
+        vertical: false
+        features_position: bottom
       - type: tile
         entity: sensor.elektrisch_verbruik_cv_maand
       - type: tile
@@ -315,8 +319,10 @@ sections:
         entity: sensor.status_warmtepomp
         name: Status warmtepomp
       - type: tile
-        entity: sensor.driewegklep_dhw_cv_status
+        entity: sensor.driewegklep_ssw_cv_status
         name: Driewegklep status
+        vertical: false
+        features_position: bottom
       - type: tile
         entity: sensor.vierwegklep_verwarmen_koelen_status
         name: Vierwegklep status
@@ -372,6 +378,36 @@ sections:
         entity: sensor.qube_metric_count_binary_sensors
       - type: tile
         entity: sensor.qube_metric_count_switches
-cards:
+  - type: grid
+    cards:
+      - type: custom:slider-button-card
+        entity: input_number.tapwater_temperature
+        slider:
+          direction: left-right
+          background: solid
+          use_state_color: false
+          use_percentage_bg_opacity: false
+          show_track: false
+          toggle_on_click: false
+          force_square: false
+        show_name: true
+        show_state: true
+        compact: true
+        icon:
+          show: true
+          use_state_color: true
+          tap_action:
+            action: more-info
+          icon: ""
+        action_button:
+          mode: toggle
+          icon: mdi:power
+          show: false
+          show_spinner: true
+          tap_action:
+            action: toggle
+        name: Tapwater (SWW) temperatuur
+        show_attribute: true
+cards: []
 type: sections
 max_columns: 2
