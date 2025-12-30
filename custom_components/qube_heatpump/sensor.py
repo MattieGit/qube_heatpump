@@ -852,6 +852,11 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
             sw_version=self._version,
         )
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired_obj = self._attr_suggested_object_id or STANDBY_POWER_UNIQUE_BASE
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired_obj)))
+
 
 class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
     _attr_should_poll = False
@@ -901,6 +906,8 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             self._last_update = last_state.last_changed
         if self._last_update is None:
             self._last_update = dt_util.utcnow()
+        desired_obj = self._attr_suggested_object_id or STANDBY_ENERGY_UNIQUE_BASE
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired_obj)))
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -993,6 +1000,11 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         return None if self._total_energy is None else round(self._total_energy, 3)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired_obj = self._attr_suggested_object_id or TOTAL_ENERGY_UNIQUE_BASE
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired_obj)))
 
     def _handle_coordinator_update(self) -> None:
         base_value = self.coordinator.data.get(self._base_unique_id)
@@ -1294,6 +1306,9 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
                     if parsed is not None:
                         last_reset = parsed
             self._tracker.restore_total(self._tariff, value, last_reset)
+        desired_obj = self._attr_suggested_object_id
+        if desired_obj:
+            await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired_obj)))
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1382,6 +1397,11 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data or {}
         self._tracker.update(data, token)
         super()._handle_coordinator_update()
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        desired_obj = self._attr_suggested_object_id or self._attr_unique_id
+        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired_obj)))
 
 
 class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
