@@ -286,7 +286,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
-            object_base=THERMIC_TARIFF_SENSOR_BASE,
+            object_base="thermische_opbrengst_cv_maand",
         )
     )
     _add_sensor_entity(
@@ -303,7 +303,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
-            object_base=THERMIC_TARIFF_SENSOR_BASE,
+            object_base="thermische_opbrengst_sww_maand",
         )
     )
 
