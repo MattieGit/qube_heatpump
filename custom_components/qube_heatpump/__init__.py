@@ -24,9 +24,7 @@ from homeassistant.setup import async_setup_component
 from .const import (
     CONF_FRIENDLY_NAME_LANGUAGE,
     CONF_HOST,
-    CONF_LABEL,
     CONF_PORT,
-    CONF_SHOW_LABEL_IN_NAME,
     CONF_UNIT_ID,
     DEFAULT_FRIENDLY_NAME_LANGUAGE,
     DEFAULT_PORT,
@@ -71,7 +69,6 @@ def _slugify(text: str) -> str:
 def _suggest_object_id(
     ent: EntityDef,
     label: str | None,
-    show_label_option: bool,
     multi_device: bool,
 ) -> str | None:
     """Suggest an entity ID slug."""
@@ -82,8 +79,8 @@ def _suggest_object_id(
     if base == "unitstatus":
         base = "qube_status_heatpump"
 
-    apply_label = show_label_option or multi_device
-    if apply_label and label and not base.startswith(f"{label}_"):
+    # Apply label prefix when multiple devices are configured
+    if multi_device and label and not base.startswith(f"{label}_"):
         base = f"{label}_{base}"
     return _slugify(base)
 
@@ -218,12 +215,33 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
         await coordinator_target.async_request_refresh()
 
 
+def _derive_label_from_title(title: str) -> str:
+    """Derive a label slug from the config entry title.
+
+    Examples:
+        "Qube Heat Pump (qube.local)" -> "qube_local"
+        "Qube Heat Pump (192.168.1.50)" -> "192_168_1_50"
+        "My Heat Pump" -> "my_heat_pump"
+    """
+    # Try to extract content from parentheses first
+    import re
+
+    match = re.search(r"\(([^)]+)\)", title)
+    if match:
+        content = match.group(1)
+    else:
+        # Use the full title if no parentheses
+        content = title
+
+    # Slugify the content
+    return _slugify(content)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:  # noqa: C901
     """Set up Qube Heat Pump from a config entry."""
     host = entry.data[CONF_HOST]
     port = entry.data.get(CONF_PORT, DEFAULT_PORT)
     options = dict(entry.options)
-    options_changed = False
 
     unit_id = int(options.get(CONF_UNIT_ID, 1))
 
@@ -234,33 +252,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     ]
     multi_device = len(existing_entries) >= 1
 
-    label = options.get(CONF_LABEL)
-    if not label:
-        used_labels = {
-            e.options.get(CONF_LABEL)
-            for e in existing_entries
-            if e.options.get(CONF_LABEL)
-        }
-        # Fallback to generating a label if none provided
-        for i in range(1, 100):
-            candidate = f"qube{i}"
-            if candidate not in used_labels:
-                label = candidate
-                break
-
-    show_label_option = bool(options.get(CONF_SHOW_LABEL_IN_NAME, False))
-    if multi_device and not show_label_option:
-        options[CONF_SHOW_LABEL_IN_NAME] = True
-        show_label_option = True
-        options_changed = True
-
-    if options_changed:
-        hass.config_entries.async_update_entry(entry, options=options)
+    # Derive label from entry.title (user can rename in UI to customize)
+    label = _derive_label_from_title(entry.title)
 
     # Rename existing entries from "WP Qube" to "Qube Heat Pump"
     if entry.title.startswith("WP Qube"):
         new_title = entry.title.replace("WP Qube", "Qube Heat Pump")
         hass.config_entries.async_update_entry(entry, title=new_title)
+        label = _derive_label_from_title(new_title)
 
     hub = QubeHub(hass, host, port, entry.entry_id, unit_id, label)
 
@@ -287,7 +286,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         if not ent.unique_id:
             continue
         domain = ent.platform
-        slug = _suggest_object_id(ent, label, show_label_option, multi_device)
+        slug = _suggest_object_id(ent, label, multi_device)
         try:
             registry_entry = ent_reg.async_get_or_create(
                 domain,
@@ -318,16 +317,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         if integration and getattr(integration, "version", None):
             version = str(integration.version)
 
-    if multi_device:
-        for other_entry in existing_entries:
-            if not bool(other_entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)):
-                other_updated = dict(other_entry.options)
-                other_updated[CONF_SHOW_LABEL_IN_NAME] = True
-                hass.config_entries.async_update_entry(
-                    other_entry, options=other_updated
-                )
-
-    apply_label_in_name = show_label_option or multi_device
+    # Apply label prefix to entity IDs when multiple devices are configured
+    apply_label_in_name = multi_device
 
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         """Handle options update."""

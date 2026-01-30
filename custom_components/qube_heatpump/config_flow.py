@@ -19,9 +19,7 @@ from homeassistant.helpers import device_registry as dr
 from .const import (
     CONF_FRIENDLY_NAME_LANGUAGE,
     CONF_HOST,
-    CONF_LABEL,
     CONF_PORT,
-    CONF_SHOW_LABEL_IN_NAME,
     CONF_UNIT_ID,
     DEFAULT_FRIENDLY_NAME_LANGUAGE,
     DEFAULT_PORT,
@@ -242,9 +240,6 @@ class OptionsFlowHandler(OptionsFlow):
         current_unit = int(
             self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
         )
-        current_label_option = bool(
-            self._entry.options.get(CONF_SHOW_LABEL_IN_NAME, False)
-        )
 
         hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         resolved_ip = None
@@ -259,7 +254,6 @@ class OptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             user_input = dict(user_input)
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
-            show_label = bool(user_input.get(CONF_SHOW_LABEL_IN_NAME, False))
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -284,8 +278,6 @@ class OptionsFlowHandler(OptionsFlow):
             if not errors:
                 opts = dict(self._entry.options)
                 opts.pop(CONF_UNIT_ID, None)
-                opts[CONF_SHOW_LABEL_IN_NAME] = show_label
-                opts[CONF_LABEL] = user_input.get(CONF_LABEL, "")
                 opts[CONF_FRIENDLY_NAME_LANGUAGE] = user_input.get(
                     CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE
                 )
@@ -310,9 +302,6 @@ class OptionsFlowHandler(OptionsFlow):
                     await self.hass.config_entries.async_reload(self._entry.entry_id)
                 return self.async_create_entry(title="", data=opts)
 
-        current_label = self._entry.options.get(
-            CONF_LABEL, self._entry.data.get(CONF_LABEL, "")
-        )
         current_language = self._entry.options.get(
             CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE
         )
@@ -320,10 +309,6 @@ class OptionsFlowHandler(OptionsFlow):
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=current_host): str,
-                vol.Optional(CONF_LABEL, default=current_label): str,
-                vol.Optional(
-                    CONF_SHOW_LABEL_IN_NAME, default=current_label_option
-                ): bool,
                 vol.Optional(
                     CONF_FRIENDLY_NAME_LANGUAGE, default=current_language
                 ): vol.In(["en", "nl"]),
