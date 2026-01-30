@@ -72,6 +72,24 @@
             "scop_dhw_day": {
                 "name": "SCOP SWW (dag)"
             },
+            "electric_consumption_day": {
+                "name": "Elektriciteitsverbruik (dag)"
+            },
+            "electric_consumption_ch_day": {
+                "name": "Elektriciteitsverbruik CV (dag)"
+            },
+            "electric_consumption_dhw_day": {
+                "name": "Elektriciteitsverbruik SWW (dag)"
+            },
+            "thermic_yield_day": {
+                "name": "Thermische opbrengst (dag)"
+            },
+            "thermic_yield_ch_day": {
+                "name": "Thermische opbrengst CV (dag)"
+            },
+            "thermic_yield_dhw_day": {
+                "name": "Thermische opbrengst SWW (dag)"
+            },
             "info": {
                 "name": "Qube info"
             },
@@ -142,7 +160,7 @@
                 "name": "Stuurvraag compressor"
             },
             "flow": {
-                "name": "Gemeten Flow"
+                "name": "Gemeten flow"
             },
             "supplytemp": {
                 "name": "Aanvoertemperatuur CV"
@@ -169,7 +187,7 @@
                 "name": "COP (berekend)"
             },
             "generalmng_thermic_pwr": {
-                "name": "Actueel Vermogen"
+                "name": "Actueel vermogen"
             },
             "unitstatus": {
                 "name": "Status code"
@@ -178,10 +196,10 @@
                 "name": "Berekend setpoint warmtepomp"
             },
             "coolsetp_1": {
-                "name": "Koel Setpoint"
+                "name": "Koel setpoint"
             },
             "heatsetp_1": {
-                "name": "Heat Setpoint"
+                "name": "Heat setpoint"
             },
             "bldc_evd_powerplus_info_pump": {
                 "name": "Actuele snelheid compressor"
@@ -217,7 +235,7 @@
                 "name": "Totaal elektrisch verbruik (excl. standby)"
             },
             "generalmng_acumulatedthermic": {
-                "name": "Totaal Thermische opbrengst"
+                "name": "Totaal thermische opbrengst"
             },
             "modbus_roomtemp": {
                 "name": "Linq ruimtetemperatuur"
@@ -291,7 +309,7 @@
                 "name": "Alarm Verzamelalarm Bron"
             },
             "glbal": {
-                "name": "Globaal Alarm"
+                "name": "Globaal alarm"
             },
             "alarmmng_al_pwrplus": {
                 "name": "Alarm verzamelalarm compressor"
@@ -420,6 +438,32 @@
                     "description": "Optioneel hub label (bijv. qube1) om een specifiek apparaat te kiezen wanneer er meerdere hubs zijn. Genegeerd als entry_id is opgegeven."
                 }
             }
+        }
+    },
+    "exceptions": {
+        "connection_failed": {
+            "message": "Kan geen verbinding maken met de Qube warmtepomp op {host}."
+        },
+        "connection_timeout": {
+            "message": "Verbinding met de Qube warmtepomp is verlopen."
+        },
+        "write_failed": {
+            "message": "Kan waarde niet schrijven naar de Qube warmtepomp."
+        },
+        "write_register_failed": {
+            "message": "Kan register op adres {address} niet schrijven."
+        },
+        "write_switch_failed": {
+            "message": "Kan schakelaar {entity_id} niet schrijven."
+        },
+        "write_setpoint_failed": {
+            "message": "Kan setpoint {entity_id} niet schrijven."
+        },
+        "not_connected": {
+            "message": "Niet verbonden met de Qube warmtepomp. Probeer opnieuw te verbinden."
+        },
+        "read_failed": {
+            "message": "Kan geen data lezen van de Qube warmtepomp."
         }
     }
 }

@@ -1,6 +1,6 @@
 {
   "domain": "qube_heatpump",
-  "name": "Qube Heat Pump",
+  "name": "Qube heat pump",
   "codeowners": ["@MattieGit"],
   "config_flow": true,
   "documentation": "https://github.com/MattieGit/qube_heatpump/blob/main/wiki/README.md",

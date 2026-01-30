@@ -10,7 +10,7 @@
     },
     "step": {
       "user": {
-        "title": "Qube Heatpump",
+        "title": "Qube heat pump",
         "description": "Enter the heat pump IP or host.\nNeed help? See the [documentation]({docs_url}).",
         "data": {
           "host": "Host/IP"
@@ -30,17 +30,13 @@
     "step": {
       "init": {
         "title": "Options",
-        "description": "Update the host if the heat pump IP changed, and choose whether to append the hub label to entity IDs.\nNeed help? See the [documentation]({docs_url}).\n\nEnable \"Add hub label\" to append the hub label such as \"qube1\" to entity IDs so they are easier to recognise when multiple heat pumps are configured. This is not recommended for single heat pump installs.\n\nCurrent IP: {resolved_ip}.",
+        "description": "Update the host if the heat pump IP changed.\nNeed help? See the [documentation]({docs_url}).\n\nTo customize entity ID prefixes for multi-device setups, rename the integration entry in Home Assistant (three-dot menu → Rename).\n\nCurrent IP: {resolved_ip}.",
         "data": {
           "host": "Host/IP",
-          "label": "Hub label (suffix)",
-          "show_label_in_name": "Add hub label to entity IDs",
           "friendly_name_language": "Language for entity names"
         },
         "data_description": {
           "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
-          "label": "Optional shorthand label (e.g. qube1) used as suffix for entity IDs when multiple heat pumps are configured.",
-          "show_label_in_name": "Enable to append the hub label to entity IDs (e.g. sensor.qube1_temperature). This is recommended for multi-device setups.",
           "friendly_name_language": "Choose the language used for entity names. Note: Existing entities won't be renamed automatically."
         }
       }
@@ -109,7 +105,7 @@
         "name": "Alarm: Collective alarm source"
       },
       "glbal": {
-        "name": "Global Alarm"
+        "name": "Global alarm"
       },
       "alarmmng_al_pwrplus": {
         "name": "Alarm: Collective alarm compressor"
@@ -211,7 +207,7 @@
         "name": "Compressor demand %"
       },
       "flow": {
-        "name": "Measured Flow"
+        "name": "Measured flow"
       },
       "supplytemp": {
         "name": "Supply temperature CV"
@@ -362,6 +358,24 @@
       "scop_dhw_day": {
         "name": "SCOP DHW (day)"
       },
+      "electric_consumption_day": {
+        "name": "Electric consumption (day)"
+      },
+      "electric_consumption_ch_day": {
+        "name": "Electric consumption CH (day)"
+      },
+      "electric_consumption_dhw_day": {
+        "name": "Electric consumption DHW (day)"
+      },
+      "thermic_yield_day": {
+        "name": "Thermic yield (day)"
+      },
+      "thermic_yield_ch_day": {
+        "name": "Thermic yield CH (day)"
+      },
+      "thermic_yield_dhw_day": {
+        "name": "Thermic yield DHW (day)"
+      },
       "info": {
         "name": "Qube info"
       },
@@ -446,7 +460,7 @@
         "name": "Alarm: Collective alarm source"
       },
       "glbal": {
-        "name": "Global Alarm"
+        "name": "Global alarm"
       },
       "alarmmng_al_pwrplus": {
         "name": "Alarm: Collective alarm compressor"
@@ -575,9 +589,35 @@
         },
         "label": {
           "name": "Hub label",
-          "description": "Optional hub label (e.g. qube1) to target a specific device when multiple hubs exist. Ignored if entry_id is provided."
+          "description": "Optional hub label to target a specific device when multiple hubs exist. The label is derived from the integration entry title (e.g. 'Qube Heat Pump (qube.local)' → 'qube_local'). Ignored if entry_id is provided."
         }
       }
+    }
+  },
+  "exceptions": {
+    "connection_failed": {
+      "message": "Failed to connect to the Qube heat pump at {host}."
+    },
+    "connection_timeout": {
+      "message": "Connection to the Qube heat pump timed out."
+    },
+    "write_failed": {
+      "message": "Failed to write value to the Qube heat pump."
+    },
+    "write_register_failed": {
+      "message": "Failed to write register at address {address}."
+    },
+    "write_switch_failed": {
+      "message": "Failed to write switch {entity_id}."
+    },
+    "write_setpoint_failed": {
+      "message": "Failed to write setpoint {entity_id}."
+    },
+    "not_connected": {
+      "message": "Not connected to the Qube heat pump. Try reconnecting."
+    },
+    "read_failed": {
+      "message": "Failed to read data from the Qube heat pump."
     }
   }
 }

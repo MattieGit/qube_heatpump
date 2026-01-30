@@ -1,4 +1,5 @@
 rules:
+  # Bronze
   action-setup: done
   appropriate-polling: done
   brands: done
@@ -17,3 +18,11 @@ rules:
   test-before-configure: done
   test-before-setup: done
   unique-config-entry: done
+
+  # Silver
+  config-entry-unloading: done
+  test-coverage: done
+
+  # Gold
+  entity-translations: done
+  exception-translations: done
