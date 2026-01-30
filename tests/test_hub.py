@@ -54,6 +54,7 @@ async def test_hub_connect_success(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
@@ -72,6 +73,7 @@ async def test_hub_connect_failure_increments_error(hass: HomeAssistant) -> None
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=False)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
@@ -92,6 +94,7 @@ async def test_hub_close(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
 
@@ -111,6 +114,7 @@ async def test_hub_set_unit_id(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
@@ -152,6 +156,7 @@ async def test_hub_read_value(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
         client.read_entity = AsyncMock(return_value=45.0)
 
@@ -214,6 +219,7 @@ async def test_hub_connect_exception(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(side_effect=OSError("Network error"))
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
@@ -288,6 +294,7 @@ async def test_hub_write_switch(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
         client.write_switch = AsyncMock(return_value=True)
 
@@ -311,6 +318,7 @@ async def test_hub_write_setpoint(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
         client.write_setpoint = AsyncMock(return_value=True)
 
@@ -325,50 +333,9 @@ async def test_hub_write_setpoint(hass: HomeAssistant) -> None:
             client.write_setpoint.assert_called()
 
 
-async def test_hub_decode_and_transform(hass: HomeAssistant) -> None:
-    """Test hub _decode_and_transform with different data types."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-
-        # Test uint16
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="uint16")
-        result = hub._decode_and_transform([1234], ent)
-        assert result == 1234
-
-        # Test int16 positive
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="int16")
-        result = hub._decode_and_transform([1000], ent)
-        assert result == 1000
-
-        # Test int16 negative
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="int16")
-        result = hub._decode_and_transform([65535], ent)
-        assert result == -1
-
-        # Test with scale
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="uint16", scale=0.1)
-        result = hub._decode_and_transform([100], ent)
-        assert abs(result - 10.0) < 0.001
-
-        # Test with offset
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="uint16", offset=10.0)
-        result = hub._decode_and_transform([100], ent)
-        assert result == 110.0
-
-        # Test with scale and offset
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="uint16", scale=0.1, offset=5.0)
-        result = hub._decode_and_transform([100], ent)
-        assert abs(result - 15.0) < 0.001
-
-
 async def test_hub_read_value_not_connected(hass: HomeAssistant) -> None:
     """Test hub async_read_value raises when not connected."""
     import pytest
-    from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -407,254 +374,6 @@ async def test_hub_get_friendly_name_no_translations(hass: HomeAssistant) -> Non
         assert name is None
 
 
-async def test_hub_decode_float32(hass: HomeAssistant) -> None:
-    """Test hub _decode_and_transform with float32."""
-    import struct
-
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-
-        # Pack float 21.5 as two 16-bit registers
-        # Hub uses little endian word order: int_val = (regs[1] << 16) | regs[0]
-        # then unpacks as big endian float
-        packed = struct.pack(">f", 21.5)
-        int_val = struct.unpack(">I", packed)[0]
-        reg0 = int_val & 0xFFFF  # Low word
-        reg1 = (int_val >> 16) & 0xFFFF  # High word
-
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="float32")
-        result = hub._decode_and_transform([reg0, reg1], ent)
-        assert abs(result - 21.5) < 0.001
-
-
-async def test_hub_decode_uint32(hass: HomeAssistant) -> None:
-    """Test hub _decode_and_transform with uint32."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-
-        # uint32: 70000 = 0x00011170
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="uint32")
-        # Low word, high word in little endian order
-        result = hub._decode_and_transform([0x1170, 0x0001], ent)
-        assert result == 70000
-
-
-async def test_hub_decode_int32(hass: HomeAssistant) -> None:
-    """Test hub _decode_and_transform with int32."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-
-        # int32 positive
-        ent = EntityDef(platform="sensor", name="test", address=0, data_type="int32")
-        result = hub._decode_and_transform([0x1170, 0x0001], ent)
-        assert result == 70000
-
-        # int32 negative (-1 = 0xFFFFFFFF)
-        result = hub._decode_and_transform([0xFFFF, 0xFFFF], ent)
-        assert result == -1
-
-
-async def test_hub_read_by_address_binary_sensor_discrete(hass: HomeAssistant) -> None:
-    """Test hub _read_by_address for binary sensor with discrete input."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[True])
-        )
-
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        await hub.async_connect()
-
-        ent = EntityDef(
-            platform="binary_sensor",
-            name="test",
-            address=100,
-            input_type="discrete_input",
-        )
-        result = await hub._read_by_address(ent)
-        assert result is True
-
-
-async def test_hub_read_by_address_binary_sensor_coil(hass: HomeAssistant) -> None:
-    """Test hub _read_by_address for binary sensor with coil input."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        await hub.async_connect()
-
-        ent = EntityDef(
-            platform="binary_sensor",
-            name="test",
-            address=100,
-            input_type="coil",
-        )
-        result = await hub._read_by_address(ent)
-        assert result is False
-
-
-async def test_hub_read_by_address_switch(hass: HomeAssistant) -> None:
-    """Test hub _read_by_address for switch."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[True])
-        )
-
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        await hub.async_connect()
-
-        ent = EntityDef(
-            platform="switch",
-            name="test",
-            address=100,
-            write_type="coil",
-        )
-        result = await hub._read_by_address(ent)
-        assert result is True
-
-
-async def test_hub_read_sensor_registers_input(hass: HomeAssistant) -> None:
-    """Test hub _read_sensor_registers with input registers."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[1234])
-        )
-
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        await hub.async_connect()
-
-        ent = EntityDef(
-            platform="sensor",
-            name="test",
-            address=100,
-            input_type="input",
-            data_type="uint16",
-        )
-        result = await hub._read_sensor_registers(ent)
-        assert result == 1234
-
-
-async def test_hub_read_sensor_registers_holding(hass: HomeAssistant) -> None:
-    """Test hub _read_sensor_registers with holding registers."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[5678])
-        )
-
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        await hub.async_connect()
-
-        ent = EntityDef(
-            platform="sensor",
-            name="test",
-            address=100,
-            input_type="holding",
-            data_type="uint16",
-        )
-        result = await hub._read_sensor_registers(ent)
-        assert result == 5678
-
-
-async def test_hub_read_sensor_registers_error(hass: HomeAssistant) -> None:
-    """Test hub _read_sensor_registers handles error response."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: True)
-        )
-
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        await hub.async_connect()
-
-        ent = EntityDef(
-            platform="sensor",
-            name="test",
-            address=100,
-            input_type="holding",
-            data_type="uint16",
-        )
-        result = await hub._read_sensor_registers(ent)
-        assert result is None
-
-
 async def test_hub_read_value_fallback_unique_id(hass: HomeAssistant) -> None:
     """Test hub async_read_value with unique_id fallback."""
     from custom_components.qube_heatpump.hub import EntityDef
@@ -666,12 +385,11 @@ async def test_hub_read_value_fallback_unique_id(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
         client.read_binary_sensor = AsyncMock(return_value=True)
         client.read_switch = AsyncMock(return_value=False)
         client.read_sensor = AsyncMock(return_value=42.0)
-        client._client = MagicMock()
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         await hub.async_connect()
@@ -710,8 +428,8 @@ async def test_hub_read_value_fallback_unique_id(hass: HomeAssistant) -> None:
         assert result == 42.0
 
 
-async def test_hub_write_switch_coil_fallback(hass: HomeAssistant) -> None:
-    """Test hub async_write_switch with coil fallback."""
+async def test_hub_write_switch_success(hass: HomeAssistant) -> None:
+    """Test hub async_write_switch with library method."""
     from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
@@ -721,34 +439,27 @@ async def test_hub_write_switch_coil_fallback(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        # write_switch returns None to trigger fallback
-        client.write_switch = AsyncMock(return_value=None)
-        client._client = MagicMock()
-        client._client.write_coil = AsyncMock(
-            return_value=MagicMock(isError=lambda: False)
-        )
+        client.write_switch = AsyncMock(return_value=True)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         await hub.async_connect()
 
-        # Entity without library entity to trigger fallback
         ent = EntityDef(
             platform="switch",
             name="test",
             address=100,
+            unique_id="test_switch",
             write_type="coil",
         )
-        ent._library_entity = None
-        ent.unique_id = None
 
         await hub.async_write_switch(ent, True)
-        client._client.write_coil.assert_called()
+        client.write_switch.assert_called_once_with("test_switch", True)
 
 
-async def test_hub_write_switch_coil_error(hass: HomeAssistant) -> None:
-    """Test hub async_write_switch handles coil write error."""
+async def test_hub_write_switch_failure(hass: HomeAssistant) -> None:
+    """Test hub async_write_switch handles failure."""
     import pytest
     from custom_components.qube_heatpump.hub import EntityDef
 
@@ -759,13 +470,9 @@ async def test_hub_write_switch_coil_error(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.write_switch = AsyncMock(return_value=None)
-        client._client = MagicMock()
-        client._client.write_coil = AsyncMock(
-            return_value=MagicMock(isError=lambda: True)
-        )
+        client.write_switch = AsyncMock(return_value=False)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         await hub.async_connect()
@@ -774,17 +481,17 @@ async def test_hub_write_switch_coil_error(hass: HomeAssistant) -> None:
             platform="switch",
             name="test",
             address=100,
+            unique_id="test_switch",
             write_type="coil",
         )
-        ent._library_entity = None
-        ent.unique_id = None
 
-        with pytest.raises(ConnectionError, match="Failed to write coil"):
+        with pytest.raises(ConnectionError, match="Failed to write switch"):
             await hub.async_write_switch(ent, True)
 
 
-async def test_hub_write_setpoint_fallback(hass: HomeAssistant) -> None:
-    """Test hub async_write_setpoint with register fallback."""
+async def test_hub_write_switch_no_unique_id(hass: HomeAssistant) -> None:
+    """Test hub async_write_switch raises with no unique_id."""
+    import pytest
     from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
@@ -794,32 +501,54 @@ async def test_hub_write_setpoint_fallback(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.write_setpoint = AsyncMock(return_value=False)
-        client._client = MagicMock()
-        client._client.write_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False)
-        )
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         await hub.async_connect()
 
-        # Entity without unique_id to trigger fallback
+        ent = EntityDef(
+            platform="switch",
+            name="test",
+            address=100,
+            unique_id=None,
+        )
+
+        with pytest.raises(ConnectionError, match="No unique_id for switch"):
+            await hub.async_write_switch(ent, True)
+
+
+async def test_hub_write_setpoint_success(hass: HomeAssistant) -> None:
+    """Test hub async_write_setpoint with library method."""
+    from custom_components.qube_heatpump.hub import EntityDef
+
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
+    ) as mock_client_cls:
+        client = mock_client_cls.return_value
+        client.host = "1.2.3.4"
+        client.port = 502
+        client.unit = 1
+        client.is_connected = False
+        client.connect = AsyncMock(return_value=True)
+        client.write_setpoint = AsyncMock(return_value=True)
+
+        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
+        await hub.async_connect()
+
         ent = EntityDef(
             platform="sensor",
             name="test",
             address=100,
-            data_type="float32",
+            unique_id="test_setpoint",
         )
-        ent._library_entity = None
 
         await hub.async_write_setpoint(ent, 21.5)
-        client._client.write_registers.assert_called()
+        client.write_setpoint.assert_called_once_with("test_setpoint", 21.5)
 
 
-async def test_hub_write_setpoint_error(hass: HomeAssistant) -> None:
-    """Test hub async_write_setpoint handles error."""
+async def test_hub_write_setpoint_failure(hass: HomeAssistant) -> None:
+    """Test hub async_write_setpoint handles failure."""
     import pytest
     from custom_components.qube_heatpump.hub import EntityDef
 
@@ -830,15 +559,13 @@ async def test_hub_write_setpoint_error(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
         client.write_setpoint = AsyncMock(return_value=False)
-        client._client = MagicMock()
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         await hub.async_connect()
 
-        # Entity with unique_id that fails
         ent = EntityDef(
             platform="sensor",
             name="test",
@@ -850,8 +577,11 @@ async def test_hub_write_setpoint_error(hass: HomeAssistant) -> None:
             await hub.async_write_setpoint(ent, 21.5)
 
 
-async def test_hub_write_register_int16_negative(hass: HomeAssistant) -> None:
-    """Test hub async_write_register with negative int16."""
+async def test_hub_write_setpoint_no_unique_id(hass: HomeAssistant) -> None:
+    """Test hub async_write_setpoint raises with no unique_id."""
+    import pytest
+    from custom_components.qube_heatpump.hub import EntityDef
+
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
     ) as mock_client_cls:
@@ -859,22 +589,53 @@ async def test_hub_write_register_int16_negative(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.write_register = AsyncMock(
-            return_value=MagicMock(isError=lambda: False)
-        )
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         await hub.async_connect()
 
-        await hub.async_write_register(100, -10, "int16")
-        client._client.write_register.assert_called()
+        ent = EntityDef(
+            platform="sensor",
+            name="test",
+            address=100,
+            unique_id=None,
+        )
+
+        with pytest.raises(ConnectionError, match="No unique_id for setpoint"):
+            await hub.async_write_setpoint(ent, 21.5)
 
 
-async def test_hub_write_register_error(hass: HomeAssistant) -> None:
-    """Test hub async_write_register handles error."""
+async def test_hub_write_register_with_entity(hass: HomeAssistant) -> None:
+    """Test hub async_write_register with matching entity."""
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
+    ) as mock_client_cls:
+        client = mock_client_cls.return_value
+        client.host = "1.2.3.4"
+        client.port = 502
+        client.unit = 1
+        client.is_connected = False
+        client.connect = AsyncMock(return_value=True)
+        client.write_setpoint = AsyncMock(return_value=True)
+
+        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
+        hub.load_library_entities()
+        await hub.async_connect()
+
+        # Find a writable sensor entity
+        writable_sensors = [
+            e for e in hub.entities
+            if e.writable and e.platform == "sensor"
+        ]
+        if writable_sensors:
+            ent = writable_sensors[0]
+            await hub.async_write_register(ent.address, 21.5)
+            client.write_setpoint.assert_called()
+
+
+async def test_hub_write_register_no_matching_entity(hass: HomeAssistant) -> None:
+    """Test hub async_write_register with no matching entity."""
     import pytest
 
     with patch(
@@ -884,18 +645,16 @@ async def test_hub_write_register_error(hass: HomeAssistant) -> None:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
+        client.is_connected = False
         client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client._client = MagicMock()
-        client._client.write_register = AsyncMock(
-            return_value=MagicMock(isError=lambda: True)
-        )
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
+        hub.load_library_entities()
         await hub.async_connect()
 
-        with pytest.raises(ConnectionError, match="Failed to write register"):
-            await hub.async_write_register(100, 42, "uint16")
+        # Use an address that doesn't match any writable entity
+        with pytest.raises(ConnectionError, match="No writable entity found"):
+            await hub.async_write_register(99999, 42)
 
 
 async def test_hub_write_register_not_connected(hass: HomeAssistant) -> None:
@@ -910,3 +669,38 @@ async def test_hub_write_register_not_connected(hass: HomeAssistant) -> None:
 
         with pytest.raises(ConnectionError, match="Client not connected"):
             await hub.async_write_register(100, 42, "uint16")
+
+
+async def test_hub_get_all_entities(hass: HomeAssistant) -> None:
+    """Test hub async_get_all_entities."""
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
+    ) as mock_client_cls:
+        client = mock_client_cls.return_value
+        client.host = "1.2.3.4"
+        client.port = 502
+        client.unit = 1
+        client.is_connected = False
+        client.connect = AsyncMock(return_value=True)
+        client.get_all_entities = AsyncMock(return_value={"temp_supply": 45.0})
+
+        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
+        await hub.async_connect()
+
+        result = await hub.async_get_all_entities()
+        assert result == {"temp_supply": 45.0}
+        client.get_all_entities.assert_called_once()
+
+
+async def test_hub_get_all_entities_not_connected(hass: HomeAssistant) -> None:
+    """Test hub async_get_all_entities raises when not connected."""
+    import pytest
+
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
+    ):
+        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
+        # Don't connect
+
+        with pytest.raises(ConnectionError, match="Client not connected"):
+            await hub.async_get_all_entities()
