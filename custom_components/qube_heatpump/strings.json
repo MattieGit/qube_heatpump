@@ -532,6 +532,14 @@
       "sgready_mode": {
         "name": "SG Ready mode"
       }
+    },
+    "number": {
+      "tapw_timeprogram_dhwsetp_nolinq": {
+        "name": "DHW setpoint"
+      },
+      "setpoint_dhw": {
+        "name": "DHW setpoint"
+      }
     }
   },
   "services": {
@@ -551,7 +559,7 @@
       "fields": {
         "address": {
           "name": "Register address",
-          "description": "The Modbus holding register address to write. Uses the same addressing as the bundled modbus.yaml (0-based unless noted differently)."
+          "description": "The Modbus holding register address to write (0-based addressing)."
         },
         "value": {
           "name": "Value",

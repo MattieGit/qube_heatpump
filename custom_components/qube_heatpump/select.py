@@ -1,15 +1,24 @@
+"""Select platform for Qube Heat Pump."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
+from typing import TYPE_CHECKING, Any
+
 from homeassistant.components.select import SelectEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .hub import EntityDef, WPQubeHub
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from . import QubeConfigEntry
+    from .hub import EntityDef, QubeHub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,13 +33,18 @@ BITS_TO_MODE = {value: key for key, value in MODE_TO_BITS.items()}
 DEFAULT_OPTION = "Off"
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    data = hass.data[DOMAIN][entry.entry_id]
-    hub: WPQubeHub = data["hub"]
-    coordinator = data["coordinator"]
-    version = data.get("version", "unknown")
-    show_label = bool(data.get("apply_label_in_name", False))
-    multi_device = bool(data.get("multi_device", False))
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: QubeConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up the Qube select entities."""
+    data = entry.runtime_data
+    hub = data.hub
+    coordinator = data.coordinator
+    version = data.version or "unknown"
+    show_label = data.apply_label_in_name
+    multi_device = data.multi_device
 
     sg_a = _find_switch(hub, "bms_sgready_a")
     sg_b = _find_switch(hub, "bms_sgready_b")
@@ -49,12 +63,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 version,
                 sg_a,
                 sg_b,
+                entry.entry_id,
             )
         ]
     )
 
 
-def _find_switch(hub: WPQubeHub, vendor_id: str) -> EntityDef | None:
+def _find_switch(hub: QubeHub, vendor_id: str) -> EntityDef | None:
     for ent in hub.entities:
         if ent.platform != "switch":
             continue
@@ -64,19 +79,23 @@ def _find_switch(hub: WPQubeHub, vendor_id: str) -> EntityDef | None:
 
 
 class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
+    """Select entity for SG Ready mode."""
+
     _attr_should_poll = False
     _attr_options = SGREADY_OPTIONS
 
     def __init__(
         self,
-        coordinator,
-        hub: WPQubeHub,
+        coordinator: Any,
+        hub: QubeHub,
         show_label: bool,
         multi_device: bool,
         version: str,
         sgready_a: EntityDef,
         sgready_b: EntityDef,
+        entry_id: str,
     ) -> None:
+        """Initialize the select entity."""
         super().__init__(coordinator)
         self._hub = hub
         self._version = str(version) if version else "unknown"
@@ -88,20 +107,27 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         self._key_a = self._entity_key(sgready_a)
         self._key_b = self._entity_key(sgready_b)
         self._assumed_option = DEFAULT_OPTION
+        self._entry_id = entry_id
 
-        base_name = hub.translate_name("sgready_mode", "SG Ready mode")
-        self._attr_name = base_name
+        self._attr_translation_key = "sgready_mode"
+        manual_name = hub.get_friendly_name("select", "sgready_mode")
+        if manual_name:
+            self._attr_name = manual_name
+            self._attr_has_entity_name = False
+        else:
+            self._attr_has_entity_name = True
         unique_base = "sgready_mode"
         if self._multi_device:
-            unique_base = f"{unique_base}_{self._label}"
+            unique_base = f"{unique_base}_{self._entry_id}"
         self._attr_unique_id = unique_base
         suggested = "sgready_mode"
         if self._show_label:
-            suggested = _slugify(f"{suggested}_{self._label}")
+            suggested = _slugify(f"{self._label}_{suggested}")
         self._attr_suggested_object_id = suggested
 
     @property
     def device_info(self) -> DeviceInfo:
+        """Return device information."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=(self._hub.label or "Qube Heatpump"),
@@ -112,6 +138,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        """Return the current selected option."""
         derived = self._derive_option()
         if derived is None:
             return self._assumed_option
@@ -120,6 +147,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         return derived
 
     async def async_select_option(self, option: str) -> None:
+        """Select a new option."""
         if option not in MODE_TO_BITS:
             raise ValueError(f"Unsupported SG Ready mode: {option}")
         target_a, target_b = MODE_TO_BITS[option]
@@ -148,7 +176,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
             return None
         try:
             return bool(value)
-        except Exception:
+        except (ValueError, TypeError):
             return None
 
     @staticmethod
@@ -159,12 +187,16 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         return f"switch_{suffix}"
 
     async def async_added_to_hass(self) -> None:
+        """Handle entity addition."""
         await super().async_added_to_hass()
         desired = self._attr_suggested_object_id or "sgready_mode"
         await _async_ensure_entity_id(self.hass, self.entity_id, desired)
 
 
-async def _async_ensure_entity_id(hass: HomeAssistant, entity_id: str, desired_obj: str | None) -> None:
+async def _async_ensure_entity_id(
+    hass: HomeAssistant, entity_id: str, desired_obj: str | None
+) -> None:
+    """Ensure the entity has the desired object ID."""
     if not desired_obj:
         return
     registry = er.async_get(hass)
@@ -176,11 +208,10 @@ async def _async_ensure_entity_id(hass: HomeAssistant, entity_id: str, desired_o
         return
     if registry.async_get(desired_eid):
         return
-    try:
+    with contextlib.suppress(Exception):
         registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
-    except Exception:
-        return
 
 
 def _slugify(text: str) -> str:
+    """Make text safe for use as an ID."""
     return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()

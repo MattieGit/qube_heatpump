@@ -1,15 +1,13 @@
 {
   "domain": "qube_heatpump",
   "name": "Qube Heat Pump",
-  "after_dependencies": ["recorder"],
   "codeowners": ["@MattieGit"],
   "config_flow": true,
-  "dependencies": ["modbus"],
-  "documentation": "https://github.com/MattieGit/qube_heatpump/wiki",
+  "documentation": "https://www.home-assistant.io/integrations/qube_heatpump",
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/MattieGit/wp-qube/issues",
-  "loggers": ["qube"],
-  "requirements": ["pymodbus>=3.9.0,<4"],
-  "version": "2026.1.4"
+  "loggers": ["homeassistant.components.qube_heatpump"],
+  "quality_scale": "bronze",
+  "requirements": ["python-qube-heatpump>=1.3.0"],
+  "version": "2.0.0"
 }

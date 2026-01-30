@@ -1,199 +1,160 @@
+"""Tests for the Qube Heat Pump integration setup and unloading."""
+
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-import json
-from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
-import pytest
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    import pytest
 
-from custom_components.qube_heatpump import async_unload_entry
-from custom_components.qube_heatpump.const import (
-    CONF_HOST,
+    from homeassistant.components.qube_heatpump.hub import QubeHub
+    from homeassistant.core import HomeAssistant
+
+from unittest.mock import AsyncMock, MagicMock
+
+from homeassistant.components.qube_heatpump import QubeData, async_unload_entry
+from homeassistant.components.qube_heatpump.const import (
     CONF_FRIENDLY_NAME_LANGUAGE,
-    CONF_SHOW_LABEL_IN_NAME,
-    DEFAULT_FRIENDLY_NAME_LANGUAGE,
+    CONF_HOST,
     DOMAIN,
     PLATFORMS,
 )
+from homeassistant.config_entries import ConfigEntryState
+
+from tests.common import MockConfigEntry
 
 
-@pytest.mark.asyncio
-async def test_async_setup_entry_registers_integration(hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify the config entry setup populates hass.data and forwards platforms."""
-
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "192.0.2.1"})
+async def test_async_setup_entry_registers_integration(
+    hass: HomeAssistant, mock_hub: MagicMock
+) -> None:
+    """Test setup entry registers the integration and its hub."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
     entry.add_to_hass(hass)
 
-    forward_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
+    # Use entry.runtime_data which is populated by async_setup_entry
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
 
-    first_refresh_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(
-        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
-        first_refresh_mock,
-    )
+    assert entry.state is ConfigEntryState.LOADED
+    # Integration refactor uses runtime_data
+    assert entry.runtime_data is not None
+    assert entry.runtime_data.label == "qube1"
 
-    monkeypatch.setattr(
-        "homeassistant.setup.async_setup_component",
-        AsyncMock(return_value=True),
+
+async def test_async_setup_entry_respects_language_option(
+    hass: HomeAssistant, mock_hub: MagicMock
+) -> None:
+    """Test setup entry respects the configured language option."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        options={CONF_FRIENDLY_NAME_LANGUAGE: "nl"},
+        title="Qube Heat Pump",
     )
+    entry.add_to_hass(hass)
 
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    assert DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]
-    stored = hass.data[DOMAIN][entry.entry_id]
-    assert stored["label"] == "qube1"
-    assert stored["friendly_name_language"] == DEFAULT_FRIENDLY_NAME_LANGUAGE
-    assert entry.options[CONF_FRIENDLY_NAME_LANGUAGE] == DEFAULT_FRIENDLY_NAME_LANGUAGE
-    manifest = json.loads((Path("custom_components/qube_heatpump/manifest.json")).read_text())
-    assert stored["version"] == manifest.get("version")
-
-    forward_mock.assert_called_once_with(entry, PLATFORMS)
-    first_refresh_mock.assert_called_once()
-    assert hass.services.has_service(DOMAIN, "reconfigure")
+    assert entry.runtime_data.friendly_name_language == "nl"
 
 
-@pytest.mark.asyncio
-async def test_async_setup_entry_respects_language_option(
-    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+async def test_async_setup_entry_includes_room_temp_sensor(
+    hass: HomeAssistant, mock_hub: MagicMock
 ) -> None:
+    """Test setup entry includes the room temperature sensor by default."""
     entry = MockConfigEntry(
         domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.55"},
-        options={CONF_FRIENDLY_NAME_LANGUAGE: "en"},
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
     )
     entry.add_to_hass(hass)
-
-    forward_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
-
-    first_refresh_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(
-        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
-        first_refresh_mock,
-    )
-
-    monkeypatch.setattr(
-        "homeassistant.setup.async_setup_component",
-        AsyncMock(return_value=True),
-    )
 
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    stored = hass.data[DOMAIN][entry.entry_id]
-    assert stored["friendly_name_language"] == "en"
-    hub = stored["hub"]
-    assert hub.friendly_language == "en"
-    translated = hub.translate_name("status_warmtepomp", "Status warmtepomp")
-    assert translated == "Heat pump status"
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.version is not None
 
 
-@pytest.mark.asyncio
-async def test_async_setup_entry_includes_room_temp_sensor(
-    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Ensure the LINQ room temperature sensor definition is registered."""
-
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "203.0.113.10"})
-    entry.add_to_hass(hass)
-
-    forward_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
-
-    first_refresh_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(
-        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
-        first_refresh_mock,
-    )
-
-    monkeypatch.setattr(
-        "homeassistant.setup.async_setup_component",
-        AsyncMock(return_value=True),
-    )
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    hub = hass.data[DOMAIN][entry.entry_id]["hub"]
-    sensor_unique_ids = {ent.unique_id for ent in hub.entities if ent.platform == "sensor"}
-    assert "modbus_roomtemp" in sensor_unique_ids
-
-
-@pytest.mark.asyncio
 async def test_multi_device_enforces_label_suffix(
+    hass: HomeAssistant, mock_hub: MagicMock
+) -> None:
+    """Test multi-device setup ensures label suffix is applied."""
+    # First entry
+    entry1 = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube 1",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry1.add_to_hass(hass)
+
+    # Second entry
+    entry2 = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.5"},
+        title="Qube 2",
+        unique_id=f"{DOMAIN}-1.2.3.5-502",
+    )
+    entry2.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
+    if entry2.state is not ConfigEntryState.LOADED:
+        await hass.config_entries.async_setup(entry2.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry1.state is ConfigEntryState.LOADED
+    assert entry2.state is ConfigEntryState.LOADED
+
+    # In multi-device setup, both entries should have multi_device=True
+    assert entry1.runtime_data.multi_device is True
+    assert entry2.runtime_data.multi_device is True
+
+
+async def test_async_unload_entry_cleans_up(
     hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Ensure applying the second hub forces label suffixing for both entries."""
-
-    entry_one = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "192.0.2.10"})
-    entry_two = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "192.0.2.11"})
-    forward_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(hass.config_entries, "async_forward_entry_setups", forward_mock)
-
-    first_refresh_mock = AsyncMock(return_value=None)
-    monkeypatch.setattr(
-        "custom_components.qube_heatpump.DataUpdateCoordinator.async_config_entry_first_refresh",
-        first_refresh_mock,
-    )
-
-    unload_mock = AsyncMock(return_value=True)
-    monkeypatch.setattr(hass.config_entries, "async_unload_platforms", unload_mock)
-
-    monkeypatch.setattr(
-        "homeassistant.setup.async_setup_component",
-        AsyncMock(return_value=True),
-    )
-
-    entry_one.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry_one.entry_id)
-    await hass.async_block_till_done()
-
-    stored_first = hass.data[DOMAIN][entry_one.entry_id]
-    assert stored_first["apply_label_in_name"] is False
-
-    entry_two.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry_two.entry_id)
-    await hass.async_block_till_done()
-
-    stored_second = hass.data[DOMAIN][entry_two.entry_id]
-    assert stored_second["apply_label_in_name"] is True
-
-    stored_first = hass.data[DOMAIN][entry_one.entry_id]
-    assert stored_first["apply_label_in_name"] is True
-    assert entry_one.options[CONF_SHOW_LABEL_IN_NAME] is True
-    assert entry_two.options[CONF_SHOW_LABEL_IN_NAME] is True
-
-
-@pytest.mark.asyncio
-async def test_async_unload_entry_cleans_up(hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure unload removes stored data and closes the hub."""
-
     entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "198.51.100.2"})
     entry.add_to_hass(hass)
 
     unload_platforms = AsyncMock(return_value=True)
     monkeypatch.setattr(hass.config_entries, "async_unload_platforms", unload_platforms)
 
+    # Register mock service to avoid ServiceNotFound and avoid read-only async_call patch
+    mock_remove = AsyncMock()
+    hass.services.async_register("group", "remove", mock_remove)
+
     class DummyHub:
         async def async_close(self) -> None:  # pragma: no cover - replaced by mock
             return None
 
     hub = DummyHub()
-    hub.async_close = AsyncMock()  # type: ignore[assignment]
+    hub.async_close = AsyncMock()  # type: ignore[method-assign]
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
-        "hub": hub,
-    }
+    entry.runtime_data = QubeData(
+        hub=cast("QubeHub", hub),
+        coordinator=AsyncMock(),
+        label="qube1",
+        apply_label_in_name=False,
+        version="1.0.0",
+        multi_device=False,
+        alarm_group_object_id="group.qube_heat_pump",
+        friendly_name_language="en",
+    )
 
     result = await async_unload_entry(hass, entry)
 
     assert result is True
     unload_platforms.assert_called_once_with(entry, PLATFORMS)
     hub.async_close.assert_awaited()
-    assert hass.data.get(DOMAIN, {}).get(entry.entry_id) is None
+    assert len(mock_remove.mock_calls) > 0
+

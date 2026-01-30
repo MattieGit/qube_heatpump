@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
+"""CLI tool to probe Modbus values."""
+
 from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import struct
 from typing import Any
-import inspect
 
 try:
     # pymodbus 3.x async client
-    from pymodbus.client import AsyncModbusTcpClient  # type: ignore
-except Exception:  # pragma: no cover - fallback is unlikely used on HA
-    AsyncModbusTcpClient = None  # type: ignore
+    from pymodbus.client import AsyncModbusTcpClient
+except ImportError:  # pragma: no cover - fallback is unlikely used on HA
+    AsyncModbusTcpClient: type[AsyncModbusTcpClient] | None = None  # type: ignore[no-redef]
 
 
-def _decode_registers(regs: list[int], data_type: str, byteorder: str, wordorder: str) -> Any:
+def _decode_registers(
+    regs: list[int], data_type: str, byteorder: str, wordorder: str
+) -> Any:
     # Normalize to two registers when needed
     if data_type in {"float32", "uint32", "int32"}:
         if len(regs) < 2:
@@ -67,46 +71,50 @@ async def _read_async(
         if ok is False:
             raise RuntimeError("Failed to connect")
 
-        async def _call(method, **kwargs):
+        async def _call(method: Any, **kwargs: Any) -> Any:
             # Try with slave first, then unit, finally without either
             try:
                 return await method(**{**kwargs, "slave": slave})
-            except TypeError as e1:
+            except TypeError:
                 try:
                     return await method(**{**kwargs, "unit": slave})
-                except TypeError as e2:
+                except TypeError:
                     # as a last resort, call without unit/slave
                     return await method(**kwargs)
 
         if kind == "discrete":
             rr = await _call(client.read_discrete_inputs, address=address, count=1)
-            print("Raw bits:", getattr(rr, "bits", None))
+            print("Raw bits:", getattr(rr, "bits", None))  # noqa: T201
             return
 
         if kind == "coil":
             rr = await _call(client.read_coils, address=address, count=1)
-            print("Raw bits:", getattr(rr, "bits", None))
+            print("Raw bits:", getattr(rr, "bits", None))  # noqa: T201
             return
 
         count = 2 if data_type in {"float32", "uint32", "int32"} else 1
         if kind == "input":
             rr = await _call(client.read_input_registers, address=address, count=count)
         else:
-            rr = await _call(client.read_holding_registers, address=address, count=count)
+            rr = await _call(
+                client.read_holding_registers, address=address, count=count
+            )
         regs = getattr(rr, "registers", None)
-        print("Raw regs:", regs)
+        print("Raw regs:", regs)  # noqa: T201
         if regs:
-            print(
-                "Decoded:", _decode_registers(regs, data_type, byteorder=byteorder, wordorder=wordorder)
+            print(  # noqa: T201
+                "Decoded:",
+                _decode_registers(
+                    regs, data_type, byteorder=byteorder, wordorder=wordorder
+                ),
             )
     finally:
-        try:
-            await client.close()
-        except Exception:
-            pass
+        with contextlib.suppress(Exception):
+            client.close()
 
 
 def main() -> None:
+    """Probe modbus."""
     p = argparse.ArgumentParser(description="Probe a Modbus/TCP value using pymodbus")
     p.add_argument("--host", required=True, help="Heat pump IP or hostname")
     p.add_argument("--port", type=int, default=502)
@@ -153,4 +161,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -1,0 +1,425 @@
+{
+    "entity": {
+        "sensor": {
+            "status_heatpump": {
+                "name": "Warmtepomp status",
+                "state": {
+                    "standby": "Standby",
+                    "alarm": "Alarm",
+                    "keyboard_off": "Toetsenbord uit",
+                    "compressor_startup": "Compressor start",
+                    "compressor_shutdown": "Compressor uit",
+                    "cooling": "Koelen",
+                    "heating": "Verwarmen",
+                    "start_fail": "Start mislukt",
+                    "heating_dhw": "Verwarmen SWW",
+                    "unknown": "Onbekend"
+                }
+            },
+            "drieweg_status": {
+                "name": "Driewegklep status",
+                "state": {
+                    "dhw": "Tapwater",
+                    "cv": "CV"
+                }
+            },
+            "vierweg_status": {
+                "name": "Vierwegklep status",
+                "state": {
+                    "heating": "Verwarmen",
+                    "cooling": "Koelen"
+                }
+            },
+            "standby_power": {
+                "name": "Standby vermogen"
+            },
+            "standby_energy": {
+                "name": "Standby energie"
+            },
+            "total_energy_incl_standby": {
+                "name": "Totaal elektriciteitsverbruik (incl. standby)"
+            },
+            "electric_consumption_cv_month": {
+                "name": "Elektriciteitsverbruik CV (maand)"
+            },
+            "electric_consumption_sww_month": {
+                "name": "Elektriciteitsverbruik SWW (maand)"
+            },
+            "thermic_yield_month": {
+                "name": "Thermische opbrengst (maand)"
+            },
+            "thermic_yield_cv_month": {
+                "name": "Thermische opbrengst CV (maand)"
+            },
+            "thermic_yield_sww_month": {
+                "name": "Thermische opbrengst SWW (maand)"
+            },
+            "scop_month": {
+                "name": "SCOP (maand)"
+            },
+            "scop_cv_month": {
+                "name": "SCOP CV (maand)"
+            },
+            "scop_sww_month": {
+                "name": "SCOP SWW (maand)"
+            },
+            "scop_day": {
+                "name": "SCOP (dag)"
+            },
+            "scop_cv_day": {
+                "name": "SCOP CV (dag)"
+            },
+            "scop_sww_day": {
+                "name": "SCOP SWW (dag)"
+            },
+            "info": {
+                "name": "Qube info"
+            },
+            "ip_address": {
+                "name": "Qube IP adres"
+            },
+            "metric_errors_connect": {
+                "name": "Qube verbindingsfouten"
+            },
+            "metric_errors_read": {
+                "name": "Qube leesfouten"
+            },
+            "metric_count_sensors": {
+                "name": "Qube aantal sensoren"
+            },
+            "metric_count_binary_sensors": {
+                "name": "Qube aantal binaire sensoren"
+            },
+            "thermostat_heatsetp_day": {
+                "name": "Setpoint ruimte CV dag"
+            },
+            "thermostat_heatsetp_night": {
+                "name": "Setpoint ruimte CV nacht"
+            },
+            "thermostat_coolsetp_day": {
+                "name": "Setpoint ruimte Koel dag"
+            },
+            "thermostat_coolsetp_night": {
+                "name": "Setpoint ruimte Koel nacht"
+            },
+            "tapw_timeprogram_dt_bms": {
+                "name": "dT aanvoertemperatuur tapwater"
+            },
+            "tapw_timeprogram_dhws": {
+                "name": "Minimumtemperatuur tapwater"
+            },
+            "tapw_timeprogram_dhws_prog": {
+                "name": "Temperatuur tapwater bij actief tijdprogramma"
+            },
+            "regulation_buffersetp_min": {
+                "name": "Minimum setpoint bufferregeling"
+            },
+            "usr_pid_heatsetp": {
+                "name": "Heat setpoint (zonder stooklijn)"
+            },
+            "usr_pid_coolsetp": {
+                "name": "Koel setpoint (zonder stooklijn)"
+            },
+            "regulation_buffersetp_max": {
+                "name": "Maximaalwaarde buffer setpoint (koelbedrijf)"
+            },
+            "tapw_timeprogram_dhwsetp_nolinq": {
+                "name": "User-defined setpoint tapwater"
+            },
+            "aout_usrpmp_val": {
+                "name": "Percentage sturing User (CV) pomp"
+            },
+            "aout_srcpmp_val": {
+                "name": "Percentage sturing bron pomp"
+            },
+            "aout_srcvalve_val": {
+                "name": "Percentage sturing bron afsluiter"
+            },
+            "dhw_regreq": {
+                "name": "Stuurvraag regeling tapwater"
+            },
+            "comppwrreq": {
+                "name": "Stuurvraag compressor"
+            },
+            "flow": {
+                "name": "Gemeten Flow"
+            },
+            "supplytemp": {
+                "name": "Aanvoertemperatuur CV"
+            },
+            "rettemp": {
+                "name": "Retourtemperatuur CV"
+            },
+            "srcintemp": {
+                "name": "Temperatuur bron vanaf dak"
+            },
+            "srcouttemp": {
+                "name": "Temperatuur bron naar dak"
+            },
+            "roomtemp": {
+                "name": "Ruimtetemperatuur"
+            },
+            "dhw_temp": {
+                "name": "Tapwatertemperatuur"
+            },
+            "outtemp": {
+                "name": "Buitentemperatuur"
+            },
+            "generalmng_cop": {
+                "name": "COP (berekend)"
+            },
+            "generalmng_thermic_pwr": {
+                "name": "Actueel Vermogen"
+            },
+            "unitstatus": {
+                "name": "Status code"
+            },
+            "regsetp": {
+                "name": "Berekend setpoint warmtepomp"
+            },
+            "coolsetp_1": {
+                "name": "Koel Setpoint"
+            },
+            "heatsetp_1": {
+                "name": "Heat Setpoint"
+            },
+            "bldc_evd_powerplus_info_pump": {
+                "name": "Actuele snelheid compressor"
+            },
+            "dhw_setp": {
+                "name": "Setpoint berekend tapwater"
+            },
+            "workinghours_dhw_hrsret": {
+                "name": "Bedrijfsuren tapwaterbedrijf"
+            },
+            "workinghours_heat_hrsret": {
+                "name": "Bedrijfsuren CV-bedrijf"
+            },
+            "workinghours_cool_hrsret": {
+                "name": "Bedrijfsuren koelbedrijf"
+            },
+            "workinghours_heater1_hrs": {
+                "name": "Bedrijfsuren Heater 1"
+            },
+            "workinghours_heater2_hrs": {
+                "name": "Bedrijfsuren Heater 2"
+            },
+            "workinghours_heater3_hrs": {
+                "name": "Bedrijfsuren Heater 3"
+            },
+            "generalmng_eletricpwr": {
+                "name": "Totaal elektrisch vermogen (berekend)"
+            },
+            "plantsetp": {
+                "name": "Setpoint plantregeling"
+            },
+            "generalmng_acumulatedpwr": {
+                "name": "Totaal elektrisch verbruik (excl. standby)"
+            },
+            "generalmng_acumulatedthermic": {
+                "name": "Totaal Thermische opbrengst"
+            },
+            "modbus_roomtemp": {
+                "name": "Linq ruimtetemperatuur"
+            },
+            "metric_count_switches": {
+                "name": "Qube aantal schakelaars"
+            }
+        },
+        "binary_sensor": {
+            "qube_alarm_sensors_active": {
+                "name": "Qube alarm sensoren actief"
+            },
+            "dout_srcpmp_val": {
+                "name": "Voeding Bron pomp"
+            },
+            "dout_usrpmp_val": {
+                "name": "Voeding User pomp"
+            },
+            "dout_fourwayvlv_val": {
+                "name": "Sturing Vierwegafsluiter"
+            },
+            "dout_cooling_val": {
+                "name": "Uitgang Koeling Actief"
+            },
+            "dout_threewayvlv_val": {
+                "name": "Uitgang driewegafsluiter CV-Tapwater"
+            },
+            "dout_bufferpmp_val": {
+                "name": "Uitgang Bufferpomp"
+            },
+            "dout_heaterstep1_val": {
+                "name": "Uitgang Heater 1"
+            },
+            "dout_heaterstep2_val": {
+                "name": "Uitgang Heater 2"
+            },
+            "dout_heaterstep3_val": {
+                "name": "Uitgang Heater 3"
+            },
+            "keybonoff": {
+                "name": "Status warmtepomp bediening"
+            },
+            "al_maxtime_antileg_active": {
+                "name": "Alarm Max Tijd Legionella overschreden"
+            },
+            "al_maxtime_dhw_active": {
+                "name": "Alarm Max Tijd Tapwater overschreden"
+            },
+            "al_dewpoint_active": {
+                "name": "Alarm dauwpunt (ingang) geactiveerd"
+            },
+            "al_underfloorsafety_active": {
+                "name": "Alarm aanvoer te warm CV"
+            },
+            "alrm_flw": {
+                "name": "Alarm Flow CV"
+            },
+            "usralrms": {
+                "name": "Alarm verzamelalarm CV"
+            },
+            "coolingalrms": {
+                "name": "Alarm verzamelalarm koelbedrijf"
+            },
+            "heatingalrms": {
+                "name": "Alarm verzamelalarm CV-bedrijf"
+            },
+            "alarmmng_al_workinghour": {
+                "name": "Alarm Bedrijfsuren"
+            },
+            "srsalrm": {
+                "name": "Alarm Verzamelalarm Bron"
+            },
+            "glbal": {
+                "name": "Globaal Alarm"
+            },
+            "alarmmng_al_pwrplus": {
+                "name": "Alarm verzamelalarm compressor"
+            },
+            "roomprb_en": {
+                "name": "Ruimteopnemer geactiveerd"
+            },
+            "plantdemand": {
+                "name": "Vraag Plant sensor"
+            },
+            "en_dhwpid": {
+                "name": "Tapwater regelaar vrijgegeven"
+            },
+            "plantprb_en": {
+                "name": "Plantopnemer is geactiveerd"
+            },
+            "bufferprb_en": {
+                "name": "Bufferopnemer is geactiveerd"
+            },
+            "id_demand": {
+                "name": "Vraag op digitale ingang"
+            },
+            "id_summerwinter": {
+                "name": "Digitale ingang zomerbedrijf geactiveerd"
+            },
+            "dewpoint": {
+                "name": "Digitale ingang dauwpunt geactiveerd"
+            },
+            "boostersecurity": {
+                "name": "Digitale ingang booster geactiveerd"
+            },
+            "srcflw": {
+                "name": "Digitale ingang flow bronzijde geactiveerd"
+            },
+            "daynightmode": {
+                "name": "Status dag/nacht modus"
+            },
+            "thermostatdemand": {
+                "name": "Vraag van thermostaat intern"
+            },
+            "req_antileg_1": {
+                "name": "Antilegionella is vrijgegeven"
+            },
+            "bms_demand": {
+                "name": "Warmtevraag actief"
+            },
+            "surplus_pv": {
+                "name": "Surplus PV actief"
+            }
+        },
+        "switch": {
+            "bms_summerwinter": {
+                "name": "Schakel zomerbedrijf in (koeling)"
+            },
+            "tapw_timeprogram_bms_forced": {
+                "name": "Activeer Tapwater verwarmen"
+            },
+            "antilegionella_frcstart_ant": {
+                "name": "Start Antilegionella"
+            },
+            "en_plantsetp_compens": {
+                "name": "Stooklijn vrijgeven"
+            },
+            "bms_sgready_a": {
+                "name": "SG Ready A"
+            },
+            "bms_sgready_b": {
+                "name": "SG Ready B"
+            },
+            "modbus_demand": {
+                "name": "Activeer warmtevraag"
+            }
+        },
+        "button": {
+            "qube_reload": {
+                "name": "Herlaad integratie"
+            }
+        },
+        "select": {
+            "sgready_mode": {
+                "name": "SG Ready modus"
+            }
+        },
+        "number": {
+            "tapw_timeprogram_dhwsetp_nolinq": {
+                "name": "SWW instelpunt"
+            },
+            "setpoint_dhw": {
+                "name": "SWW instelpunt"
+            }
+        }
+    },
+    "services": {
+        "reconfigure": {
+            "name": "Herconfigureer integratie",
+            "description": "Open de herconfiguratie flow om de Modbus host of poort bij te werken via de Home Assistant UI.",
+            "fields": {
+                "entry_id": {
+                    "name": "Config entry ID",
+                    "description": "Optioneel entry_id om te herconfigureren. Indien leeg, wordt geprobeerd de enkele geconfigureerde entry automatisch te vinden."
+                }
+            }
+        },
+        "write_register": {
+            "name": "Schrijf holding register",
+            "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp. Ondersteunt uint16, int16 en float32 registers en spiegelt het gedrag van de native modbus.write_register service.",
+            "fields": {
+                "address": {
+                    "name": "Register adres",
+                    "description": "Het Modbus holding register adres om naar te schrijven (0-based adressering)."
+                },
+                "value": {
+                    "name": "Waarde",
+                    "description": "De waarde om in het register op te slaan. Float waarden worden gecodeerd als big-endian IEEE 754 wanneer data_type float32 is."
+                },
+                "data_type": {
+                    "name": "Data type",
+                    "description": "Register data type. Gebruik float32 voor 32-bit floating point registers."
+                },
+                "entry_id": {
+                    "name": "Config entry ID",
+                    "description": "Optioneel entry_id van de doel integratie instantie. Nodig wanneer meerdere Qube warmtepompen zijn geconfigureerd."
+                },
+                "label": {
+                    "name": "Hub label",
+                    "description": "Optioneel hub label (bijv. qube1) om een specifiek apparaat te kiezen wanneer er meerdere hubs zijn. Genegeerd als entry_id is opgegeven."
+                }
+            }
+        }
+    }
+}

@@ -1,42 +1,46 @@
+"""Diagnostics support for Qube Heat Pump."""
+
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.components.diagnostics import async_redact_data
 
-from .const import DOMAIN
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
-TO_REDACT = {"host", "ip", "address"}
+    from . import QubeConfigEntry
+
+TO_REDACT = {"host", "port", "unique_id"}
 
 
 async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: ConfigEntry
+    hass: HomeAssistant, entry: QubeConfigEntry
 ) -> dict[str, Any]:
-    data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
-    hub = data.get("hub")
-    label = data.get("label")
-    # Build a minimal diagnostics snapshot
-    summary: dict[str, Any] = {
-        "label": getattr(hub, "label", label),
-        "host": getattr(hub, "host", None),
-        "unit": getattr(hub, "unit", None),
-        "entity_counts": {
-            "sensor": sum(1 for e in getattr(hub, "entities", []) if e.platform == "sensor"),
-            "binary_sensor": sum(1 for e in getattr(hub, "entities", []) if e.platform == "binary_sensor"),
-            "switch": sum(1 for e in getattr(hub, "entities", []) if e.platform == "switch"),
+    """Return diagnostics for a config entry."""
+    data = entry.runtime_data
+    hub = data.hub
+
+    summary = {
+        "entry": {
+            "entry_id": entry.entry_id,
+            "data": entry.data,
+            "options": entry.options,
         },
-        "entities_sample": [
+        "hub": {
+            "host": getattr(hub, "host", None),
+            "port": getattr(hub, "port", None),
+            "label": getattr(hub, "label", None),
+            "multi_device": data.multi_device,
+        },
+        "entities": [
             {
-                "platform": e.platform,
-                "vendor_id": getattr(e, "vendor_id", None),
-                "address": e.address,
-                "input_type": e.input_type,
-                "data_type": e.data_type,
+                "name": getattr(e, "name", None),
+                "unique_id": getattr(e, "unique_id", None),
+                "platform": getattr(e, "platform", None),
+                "address": getattr(e, "address", None),
             }
             for e in list(getattr(hub, "entities", []))[:10]
         ],
     }
     return async_redact_data(summary, TO_REDACT)
-

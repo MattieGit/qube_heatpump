@@ -36,8 +36,8 @@ sections:
               background: rgba(100, 87, 13, 0.45)
               border-radius: 6px
               padding: 1px 2px
-            prefix: "☀️ "
-            title: Buitentemperatuur
+            prefix: "Outdoor "
+            title: Outdoor temperature
             tap_action:
               action: more-info
           - type: state-label
@@ -53,8 +53,8 @@ sections:
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
-            prefix: "Ruimte "
-            title: Ruimte-temperatuur
+            prefix: "Room "
+            title: Room temperature
             tap_action:
               action: more-info
           - type: state-label
@@ -70,8 +70,8 @@ sections:
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
-            prefix: "Temp. vanaf dak "
-            title: Temperatuur bron vanaf dak
+            prefix: "Source in "
+            title: Source temperature from roof
             tap_action:
               action: more-info
           - type: state-label
@@ -87,8 +87,8 @@ sections:
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
-            prefix: "Temp. naar dak "
-            title: Temperatuur bron naar dak
+            prefix: "Source out "
+            title: Source temperature to roof
             tap_action:
               action: more-info
           - type: state-label
@@ -104,8 +104,8 @@ sections:
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
-            prefix: "Aanvoer CV "
-            title: Aanvoertemperatuur CV
+            prefix: "Supply "
+            title: Supply temperature
             tap_action:
               action: more-info
           - type: state-label
@@ -121,8 +121,8 @@ sections:
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
-            prefix: "Retour CV "
-            title: Retourtemperatuur CV
+            prefix: "Return "
+            title: Return temperature
             tap_action:
               action: more-info
           - type: state-label
@@ -136,8 +136,8 @@ sections:
               text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8)
               background: rgba(0, 0, 0, 0.45)
               border-radius: 6px
-            prefix: "SWW "
-            title: Sanitair warm water
+            prefix: "DHW "
+            title: Domestic hot water temperature
             tap_action:
               action: more-info
   - type: grid
@@ -172,7 +172,7 @@ sections:
   - type: grid
     visibility:
       - condition: state
-        entity: binary_sensor.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors_active
         state: "on"
     cards:
       - type: heading
@@ -199,14 +199,14 @@ sections:
   - type: grid
     visibility:
       - condition: state
-        entity: binary_sensor.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors_active
         state: "off"
     cards:
       - type: heading
         heading: Alarm sensors
         icon: mdi:alarm-light
       - type: tile
-        entity: binary_sensor.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors_active
         name: No active alarms
         icon: mdi:alarm-off
         color: green
@@ -270,19 +270,19 @@ sections:
       - type: tile
         entity: sensor.generalmng_acumulatedthermic
       - type: tile
-        entity: sensor.qube_total_energy_incl_standby
+        entity: sensor.qube_total_energy_with_standby
       - type: tile
-        entity: sensor.standby_verbruik
+        entity: sensor.qube_standby_power
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.standby_energy
+        entity: sensor.qube_standby_energy
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.elektrisch_verbruik_cv_maand
+        entity: sensor.qube_energy_tariff_cv
       - type: tile
-        entity: sensor.elektrisch_verbruik_sww_maand
+        entity: sensor.qube_energy_tariff_sww
   - type: grid
     cards:
       - type: heading
@@ -293,7 +293,7 @@ sections:
         name: Compressor speed
       - type: tile
         entity: sensor.flow
-        name: Gemeten flow
+        name: Flow rate
       - type: tile
         entity: sensor.comppwrreq
         name: Compressor demand
@@ -302,30 +302,30 @@ sections:
         name: DHW demand
       - type: tile
         entity: sensor.tapw_timeprogram_dt_bms
-        name: Tapwater delta T
+        name: DHW delta T
       - type: tile
         entity: sensor.plantsetp
         name: Plant setpoint
       - type: tile
         entity: sensor.regsetp
-        name: Warmtepomp setpoint
+        name: Regulation setpoint
       - type: tile
         entity: sensor.generalmng_thermic_pwr
-        name: Thermic power
+        name: Thermal power
       - type: tile
         entity: sensor.modbus_roomtemp
-        name: Linq room temperature
+        name: Room temperature (Linq)
       - type: tile
         entity: sensor.status_warmtepomp
-        name: Status warmtepomp
+        name: Heat pump status
       - type: tile
         entity: sensor.driewegklep_ssw_cv_status
-        name: Driewegklep status
+        name: 3-way valve status
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.vierwegklep_verwarmen_koelen_status
-        name: Vierwegklep status
+        name: 4-way valve status
   - type: grid
     cards:
       - type: heading
@@ -380,34 +380,14 @@ sections:
         entity: sensor.qube_metric_count_switches
   - type: grid
     cards:
-      - type: custom:slider-button-card
-        entity: input_number.tapwater_temperature
-        slider:
-          direction: left-right
-          background: solid
-          use_state_color: false
-          use_percentage_bg_opacity: false
-          show_track: false
-          toggle_on_click: false
-          force_square: false
-        show_name: true
-        show_state: true
-        compact: true
-        icon:
-          show: true
-          use_state_color: true
-          tap_action:
-            action: more-info
-          icon: ""
-        action_button:
-          mode: toggle
-          icon: mdi:power
-          show: false
-          show_spinner: true
-          tap_action:
-            action: toggle
-        name: Tapwater (SWW) temperatuur
-        show_attribute: true
+      - type: heading
+        heading: DHW setpoint control
+        icon: mdi:water-thermometer
+      - type: tile
+        entity: number.setpoint_dhw
+        name: DHW temperature setpoint
+        features:
+          - type: numeric-input
 cards: []
 type: sections
 max_columns: 2
