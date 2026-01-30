@@ -14,6 +14,17 @@
 - Run linters/hooks (if configured): `pre-commit run --all-files`.
 - Python tests (when present): `pytest -q` from repo root.
 - Validate config (example): `python scripts/validate_config.py conf_modbus.yaml` to check schema and references.
+- **HACS validation (local)**: Always run before pushing to GitHub:
+  ```bash
+  TOKEN=$(gh auth token) && docker run --rm --platform linux/amd64 \
+    -v "$(pwd):/github/workspace" \
+    -e "INPUT_GITHUB_TOKEN=${TOKEN}" \
+    -e "GITHUB_TOKEN=${TOKEN}" \
+    -e "GITHUB_REPOSITORY=MattieGit/qube_heatpump" \
+    -e "INPUT_CATEGORY=integration" \
+    ghcr.io/hacs/action:main
+  ```
+  Note: Requires Docker running. On Apple Silicon (arm64), the `--platform linux/amd64` flag is required as the HACS action image only exists for amd64.
 - Current configuration has been fully validated and is working as expected. Don't make any breaking changes.
 
 ## Coding Style & Naming Conventions
