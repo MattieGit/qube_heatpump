@@ -279,10 +279,10 @@
         "name": "Plant regulation setpoint"
       },
       "generalmng_acumulatedpwr": {
-        "name": "Total electric consumption (excl. standby)"
+        "name": "Electric consumption total (excl. standby)"
       },
       "generalmng_acumulatedthermic": {
-        "name": "Total thermic yield"
+        "name": "Thermic yield total"
       },
       "modbus_roomtemp": {
         "name": "Linq room temperature"
@@ -323,7 +323,7 @@
         "name": "Standby energy"
       },
       "total_energy_incl_standby": {
-        "name": "Total electric consumption (incl. standby)"
+        "name": "Electric consumption total (incl. standby)"
       },
       "electric_consumption_ch_month": {
         "name": "Electric consumption CH (month)"
@@ -332,7 +332,7 @@
         "name": "Electric consumption DHW (month)"
       },
       "thermic_yield_month": {
-        "name": "Thermic yield (month)"
+        "name": "Thermic yield total (month)"
       },
       "thermic_yield_ch_month": {
         "name": "Thermic yield CH (month)"
@@ -359,7 +359,7 @@
         "name": "SCOP DHW (day)"
       },
       "electric_consumption_day": {
-        "name": "Electric consumption (day)"
+        "name": "Electric consumption total (day)"
       },
       "electric_consumption_ch_day": {
         "name": "Electric consumption CH (day)"
@@ -368,7 +368,7 @@
         "name": "Electric consumption DHW (day)"
       },
       "thermic_yield_day": {
-        "name": "Thermic yield (day)"
+        "name": "Thermic yield total (day)"
       },
       "thermic_yield_ch_day": {
         "name": "Thermic yield CH (day)"

@@ -37,7 +37,7 @@
                 "name": "Standby energie"
             },
             "total_energy_incl_standby": {
-                "name": "Totaal elektriciteitsverbruik (incl. standby)"
+                "name": "Elektriciteitsverbruik totaal (incl. standby)"
             },
             "electric_consumption_ch_month": {
                 "name": "Elektriciteitsverbruik CV (maand)"
@@ -46,7 +46,7 @@
                 "name": "Elektriciteitsverbruik SWW (maand)"
             },
             "thermic_yield_month": {
-                "name": "Thermische opbrengst (maand)"
+                "name": "Thermische opbrengst totaal (maand)"
             },
             "thermic_yield_ch_month": {
                 "name": "Thermische opbrengst CV (maand)"
@@ -73,7 +73,7 @@
                 "name": "SCOP SWW (dag)"
             },
             "electric_consumption_day": {
-                "name": "Elektriciteitsverbruik (dag)"
+                "name": "Elektriciteitsverbruik totaal (dag)"
             },
             "electric_consumption_ch_day": {
                 "name": "Elektriciteitsverbruik CV (dag)"
@@ -82,7 +82,7 @@
                 "name": "Elektriciteitsverbruik SWW (dag)"
             },
             "thermic_yield_day": {
-                "name": "Thermische opbrengst (dag)"
+                "name": "Thermische opbrengst totaal (dag)"
             },
             "thermic_yield_ch_day": {
                 "name": "Thermische opbrengst CV (dag)"
@@ -232,16 +232,22 @@
                 "name": "Setpoint plantregeling"
             },
             "generalmng_acumulatedpwr": {
-                "name": "Totaal elektrisch verbruik (excl. standby)"
+                "name": "Elektriciteitsverbruik totaal (excl. standby)"
             },
             "generalmng_acumulatedthermic": {
-                "name": "Totaal thermische opbrengst"
+                "name": "Thermische opbrengst totaal"
             },
             "modbus_roomtemp": {
                 "name": "Linq ruimtetemperatuur"
             },
             "metric_count_switches": {
                 "name": "Qube aantal schakelaars"
+            },
+            "energy_total_electric": {
+                "name": "Elektriciteitsverbruik totaal"
+            },
+            "energy_total_thermic": {
+                "name": "Thermische opbrengst totaal"
             }
         },
         "binary_sensor": {
