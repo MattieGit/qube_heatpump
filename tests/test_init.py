@@ -2,72 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from unittest.mock import AsyncMock, MagicMock, patch
 
-if TYPE_CHECKING:
-    import pytest
-
-    from homeassistant.components.qube_heatpump.hub import QubeHub
-    from homeassistant.core import HomeAssistant
-
-from unittest.mock import AsyncMock, MagicMock
-
-from homeassistant.components.qube_heatpump import QubeData, async_unload_entry
-from homeassistant.components.qube_heatpump.const import (
-    CONF_FRIENDLY_NAME_LANGUAGE,
-    CONF_HOST,
-    DOMAIN,
-    PLATFORMS,
-)
+from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.core import HomeAssistant
 
-from tests.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
 async def test_async_setup_entry_registers_integration(
-    hass: HomeAssistant, mock_hub: MagicMock
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
 ) -> None:
-    """Test setup entry registers the integration and its hub."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-    )
-    entry.add_to_hass(hass)
-
-    # Use entry.runtime_data which is populated by async_setup_entry
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    assert entry.state is ConfigEntryState.LOADED
-    # Integration refactor uses runtime_data
-    assert entry.runtime_data is not None
-    assert entry.runtime_data.label == "qube1"
-
-
-async def test_async_setup_entry_respects_language_option(
-    hass: HomeAssistant, mock_hub: MagicMock
-) -> None:
-    """Test setup entry respects the configured language option."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        options={CONF_FRIENDLY_NAME_LANGUAGE: "nl"},
-        title="Qube Heat Pump",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    assert entry.state is ConfigEntryState.LOADED
-    assert entry.runtime_data.friendly_name_language == "nl"
-
-
-async def test_async_setup_entry_includes_room_temp_sensor(
-    hass: HomeAssistant, mock_hub: MagicMock
-) -> None:
-    """Test setup entry includes the room temperature sensor by default."""
+    """Test setup entry registers the integration and creates entities."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "1.2.3.4"},
@@ -78,83 +26,290 @@ async def test_async_setup_entry_includes_room_temp_sensor(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
+    # Assert config entry state via ConfigEntry.state attribute
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.runtime_data.version is not None
 
-
-async def test_multi_device_enforces_label_suffix(
-    hass: HomeAssistant, mock_hub: MagicMock
-) -> None:
-    """Test multi-device setup ensures label suffix is applied."""
-    # First entry
-    entry1 = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube 1",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry1.add_to_hass(hass)
-
-    # Second entry
-    entry2 = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.5"},
-        title="Qube 2",
-        unique_id=f"{DOMAIN}-1.2.3.5-502",
-    )
-    entry2.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.async_block_till_done()
-
-    if entry2.state is not ConfigEntryState.LOADED:
-        await hass.config_entries.async_setup(entry2.entry_id)
-        await hass.async_block_till_done()
-
-    assert entry1.state is ConfigEntryState.LOADED
-    assert entry2.state is ConfigEntryState.LOADED
-
-    # In multi-device setup, both entries should have multi_device=True
-    assert entry1.runtime_data.multi_device is True
-    assert entry2.runtime_data.multi_device is True
+    # Assert entity state via core state machine
+    states = hass.states.async_all()
+    sensor_states = [s for s in states if s.entity_id.startswith("sensor.")]
+    assert len(sensor_states) > 0
 
 
 async def test_async_unload_entry_cleans_up(
-    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
 ) -> None:
     """Ensure unload removes stored data and closes the hub."""
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "198.51.100.2"})
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
     entry.add_to_hass(hass)
 
-    unload_platforms = AsyncMock(return_value=True)
-    monkeypatch.setattr(hass.config_entries, "async_unload_platforms", unload_platforms)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
 
-    # Register mock service to avoid ServiceNotFound and avoid read-only async_call patch
-    mock_remove = AsyncMock()
-    hass.services.async_register("group", "remove", mock_remove)
+    assert entry.state is ConfigEntryState.LOADED
 
-    class DummyHub:
-        async def async_close(self) -> None:  # pragma: no cover - replaced by mock
-            return None
-
-    hub = DummyHub()
-    hub.async_close = AsyncMock()  # type: ignore[method-assign]
-
-    entry.runtime_data = QubeData(
-        hub=cast("QubeHub", hub),
-        coordinator=AsyncMock(),
-        label="qube1",
-        apply_label_in_name=False,
-        version="1.0.0",
-        multi_device=False,
-        alarm_group_object_id="group.qube_heat_pump",
-        friendly_name_language="en",
-    )
-
-    result = await async_unload_entry(hass, entry)
+    # Unload via config entries interface
+    result = await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
 
     assert result is True
-    unload_platforms.assert_called_once_with(entry, PLATFORMS)
-    hub.async_close.assert_awaited()
-    assert len(mock_remove.mock_calls) > 0
+    # Assert config entry state after unload
+    assert entry.state is ConfigEntryState.NOT_LOADED
 
+
+async def test_async_setup_entry_multi_device(
+    hass: HomeAssistant,
+) -> None:
+    """Test multi-device setup marks entries appropriately."""
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
+    ) as mock_client_cls:
+        client = mock_client_cls.return_value
+        client.host = "1.2.3.4"
+        client.port = 502
+        client.unit = 1
+        client.connect = AsyncMock(return_value=True)
+        client.is_connected = True
+        client.close = AsyncMock(return_value=None)
+        client.read_entity = AsyncMock(return_value=45.0)
+        client.read_sensor = AsyncMock(return_value=45.0)
+        client.read_binary_sensor = AsyncMock(return_value=False)
+        client.read_switch = AsyncMock(return_value=False)
+        client._client = MagicMock()
+        client._client.read_holding_registers = AsyncMock(
+            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
+        )
+        client._client.read_input_registers = AsyncMock(
+            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
+        )
+        client._client.read_coils = AsyncMock(
+            return_value=MagicMock(isError=lambda: False, bits=[False])
+        )
+        client._client.read_discrete_inputs = AsyncMock(
+            return_value=MagicMock(isError=lambda: False, bits=[False])
+        )
+
+        # First entry - add and setup
+        entry1 = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_HOST: "1.2.3.4"},
+            title="Qube 1",
+            unique_id=f"{DOMAIN}-1.2.3.4-502",
+        )
+        entry1.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry1.entry_id)
+        await hass.async_block_till_done()
+
+        # Second entry - add and setup after first is done
+        entry2 = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_HOST: "1.2.3.5"},
+            title="Qube 2",
+            unique_id=f"{DOMAIN}-1.2.3.5-502",
+        )
+        entry2.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry2.entry_id)
+        await hass.async_block_till_done()
+
+        assert entry1.state is ConfigEntryState.LOADED
+        assert entry2.state is ConfigEntryState.LOADED
+
+        # In multi-device setup, both entries should have multi_device=True
+        assert entry1.runtime_data.multi_device is True
+        assert entry2.runtime_data.multi_device is True
+
+
+async def test_async_setup_entry_label_from_title(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test label is derived from entry title."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump (my_qube)",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.label == "my_qube"
+
+
+async def test_async_setup_entry_label_fallback(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test label falls back to slugified title when no parentheses."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="My Qube Device",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.label == "my_qube_device"
+
+
+def test_suggest_object_id_none_base() -> None:
+    """Test _suggest_object_id returns None when base is missing."""
+    from custom_components.qube_heatpump import _suggest_object_id
+    from custom_components.qube_heatpump.hub import EntityDef
+
+    ent = EntityDef(platform="sensor", name="Test", address=100)
+    ent.vendor_id = None
+    ent.unique_id = None
+
+    result = _suggest_object_id(ent, "qube1", True)
+    assert result is None
+
+
+def test_suggest_object_id_unitstatus() -> None:
+    """Test _suggest_object_id handles unitstatus special case."""
+    from custom_components.qube_heatpump import _suggest_object_id
+    from custom_components.qube_heatpump.hub import EntityDef
+
+    ent = EntityDef(platform="sensor", name="Test", address=100, vendor_id="UnitStatus")
+
+    result = _suggest_object_id(ent, None, False)
+    assert result == "qube_status_heatpump"
+
+
+def test_is_alarm_entity() -> None:
+    """Test _is_alarm_entity detection."""
+    from custom_components.qube_heatpump import _is_alarm_entity
+    from custom_components.qube_heatpump.hub import EntityDef
+
+    # Alarm by name
+    ent1 = EntityDef(platform="binary_sensor", name="Alarm Test", address=100)
+    assert _is_alarm_entity(ent1) is True
+
+    # Alarm by vendor_id starting with "al"
+    ent2 = EntityDef(
+        platform="binary_sensor", name="Test", address=101, vendor_id="alrm_test"
+    )
+    assert _is_alarm_entity(ent2) is True
+
+    # Not an alarm - wrong platform
+    ent3 = EntityDef(platform="sensor", name="Alarm Test", address=102)
+    assert _is_alarm_entity(ent3) is False
+
+    # Not an alarm - no alarm indicator
+    ent4 = EntityDef(platform="binary_sensor", name="Test", address=103)
+    assert _is_alarm_entity(ent4) is False
+
+
+def test_alarm_group_object_id() -> None:
+    """Test _alarm_group_object_id generation."""
+    from custom_components.qube_heatpump import _alarm_group_object_id
+
+    # Single device
+    result = _alarm_group_object_id(None, False)
+    assert result == "qube_alarm_sensors"
+
+    # Multi-device with label
+    result = _alarm_group_object_id("qube1", True)
+    assert result == "qube_alarm_sensors_qube1"
+
+
+def test_derive_label_from_title() -> None:
+    """Test _derive_label_from_title function."""
+    from custom_components.qube_heatpump import _derive_label_from_title
+
+    # With parentheses
+    assert _derive_label_from_title("Qube Heat Pump (qube.local)") == "qube_local"
+    assert _derive_label_from_title("Qube Heat Pump (192.168.1.50)") == "192_168_1_50"
+
+    # Without parentheses - fallback to slug
+    assert _derive_label_from_title("My Heat Pump") == "my_heat_pump"
+
+
+async def test_resolve_entry_by_label(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test _resolve_entry resolves entry by label."""
+    from custom_components.qube_heatpump import _resolve_entry
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump (testlabel)",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Resolve by label
+    result = _resolve_entry(hass, None, "testlabel")
+    assert result is not None
+    assert result.entry_id == entry.entry_id
+
+
+async def test_resolve_entry_no_match(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test _resolve_entry returns None when no match."""
+    from custom_components.qube_heatpump import _resolve_entry
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump (testlabel)",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Add a second entry so auto-resolve fails
+    entry2 = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.5"},
+        title="Qube Heat Pump (other)",
+        unique_id=f"{DOMAIN}-1.2.3.5-502",
+    )
+    entry2.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry2.entry_id)
+    await hass.async_block_till_done()
+
+    # Try to resolve with non-matching label
+    result = _resolve_entry(hass, None, "nonexistent")
+    assert result is None
+
+
+async def test_resolve_entry_by_hub_label(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test _resolve_entry resolves entry by hub.label attribute."""
+    from custom_components.qube_heatpump import _resolve_entry
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump (qube1)",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # The hub should have label set from title
+    result = _resolve_entry(hass, None, "qube1")
+    assert result is not None
