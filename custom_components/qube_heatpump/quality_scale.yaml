@@ -24,5 +24,32 @@ rules:
   test-coverage: done
 
   # Gold
+  devices: done
+  diagnostics: done
+  discovery:
+    status: exempt
+    comment: Modbus/TCP devices cannot be auto-discovered on the network.
+  discovery-update-info:
+    status: exempt
+    comment: No discovery mechanism available for Modbus devices.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: Modbus register definitions are fixed; entities are determined at setup.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
   entity-translations: done
   exception-translations: done
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues: done
+  stale-devices:
+    status: exempt
+    comment: Single device per entry; device is removed when entry is removed.

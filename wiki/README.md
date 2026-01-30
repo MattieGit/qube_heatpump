@@ -2,17 +2,100 @@
 
 ## Table of Contents
 
-1. [Version 2.0.0 Breaking Changes](#version-200-breaking-changes)
-2. [Entity Reference](#entity-reference)
-3. [Computed & Derived Entities](#computed--derived-entities)
-4. [SG Ready Signals](#sg-ready-signals)
-5. [Virtual Thermostat Control](#virtual-thermostat-control)
-6. [Dashboard Controls](#dashboard-controls)
-7. [Data Integrity & Monotonic Clamping](#data-integrity--monotonic-clamping)
-8. [Error Handling & Recovery](#error-handling--recovery)
-9. [Security Considerations](#security-considerations)
-10. [Diagnostics Toolkit](#diagnostics-toolkit)
-11. [Migration from v1.x](#migration-from-v1x)
+1. [Supported Devices](#supported-devices)
+2. [Data Updates](#data-updates)
+3. [Known Limitations](#known-limitations)
+4. [Version 2.0.0 Breaking Changes](#version-200-breaking-changes)
+5. [Entity Reference](#entity-reference)
+6. [Computed & Derived Entities](#computed--derived-entities)
+7. [SG Ready Signals](#sg-ready-signals)
+8. [Virtual Thermostat Control](#virtual-thermostat-control)
+9. [Use Cases](#use-cases)
+10. [Dashboard Controls](#dashboard-controls)
+11. [Data Integrity & Monotonic Clamping](#data-integrity--monotonic-clamping)
+12. [Error Handling & Recovery](#error-handling--recovery)
+13. [Security Considerations](#security-considerations)
+14. [Troubleshooting](#troubleshooting)
+15. [Diagnostics Toolkit](#diagnostics-toolkit)
+16. [Migration from v1.x](#migration-from-v1x)
+
+---
+
+## Supported Devices
+
+This integration supports [Qube](https://qube-renewables.com/) heat pumps with Modbus/TCP connectivity.
+
+### Compatible Models
+
+| Model | Modbus Support | Notes |
+|-------|---------------|-------|
+| Qube Heat Pump (all variants) | ✅ | Primary supported device |
+| Qube with Linq thermostat | ✅ | Can disable Linq for HA control |
+
+### Requirements
+
+- Qube heat pump connected to local network via Ethernet
+- Modbus/TCP enabled on the heat pump
+- Network access from Home Assistant to heat pump IP (default port: 502)
+
+### Firmware Compatibility
+
+The integration is tested with current Qube firmware versions. If you encounter issues with a specific firmware version, please open an issue on GitHub with your firmware version and the problem description.
+
+---
+
+## Data Updates
+
+### Polling Interval
+
+The integration polls the heat pump every **10 seconds** by default. This interval provides a good balance between responsiveness and network load.
+
+The polling is handled by Home Assistant's `DataUpdateCoordinator` pattern, which:
+- Polls all Modbus registers in a single coordinated update
+- Handles retry logic automatically
+- Makes entity state changes available simultaneously
+
+### When Data Updates
+
+- **On startup**: Initial data fetch when the integration loads
+- **Every 10 seconds**: Regular polling interval
+- **After writes**: Immediate refresh when you change a setpoint or switch
+
+### Manual Refresh
+
+To force an immediate data refresh:
+1. Use the **Reload** button entity (`button.qube_reload`)
+2. Or reload the integration from Settings → Devices & Services
+
+---
+
+## Known Limitations
+
+### Technical Limitations
+
+| Limitation | Description | Workaround |
+|------------|-------------|------------|
+| **Single device per entry** | Each integration entry connects to one heat pump | Add multiple entries for multiple pumps |
+| **No auto-discovery** | Modbus devices cannot be auto-discovered | Manual IP configuration required |
+| **Fixed register map** | Entity list is determined at setup | Reload integration if registers change |
+| **Unencrypted protocol** | Modbus/TCP has no encryption | Keep heat pump on trusted network |
+| **No authentication** | Modbus has no user/password | Rely on network-level access control |
+
+### Data Limitations
+
+| Limitation | Description | Notes |
+|------------|-------------|-------|
+| **Energy counter glitches** | Heat pump occasionally reports invalid energy values | Handled by monotonic clamping (see below) |
+| **Entity ID changes** | Renaming the integration entry changes entity IDs | Update automations/dashboards after rename |
+| **10-second resolution** | Data is polled every 10 seconds | Sub-second changes may be missed |
+
+### Not Supported
+
+- Remote/cloud access (local only)
+- Heat pump firmware updates
+- Advanced configuration of heat pump parameters beyond exposed registers
+
+---
 
 ---
 
@@ -28,7 +111,7 @@ Version 2.0.0 is a major architectural update that prepares the integration for 
 | Coordination | Custom polling | `DataUpdateCoordinator` pattern |
 | Entity naming | Mixed Dutch/English | Consistent English keys with translations |
 | Setpoint control | `write_register` service | Native `number` entities |
-| Multi-device | Custom labels in options | Single device per config entry |
+| Multi-device | Custom labels in options | Label derived from entry title |
 
 ### Why These Changes?
 
@@ -98,6 +181,8 @@ Beyond raw Modbus registers, the integration creates several computed sensors:
 
 ### Energy Tracking
 
+#### Monthly Energy Sensors
+
 | Entity | Description |
 |--------|-------------|
 | `sensor.qube_standby_power` | Fixed 17W standby power |
@@ -106,8 +191,21 @@ Beyond raw Modbus registers, the integration creates several computed sensors:
 | `sensor.qube_energy_tariff_ch` | Monthly CH (Central Heating) electrical consumption |
 | `sensor.qube_energy_tariff_dhw` | Monthly DHW (Domestic Hot Water) electrical consumption |
 | `sensor.thermische_opbrengst_maand` | Monthly total thermal yield |
-| `sensor.thermische_opbrengst_cv_maand` | Monthly CV thermal yield |
-| `sensor.thermische_opbrengst_sww_maand` | Monthly SWW thermal yield |
+| `sensor.thermic_yield_ch_month` | Monthly CH thermal yield |
+| `sensor.thermic_yield_dhw_month` | Monthly DHW thermal yield |
+
+#### Daily Energy Sensors
+
+| Entity | Description |
+|--------|-------------|
+| `sensor.electric_consumption_day` | Daily total electrical consumption |
+| `sensor.electric_consumption_ch_day` | Daily CH electrical consumption |
+| `sensor.electric_consumption_dhw_day` | Daily DHW electrical consumption |
+| `sensor.thermic_yield_day` | Daily total thermal yield |
+| `sensor.thermic_yield_ch_day` | Daily CH thermal yield |
+| `sensor.thermic_yield_dhw_day` | Daily DHW thermal yield |
+
+Daily sensors reset at midnight (local time). Use these for daily statistics and energy dashboards.
 
 ### SCOP Calculations
 
@@ -198,6 +296,168 @@ data:
 
 ---
 
+## Multi-Device Configuration
+
+When multiple Qube heat pumps are configured, the integration automatically prefixes entity IDs with a label derived from the integration entry title.
+
+### How Labels Work
+
+The label is extracted from the entry title:
+- `"Qube Heat Pump (qube.local)"` → `qube_local`
+- `"Qube Heat Pump (192.168.1.50)"` → `192_168_1_50`
+- `"Living Room Heat Pump"` → `living_room_heat_pump`
+
+### Customizing Labels
+
+To customize the entity prefix for a heat pump:
+
+1. Go to **Settings → Devices & Services → Integrations**
+2. Find your Qube Heat Pump entry
+3. Click the three-dot menu → **Rename**
+4. Change the title (e.g., "Qube Heat Pump (basement)")
+5. Reload the integration
+
+The new label (`basement`) will be used as the entity prefix.
+
+### Example Multi-Device Entity IDs
+
+| Single Device | Multi-Device (basement) |
+|---------------|-------------------------|
+| `sensor.outtemp` | `sensor.basement_outtemp` |
+| `switch.modbus_demand` | `switch.basement_modbus_demand` |
+| `sensor.electric_consumption_day` | `sensor.basement_electric_consumption_day` |
+
+---
+
+## Use Cases
+
+### Energy Monitoring Dashboard
+
+Track your heat pump's energy efficiency over time:
+
+```yaml
+# Example energy dashboard card
+type: statistics-graph
+title: Monthly Energy & Performance
+entities:
+  - sensor.electric_consumption_ch_month
+  - sensor.electric_consumption_dhw_month
+  - sensor.thermic_yield_month
+stat_types:
+  - sum
+period:
+  calendar:
+    period: month
+```
+
+### Smart Grid Integration
+
+Use SG Ready signals to optimize energy consumption based on electricity prices:
+
+```yaml
+automation:
+  - alias: "Cheap electricity - boost heat pump"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.electricity_price
+        below: 0.10
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.sgready_mode
+        data:
+          option: "Plus"
+
+  - alias: "Expensive electricity - reduce heat pump"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.electricity_price
+        above: 0.30
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.sgready_mode
+        data:
+          option: "Off"
+```
+
+### PV Surplus Heating
+
+Combine with solar production to heat water when excess solar power is available:
+
+```yaml
+automation:
+  - alias: "PV surplus - heat DHW"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.solar_power
+        above: 1500  # 1.5kW surplus
+        for:
+          minutes: 5
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.dhw_temp
+        below: 55
+    action:
+      - service: switch.turn_on
+        entity_id: switch.tapw_timeprogram_bms_forced
+
+  - alias: "PV surplus ended - stop DHW boost"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.solar_power
+        below: 500
+        for:
+          minutes: 10
+    action:
+      - service: switch.turn_off
+        entity_id: switch.tapw_timeprogram_bms_forced
+```
+
+### Alarm Notifications
+
+Get notified when the heat pump reports an alarm:
+
+```yaml
+automation:
+  - alias: "Heat pump alarm notification"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.glbal
+        to: "on"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Heat Pump Alarm"
+          message: "The Qube heat pump has reported an alarm. Check the status."
+          data:
+            priority: high
+```
+
+### Performance Tracking
+
+Monitor SCOP (Seasonal Coefficient of Performance) trends:
+
+```yaml
+# Create a template sensor for SCOP status
+template:
+  - sensor:
+      - name: "Heat Pump Efficiency Status"
+        state: >
+          {% set scop = states('sensor.scop_month') | float(0) %}
+          {% if scop >= 4.5 %}
+            Excellent
+          {% elif scop >= 3.5 %}
+            Good
+          {% elif scop >= 2.5 %}
+            Fair
+          {% else %}
+            Poor
+          {% endif %}
+```
+
+---
+
 ## Dashboard Controls
 
 The sample dashboard in `examples/dashboard_qube_overview.yaml` includes:
@@ -274,6 +534,89 @@ All communication is local:
 - Direct Modbus/TCP to heat pump IP
 - No cloud services or external APIs
 - No data leaves your network
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### Cannot Connect to Heat Pump
+
+**Symptoms**: Integration fails to load, entities show "unavailable"
+
+**Solutions**:
+1. **Verify network connectivity**
+   ```bash
+   ping <heat-pump-ip>
+   ```
+2. **Check Modbus port is open**
+   ```bash
+   nc -zv <heat-pump-ip> 502
+   ```
+3. **Verify heat pump has Modbus enabled** - Check heat pump controller settings
+4. **Check firewall rules** - Ensure Home Assistant can reach port 502
+
+#### Entities Show "Unknown" or "Unavailable"
+
+**Symptoms**: Some or all entities show unknown/unavailable state
+
+**Solutions**:
+1. Check the `sensor.qube_metric_errors_read` for read error count
+2. Enable debug logging to see detailed error messages:
+   ```yaml
+   logger:
+     logs:
+       custom_components.qube_heatpump: debug
+   ```
+3. Try reloading the integration (Settings → Devices & Services → Qube Heat Pump → Reload)
+
+#### Energy Values Jump or Reset
+
+**Symptoms**: Energy statistics show unexpected jumps or resets
+
+**Explanation**: The heat pump occasionally reports glitched values. The integration uses monotonic clamping to filter these.
+
+**Solutions**:
+1. Check debug logs for "Monotonic clamp" messages
+2. If values are genuinely wrong, use Home Assistant's statistics adjustment tool
+
+#### Automations Not Triggering
+
+**Symptoms**: Automations based on heat pump entities don't trigger
+
+**Solutions**:
+1. Verify entity IDs haven't changed (check Developer Tools → States)
+2. Check entity state history to confirm state changes
+3. For multi-device setups, ensure correct entity prefix
+
+#### Slow Response to Commands
+
+**Symptoms**: Switches/setpoints take time to reflect changes
+
+**Explanation**: The 10-second polling interval means changes may take up to 10 seconds to appear.
+
+**Solutions**:
+1. Commands trigger an immediate refresh, so delays should be minimal
+2. For critical timing, consider checking entity state before proceeding
+
+### Debug Logging
+
+Enable detailed logging for troubleshooting:
+
+```yaml
+logger:
+  logs:
+    custom_components.qube_heatpump: debug
+    custom_components.qube_heatpump.hub: debug
+    custom_components.qube_heatpump.coordinator: debug
+```
+
+### Getting Help
+
+1. **Download diagnostics** - Settings → Devices & Services → Qube Heat Pump → Download diagnostics
+2. **Check GitHub issues** - Search for similar issues at [GitHub Issues](https://github.com/MattieGit/qube_heatpump/issues)
+3. **Open a new issue** - Include diagnostics file, debug logs, and problem description
 
 ---
 
@@ -367,6 +710,25 @@ Use the updated `examples/dashboard_qube_overview.yaml` as reference.
 | `sensor.vierwegklep_verwarmen_koelen_status` | `sensor.vierweg_status` |
 
 **Note:** "CV" has been renamed to "CH" (Central Heating) and "SWW" to "DHW" (Domestic Hot Water) for international clarity.
+
+### Multi-Device Label Changes
+
+In v2.0.0, the `label` and `show_label_in_name` options have been removed. The entity prefix for multi-device setups is now derived from the integration entry title.
+
+**If you used custom labels:**
+1. After migration, rename the integration entry to your preferred name
+2. The label will be derived from the new title (see Multi-Device Configuration section)
+3. Entity IDs will update after reloading the integration
+
+### New Daily Energy Sensors
+
+v2.0.0 adds daily energy tracking sensors that reset at midnight:
+- `sensor.electric_consumption_day` - Total daily electrical consumption
+- `sensor.electric_consumption_ch_day` - Daily CH consumption
+- `sensor.electric_consumption_dhw_day` - Daily DHW consumption
+- `sensor.thermic_yield_day` - Total daily thermal yield
+- `sensor.thermic_yield_ch_day` - Daily CH thermal yield
+- `sensor.thermic_yield_dhw_day` - Daily DHW thermal yield
 
 ### Energy Statistics
 

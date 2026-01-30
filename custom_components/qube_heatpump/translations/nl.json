@@ -440,6 +440,19 @@
             }
         }
     },
+    "issues": {
+        "connection_failed": {
+            "title": "Verbinding met Qube warmtepomp mislukt",
+            "fix_flow": {
+                "step": {
+                    "confirm": {
+                        "title": "Verbinding met Qube warmtepomp mislukt",
+                        "description": "De integratie kon geen verbinding maken met de Qube warmtepomp op **{host}** na meerdere pogingen.\n\nMogelijke oorzaken:\n- De warmtepomp is uitgeschakeld of in standby\n- Netwerkverbindingsproblemen\n- IP-adres is gewijzigd\n\nWilt u de verbindingsinstellingen opnieuw configureren?"
+                    }
+                }
+            }
+        }
+    },
     "exceptions": {
         "connection_failed": {
             "message": "Kan geen verbinding maken met de Qube warmtepomp op {host}."

@@ -1,4 +1,208 @@
 {
+  "entity": {
+    "sensor": {
+      "status_heatpump": {
+        "default": "mdi:heat-pump",
+        "state": {
+          "standby": "mdi:power-standby",
+          "alarm": "mdi:alert-circle",
+          "keyboard_off": "mdi:keyboard-off",
+          "compressor_startup": "mdi:rocket-launch",
+          "compressor_shutdown": "mdi:power-off",
+          "cooling": "mdi:snowflake",
+          "heating": "mdi:fire",
+          "start_fail": "mdi:alert",
+          "heating_dhw": "mdi:water-boiler"
+        }
+      },
+      "drieweg_status": {
+        "default": "mdi:valve",
+        "state": {
+          "dhw": "mdi:water-boiler",
+          "ch": "mdi:radiator"
+        }
+      },
+      "vierweg_status": {
+        "default": "mdi:valve",
+        "state": {
+          "heating": "mdi:fire",
+          "cooling": "mdi:snowflake"
+        }
+      },
+      "standby_power": {
+        "default": "mdi:power-standby"
+      },
+      "standby_energy": {
+        "default": "mdi:lightning-bolt"
+      },
+      "total_energy_incl_standby": {
+        "default": "mdi:lightning-bolt"
+      },
+      "electric_consumption_ch_month": {
+        "default": "mdi:lightning-bolt"
+      },
+      "electric_consumption_dhw_month": {
+        "default": "mdi:lightning-bolt"
+      },
+      "thermic_yield_month": {
+        "default": "mdi:fire"
+      },
+      "thermic_yield_ch_month": {
+        "default": "mdi:radiator"
+      },
+      "thermic_yield_dhw_month": {
+        "default": "mdi:water-boiler"
+      },
+      "scop_month": {
+        "default": "mdi:chart-line"
+      },
+      "scop_ch_month": {
+        "default": "mdi:chart-line"
+      },
+      "scop_dhw_month": {
+        "default": "mdi:chart-line"
+      },
+      "scop_day": {
+        "default": "mdi:chart-line"
+      },
+      "scop_ch_day": {
+        "default": "mdi:chart-line"
+      },
+      "scop_dhw_day": {
+        "default": "mdi:chart-line"
+      },
+      "info": {
+        "default": "mdi:information"
+      },
+      "ip_address": {
+        "default": "mdi:ip-network"
+      },
+      "metric_errors_connect": {
+        "default": "mdi:connection"
+      },
+      "metric_errors_read": {
+        "default": "mdi:database-alert"
+      },
+      "metric_count_sensors": {
+        "default": "mdi:counter"
+      },
+      "metric_count_binary_sensors": {
+        "default": "mdi:counter"
+      },
+      "metric_count_switches": {
+        "default": "mdi:counter"
+      },
+      "flow": {
+        "default": "mdi:water-pump"
+      },
+      "supplytemp": {
+        "default": "mdi:thermometer-chevron-up"
+      },
+      "rettemp": {
+        "default": "mdi:thermometer-chevron-down"
+      },
+      "srcintemp": {
+        "default": "mdi:thermometer"
+      },
+      "srcouttemp": {
+        "default": "mdi:thermometer"
+      },
+      "roomtemp": {
+        "default": "mdi:home-thermometer"
+      },
+      "dhw_temp": {
+        "default": "mdi:water-thermometer"
+      },
+      "outtemp": {
+        "default": "mdi:thermometer"
+      },
+      "generalmng_cop": {
+        "default": "mdi:chart-areaspline"
+      },
+      "generalmng_thermic_pwr": {
+        "default": "mdi:fire"
+      },
+      "generalmng_eletricpwr": {
+        "default": "mdi:flash"
+      },
+      "generalmng_acumulatedpwr": {
+        "default": "mdi:lightning-bolt"
+      },
+      "generalmng_acumulatedthermic": {
+        "default": "mdi:fire"
+      },
+      "bldc_evd_powerplus_info_pump": {
+        "default": "mdi:fan"
+      }
+    },
+    "binary_sensor": {
+      "qube_alarm_sensors_active": {
+        "default": "mdi:alarm-light"
+      },
+      "glbal": {
+        "default": "mdi:alert-circle"
+      },
+      "dout_srcpmp_val": {
+        "default": "mdi:pump"
+      },
+      "dout_usrpmp_val": {
+        "default": "mdi:pump"
+      },
+      "dout_bufferpmp_val": {
+        "default": "mdi:pump"
+      },
+      "dout_heaterstep1_val": {
+        "default": "mdi:heating-coil"
+      },
+      "dout_heaterstep2_val": {
+        "default": "mdi:heating-coil"
+      },
+      "dout_heaterstep3_val": {
+        "default": "mdi:heating-coil"
+      },
+      "surplus_pv": {
+        "default": "mdi:solar-power"
+      },
+      "bms_demand": {
+        "default": "mdi:thermostat"
+      }
+    },
+    "switch": {
+      "bms_summerwinter": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "tapw_timeprogram_bms_forced": {
+        "default": "mdi:water-boiler"
+      },
+      "antilegionella_frcstart_ant": {
+        "default": "mdi:bacteria"
+      },
+      "en_plantsetp_compens": {
+        "default": "mdi:chart-bell-curve-cumulative"
+      },
+      "modbus_demand": {
+        "default": "mdi:thermostat"
+      }
+    },
+    "select": {
+      "sgready_mode": {
+        "default": "mdi:transmission-tower"
+      }
+    },
+    "button": {
+      "qube_reload": {
+        "default": "mdi:reload"
+      }
+    },
+    "number": {
+      "setpoint_dhw": {
+        "default": "mdi:water-thermometer"
+      },
+      "tapw_timeprogram_dhwsetp_nolinq": {
+        "default": "mdi:water-thermometer"
+      }
+    }
+  },
   "services": {
     "reconfigure": {
       "service": "mdi:cog"

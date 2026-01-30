@@ -594,6 +594,19 @@
       }
     }
   },
+  "issues": {
+    "connection_failed": {
+      "title": "Connection to Qube heat pump failed",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Connection to Qube heat pump failed",
+            "description": "The integration has been unable to connect to the Qube heat pump at **{host}** after multiple attempts.\n\nPossible causes:\n- The heat pump is powered off or in standby\n- Network connectivity issues\n- IP address has changed\n\nWould you like to reconfigure the connection settings?"
+          }
+        }
+      }
+    }
+  },
   "exceptions": {
     "connection_failed": {
       "message": "Failed to connect to the Qube heat pump at {host}."

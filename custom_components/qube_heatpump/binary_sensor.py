@@ -5,7 +5,10 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.const import EntityCategory
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -24,6 +27,63 @@ HIDDEN_VENDOR_IDS = {
     "dout_threewayvlv_val",
     "dout_fourwayvlv_val",
 }
+
+# Vendor IDs that should be classified as problem/alarm sensors
+ALARM_VENDOR_IDS = {
+    "al_maxtime_antileg_active",
+    "al_maxtime_dhw_active",
+    "al_dewpoint_active",
+    "al_underfloorsafety_active",
+    "alrm_flw",
+    "usralrms",
+    "coolingalrms",
+    "heatingalrms",
+    "alarmmng_al_workinghour",
+    "srsalrm",
+    "glbal",
+    "alarmmng_al_pwrplus",
+}
+
+# Vendor IDs that are running/power status sensors
+RUNNING_VENDOR_IDS = {
+    "dout_srcpmp_val",
+    "dout_usrpmp_val",
+    "dout_bufferpmp_val",
+    "dout_heaterstep1_val",
+    "dout_heaterstep2_val",
+    "dout_heaterstep3_val",
+    "dout_cooling_val",
+    "keybonoff",
+}
+
+
+def _derive_binary_device_class(vendor_id: str | None) -> BinarySensorDeviceClass | None:
+    """Derive device class from vendor ID."""
+    if not vendor_id:
+        return None
+    vendor_lower = vendor_id.lower()
+    if vendor_id in ALARM_VENDOR_IDS or vendor_lower.startswith("al"):
+        return BinarySensorDeviceClass.PROBLEM
+    if vendor_id in RUNNING_VENDOR_IDS:
+        return BinarySensorDeviceClass.RUNNING
+    return None
+
+
+def _derive_entity_category(vendor_id: str | None) -> EntityCategory | None:
+    """Derive entity category from vendor ID."""
+    if not vendor_id:
+        return None
+    vendor_lower = vendor_id.lower()
+    # Alarm sensors are diagnostic
+    if vendor_id in ALARM_VENDOR_IDS or vendor_lower.startswith("al"):
+        return EntityCategory.DIAGNOSTIC
+    # Output status sensors (dout_*) are diagnostic
+    if vendor_lower.startswith("dout_"):
+        return EntityCategory.DIAGNOSTIC
+    # Status sensors are diagnostic
+    if "status" in vendor_lower or vendor_lower.endswith("_en"):
+        return EntityCategory.DIAGNOSTIC
+    return None
 
 
 async def async_setup_entry(
@@ -123,6 +183,14 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         if vendor_id in HIDDEN_VENDOR_IDS:
             self._attr_entity_registry_visible_default = False
             self._attr_entity_registry_enabled_default = False
+        # Set device class based on vendor ID
+        device_class = _derive_binary_device_class(vendor_id)
+        if device_class:
+            self._attr_device_class = device_class
+        # Set entity category based on vendor ID
+        entity_category = _derive_entity_category(vendor_id)
+        if entity_category:
+            self._attr_entity_category = entity_category
         if vendor_id:
             candidate = vendor_id
             if self._show_label:
@@ -168,6 +236,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(
         self,

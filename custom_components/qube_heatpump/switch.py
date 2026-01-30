@@ -76,6 +76,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
     """Qube switch entity."""
 
     _attr_should_poll = False
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -92,7 +93,6 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         self._show_label = bool(show_label)
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             self._attr_entity_registry_visible_default = False
-            self._attr_entity_category = EntityCategory.CONFIG
         if ent.translation_key:
             manual_name = hub.get_friendly_name("switch", ent.translation_key)
             if manual_name:

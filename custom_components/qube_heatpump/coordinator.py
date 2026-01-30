@@ -13,9 +13,13 @@ if TYPE_CHECKING:
 
     from .hub import EntityDef, QubeHub
 
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+
+# Number of consecutive failures before creating a repair issue
+CONSECUTIVE_FAILURES_THRESHOLD = 5
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,6 +50,8 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Initialize the coordinator."""
         self.hub = hub
         self.entry = entry
+        self._consecutive_failures = 0
+        self._issue_created = False
         super().__init__(
             hass,
             _LOGGER,
@@ -55,10 +61,49 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             config_entry=entry,
         )
 
+    def _create_connection_issue(self) -> None:
+        """Create a repair issue for persistent connection failures."""
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            f"connection_failed_{self.entry.entry_id}",
+            is_fixable=True,
+            is_persistent=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key="connection_failed",
+            translation_placeholders={"host": self.hub.host},
+            data={"entry_id": self.entry.entry_id},
+        )
+        self._issue_created = True
+
+    def _delete_connection_issue(self) -> None:
+        """Delete the connection failure repair issue."""
+        if self._issue_created:
+            ir.async_delete_issue(
+                self.hass,
+                DOMAIN,
+                f"connection_failed_{self.entry.entry_id}",
+            )
+            self._issue_created = False
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the hub."""
-        await self.hub.async_resolve_ip()
-        await self.hub.async_connect()
+        try:
+            await self.hub.async_resolve_ip()
+            await self.hub.async_connect()
+        except Exception as exc:
+            self._consecutive_failures += 1
+            if (
+                self._consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD
+                and not self._issue_created
+            ):
+                self._create_connection_issue()
+            raise UpdateFailed(f"Connection to {self.hub.host} failed: {exc}") from exc
+
+        # Connection successful - reset failure counter and delete any issue
+        self._consecutive_failures = 0
+        self._delete_connection_issue()
+
         results: dict[str, Any] = {}
 
         # Access persistent storage for monotonic counters
