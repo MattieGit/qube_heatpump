@@ -356,18 +356,34 @@ class QubeHub:
         if self._client is None:
             raise ConnectionError("Client not connected")
 
+        value = None
+
         # Use library entity if available
         if ent._library_entity is not None:
-            return await self._client.read_entity(ent._library_entity)
+            lib_ent = ent._library_entity
+            value = await self._client.read_entity(lib_ent)
+            _LOGGER.debug(
+                "Read entity %s: addr=%s input=%s dtype=%s value=%s",
+                ent.unique_id,
+                lib_ent.address,
+                lib_ent.input_type.value if lib_ent.input_type else None,
+                lib_ent.data_type.value if lib_ent.data_type else None,
+                value,
+            )
+            return value
 
         # Fallback: Use key-based reads
         if ent.unique_id:
             if ent.platform == "binary_sensor":
-                return await self._client.read_binary_sensor(ent.unique_id)
-            if ent.platform == "switch":
-                return await self._client.read_switch(ent.unique_id)
-            if ent.platform == "sensor":
-                return await self._client.read_sensor(ent.unique_id)
+                value = await self._client.read_binary_sensor(ent.unique_id)
+            elif ent.platform == "switch":
+                value = await self._client.read_switch(ent.unique_id)
+            elif ent.platform == "sensor":
+                value = await self._client.read_sensor(ent.unique_id)
+            _LOGGER.debug(
+                "Read %s %s: value=%s", ent.platform, ent.unique_id, value
+            )
+            return value
 
         return None
 
