@@ -517,7 +517,7 @@ class TestQubeSCOPSensorEdgeCases:
     """Tests for QubeSCOPSensor edge cases."""
 
     async def test_scop_zero_electric(self, hass: HomeAssistant) -> None:
-        """Test SCOP returns None when electric is zero."""
+        """Test SCOP returns 0 when electric is zero (no data yet)."""
         from custom_components.qube_heatpump.sensor import QubeSCOPSensor
 
         hub = MagicMock()
@@ -551,10 +551,10 @@ class TestQubeSCOPSensorEdgeCases:
             version="1.0",
         )
 
-        assert sensor.native_value is None
+        assert sensor.native_value == 0.0
 
     async def test_scop_exceeds_max(self, hass: HomeAssistant) -> None:
-        """Test SCOP returns None when value exceeds max expected."""
+        """Test SCOP returns 0 when value exceeds max expected."""
         from custom_components.qube_heatpump.sensor import QubeSCOPSensor
 
         hub = MagicMock()
@@ -590,10 +590,10 @@ class TestQubeSCOPSensorEdgeCases:
         )
 
         # SCOP would be 40 (20/0.5 per tariff * 2 tariffs) which exceeds max
-        assert sensor.native_value is None
+        assert sensor.native_value == 0.0
 
     async def test_scop_negative(self, hass: HomeAssistant) -> None:
-        """Test SCOP returns None when value is negative."""
+        """Test SCOP returns 0 when value is negative."""
         from custom_components.qube_heatpump.sensor import QubeSCOPSensor
 
         hub = MagicMock()
@@ -627,7 +627,7 @@ class TestQubeSCOPSensorEdgeCases:
             version="1.0",
         )
 
-        assert sensor.native_value is None
+        assert sensor.native_value == 0.0
 
     async def test_scop_valid_calculation(self, hass: HomeAssistant) -> None:
         """Test SCOP calculates correctly."""

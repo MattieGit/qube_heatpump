@@ -1568,21 +1568,21 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         return elec, therm
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float:
         """Return value."""
         elec, therm = self._current_totals()
         if elec is None or therm is None:
-            return None
+            return 0.0
         try:
             elec_f = float(elec)
             therm_f = float(therm)
         except (TypeError, ValueError):
-            return None
+            return 0.0
         if elec_f <= 0:
-            return None
+            return 0.0
         scop = therm_f / elec_f
         if scop < 0 or scop > SCOP_MAX_EXPECTED:
-            return None
+            return 0.0
         return round(scop, 1)
 
     def _handle_coordinator_update(self) -> None:
