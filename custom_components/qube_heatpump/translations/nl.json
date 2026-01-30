@@ -20,7 +20,7 @@
                 "name": "Driewegklep status",
                 "state": {
                     "dhw": "Tapwater",
-                    "cv": "CV"
+                    "ch": "CV"
                 }
             },
             "vierweg_status": {
@@ -39,37 +39,37 @@
             "total_energy_incl_standby": {
                 "name": "Totaal elektriciteitsverbruik (incl. standby)"
             },
-            "electric_consumption_cv_month": {
+            "electric_consumption_ch_month": {
                 "name": "Elektriciteitsverbruik CV (maand)"
             },
-            "electric_consumption_sww_month": {
+            "electric_consumption_dhw_month": {
                 "name": "Elektriciteitsverbruik SWW (maand)"
             },
             "thermic_yield_month": {
                 "name": "Thermische opbrengst (maand)"
             },
-            "thermic_yield_cv_month": {
+            "thermic_yield_ch_month": {
                 "name": "Thermische opbrengst CV (maand)"
             },
-            "thermic_yield_sww_month": {
+            "thermic_yield_dhw_month": {
                 "name": "Thermische opbrengst SWW (maand)"
             },
             "scop_month": {
                 "name": "SCOP (maand)"
             },
-            "scop_cv_month": {
+            "scop_ch_month": {
                 "name": "SCOP CV (maand)"
             },
-            "scop_sww_month": {
+            "scop_dhw_month": {
                 "name": "SCOP SWW (maand)"
             },
             "scop_day": {
                 "name": "SCOP (dag)"
             },
-            "scop_cv_day": {
+            "scop_ch_day": {
                 "name": "SCOP CV (dag)"
             },
-            "scop_sww_day": {
+            "scop_dhw_day": {
                 "name": "SCOP SWW (dag)"
             },
             "info": {

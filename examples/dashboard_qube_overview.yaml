@@ -280,9 +280,9 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_energy_tariff_cv
+        entity: sensor.qube_energy_tariff_ch
       - type: tile
-        entity: sensor.qube_energy_tariff_sww
+        entity: sensor.qube_energy_tariff_dhw
   - type: grid
     cards:
       - type: heading

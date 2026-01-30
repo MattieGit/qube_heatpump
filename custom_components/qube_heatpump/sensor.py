@@ -53,11 +53,11 @@ TARIFF_SENSOR_BASE = "qube_energy_tariff"
 THERMIC_TARIFF_SENSOR_BASE = "qube_thermic_energy_tariff"
 THERMIC_TOTAL_MONTHLY_UNIQUE_BASE = "qube_thermic_energy_monthly"
 SCOP_TOTAL_UNIQUE_BASE = "qube_scop_monthly"
-SCOP_CV_UNIQUE_BASE = "qube_scop_cv_monthly"
-SCOP_SWW_UNIQUE_BASE = "qube_scop_sww_monthly"
+SCOP_CH_UNIQUE_BASE = "qube_scop_ch_monthly"
+SCOP_DHW_UNIQUE_BASE = "qube_scop_dhw_monthly"
 SCOP_TOTAL_DAILY_UNIQUE_BASE = "qube_scop_daily"
-SCOP_CV_DAILY_UNIQUE_BASE = "qube_scop_cv_daily"
-SCOP_SWW_DAILY_UNIQUE_BASE = "qube_scop_sww_daily"
+SCOP_CH_DAILY_UNIQUE_BASE = "qube_scop_ch_daily"
+SCOP_DHW_DAILY_UNIQUE_BASE = "qube_scop_dhw_daily"
 SCOP_MAX_EXPECTED = 10.0
 
 
@@ -279,8 +279,8 @@ async def async_setup_entry(
             coordinator,
             hub,
             tracker,
-            tariff="CV",
-            translation_key="electric_consumption_cv_month",
+            tariff="CH",
+            translation_key="electric_consumption_ch_month",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -291,8 +291,8 @@ async def async_setup_entry(
             coordinator,
             hub,
             tracker,
-            tariff="SWW",
-            translation_key="electric_consumption_sww_month",
+            tariff="DHW",
+            translation_key="electric_consumption_dhw_month",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -316,13 +316,13 @@ async def async_setup_entry(
             coordinator,
             hub,
             thermic_tracker,
-            tariff="CV",
-            translation_key="thermic_yield_cv_month",
+            tariff="CH",
+            translation_key="thermic_yield_ch_month",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
-            object_base="thermische_opbrengst_cv_maand",
+            object_base="thermic_yield_ch_month",
         )
     )
     _add_sensor_entity(
@@ -330,13 +330,13 @@ async def async_setup_entry(
             coordinator,
             hub,
             thermic_tracker,
-            tariff="SWW",
-            translation_key="thermic_yield_sww_month",
+            tariff="DHW",
+            translation_key="thermic_yield_dhw_month",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
-            object_base="thermische_opbrengst_sww_maand",
+            object_base="thermic_yield_dhw_month",
         )
     )
 
@@ -361,10 +361,10 @@ async def async_setup_entry(
             hub,
             electric_tracker=tracker,
             thermic_tracker=thermic_tracker,
-            scope="CV",
-            translation_key="scop_cv_month",
-            unique_base=SCOP_CV_UNIQUE_BASE,
-            object_base="scop_cv_maand",
+            scope="CH",
+            translation_key="scop_ch_month",
+            unique_base=SCOP_CH_UNIQUE_BASE,
+            object_base="scop_ch_month",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -376,10 +376,10 @@ async def async_setup_entry(
             hub,
             electric_tracker=tracker,
             thermic_tracker=thermic_tracker,
-            scope="SWW",
-            translation_key="scop_sww_month",
-            unique_base=SCOP_SWW_UNIQUE_BASE,
-            object_base="scop_sww_maand",
+            scope="DHW",
+            translation_key="scop_dhw_month",
+            unique_base=SCOP_DHW_UNIQUE_BASE,
+            object_base="scop_dhw_month",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -407,10 +407,10 @@ async def async_setup_entry(
             hub,
             electric_tracker=daily_electric_tracker,
             thermic_tracker=daily_thermic_tracker,
-            scope="CV",
-            translation_key="scop_cv_day",
-            unique_base=SCOP_CV_DAILY_UNIQUE_BASE,
-            object_base="scop_cv_dag",
+            scope="CH",
+            translation_key="scop_ch_day",
+            unique_base=SCOP_CH_DAILY_UNIQUE_BASE,
+            object_base="scop_ch_day",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -422,10 +422,10 @@ async def async_setup_entry(
             hub,
             electric_tracker=daily_electric_tracker,
             thermic_tracker=daily_thermic_tracker,
-            scope="SWW",
-            translation_key="scop_sww_day",
-            unique_base=SCOP_SWW_DAILY_UNIQUE_BASE,
-            object_base="scop_sww_dag",
+            scope="DHW",
+            translation_key="scop_dhw_day",
+            unique_base=SCOP_DHW_DAILY_UNIQUE_BASE,
+            object_base="scop_dhw_day",
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
@@ -1180,8 +1180,8 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
                 }
                 return mapping.get(code, "unknown")
             if self._kind == "drieweg":
-                # DHW (True) vs CV (False)
-                return "dhw" if bool(val) else "cv"
+                # DHW (True) vs CH (False)
+                return "dhw" if bool(val) else "ch"
             if self._kind == "vierweg":
                 # Verwarmen (True) vs Koelen (False) -> heating/cooling
                 return "heating" if bool(val) else "cooling"
@@ -1215,7 +1215,7 @@ def _binary_unique_id(label: str | None, multi_device: bool) -> str:
 
 
 class TariffEnergyTracker:
-    """Track split energy totals for CV/SWW."""
+    """Track split energy totals for CH/DHW (Central Heating / Domestic Hot Water)."""
 
     def __init__(
         self,
@@ -1316,7 +1316,7 @@ class TariffEnergyTracker:
     def _refresh_current_tariff(self, coordinator_data: dict[str, Any]) -> None:
         state = coordinator_data.get(self.binary_key)
         if isinstance(state, bool):
-            self._current_tariff = "SWW" if state else "CV"
+            self._current_tariff = "DHW" if state else "CH"
 
     def get_total(self, tariff: str) -> float:
         """Get total for tariff."""

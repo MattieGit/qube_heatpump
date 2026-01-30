@@ -47,8 +47,10 @@ This Home Assistant integration connects to your Qube heat pump via Modbus/TCP a
 |---------------|---------------|
 | `sensor.status_warmtepomp` | `sensor.status_heatpump` |
 | `sensor.standby_verbruik` | `sensor.qube_standby_energy` |
-| `sensor.elektrisch_verbruik_cv_maand` | `sensor.qube_energy_tariff_cv` |
-| `sensor.elektrisch_verbruik_sww_maand` | `sensor.qube_energy_tariff_sww` |
+| `sensor.elektrisch_verbruik_cv_maand` | `sensor.qube_energy_tariff_ch` |
+| `sensor.elektrisch_verbruik_sww_maand` | `sensor.qube_energy_tariff_dhw` |
+
+**Note:** "CV" has been renamed to "CH" (Central Heating) and "SWW" to "DHW" (Domestic Hot Water) for international clarity.
 
 ## Installation
 

@@ -310,7 +310,7 @@
         "name": "Three-way valve status",
         "state": {
           "dhw": "DHW",
-          "cv": "CV"
+          "ch": "CH"
         }
       },
       "vierweg_status": {
@@ -329,37 +329,37 @@
       "total_energy_incl_standby": {
         "name": "Total electric consumption (incl. standby)"
       },
-      "electric_consumption_cv_month": {
-        "name": "Electric consumption CV (month)"
+      "electric_consumption_ch_month": {
+        "name": "Electric consumption CH (month)"
       },
-      "electric_consumption_sww_month": {
+      "electric_consumption_dhw_month": {
         "name": "Electric consumption DHW (month)"
       },
       "thermic_yield_month": {
         "name": "Thermic yield (month)"
       },
-      "thermic_yield_cv_month": {
-        "name": "Thermic yield CV (month)"
+      "thermic_yield_ch_month": {
+        "name": "Thermic yield CH (month)"
       },
-      "thermic_yield_sww_month": {
+      "thermic_yield_dhw_month": {
         "name": "Thermic yield DHW (month)"
       },
       "scop_month": {
         "name": "SCOP (month)"
       },
-      "scop_cv_month": {
-        "name": "SCOP CV (month)"
+      "scop_ch_month": {
+        "name": "SCOP CH (month)"
       },
-      "scop_sww_month": {
+      "scop_dhw_month": {
         "name": "SCOP DHW (month)"
       },
       "scop_day": {
         "name": "SCOP (day)"
       },
-      "scop_cv_day": {
-        "name": "SCOP CV (day)"
+      "scop_ch_day": {
+        "name": "SCOP CH (day)"
       },
-      "scop_sww_day": {
+      "scop_dhw_day": {
         "name": "SCOP DHW (day)"
       },
       "info": {

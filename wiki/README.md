@@ -103,8 +103,8 @@ Beyond raw Modbus registers, the integration creates several computed sensors:
 | `sensor.qube_standby_power` | Fixed 17W standby power |
 | `sensor.qube_standby_energy` | Accumulated standby consumption (kWh) |
 | `sensor.qube_total_energy_with_standby` | Total consumption including standby |
-| `sensor.qube_energy_tariff_cv` | Monthly CV electrical consumption |
-| `sensor.qube_energy_tariff_sww` | Monthly SWW electrical consumption |
+| `sensor.qube_energy_tariff_ch` | Monthly CH (Central Heating) electrical consumption |
+| `sensor.qube_energy_tariff_dhw` | Monthly DHW (Domestic Hot Water) electrical consumption |
 | `sensor.thermische_opbrengst_maand` | Monthly total thermal yield |
 | `sensor.thermische_opbrengst_cv_maand` | Monthly CV thermal yield |
 | `sensor.thermische_opbrengst_sww_maand` | Monthly SWW thermal yield |
@@ -114,11 +114,11 @@ Beyond raw Modbus registers, the integration creates several computed sensors:
 | Entity | Period | Scope |
 |--------|--------|-------|
 | `sensor.scop_maand` | Monthly | Total |
-| `sensor.scop_cv_maand` | Monthly | CV only |
-| `sensor.scop_sww_maand` | Monthly | SWW only |
+| `sensor.scop_ch_month` | Monthly | CH only |
+| `sensor.scop_dhw_month` | Monthly | DHW only |
 | `sensor.scop_dag` | Daily | Total |
-| `sensor.scop_cv_dag` | Daily | CV only |
-| `sensor.scop_sww_dag` | Daily | SWW only |
+| `sensor.scop_ch_day` | Daily | CH only |
+| `sensor.scop_dhw_day` | Daily | DHW only |
 
 SCOP values are calculated by dividing thermal yield by electrical consumption. Values outside the 0-10 range are filtered as implausible.
 
@@ -127,7 +127,7 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 | Entity | Values |
 |--------|--------|
 | `sensor.status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, unknown |
-| `sensor.drieweg_status` | dhw, cv |
+| `sensor.drieweg_status` | dhw, ch |
 | `sensor.vierweg_status` | heating, cooling |
 
 ---
@@ -361,10 +361,12 @@ Use the updated `examples/dashboard_qube_overview.yaml` as reference.
 | `sensor.status_warmtepomp` | `sensor.status_heatpump` |
 | `sensor.standby_verbruik` | `sensor.qube_standby_energy` |
 | `sensor.qube_total_energy_incl_standby` | `sensor.qube_total_energy_with_standby` |
-| `sensor.elektrisch_verbruik_cv_maand` | `sensor.qube_energy_tariff_cv` |
-| `sensor.elektrisch_verbruik_sww_maand` | `sensor.qube_energy_tariff_sww` |
+| `sensor.elektrisch_verbruik_cv_maand` | `sensor.qube_energy_tariff_ch` |
+| `sensor.elektrisch_verbruik_sww_maand` | `sensor.qube_energy_tariff_dhw` |
 | `sensor.driewegklep_ssw_cv_status` | `sensor.drieweg_status` |
 | `sensor.vierwegklep_verwarmen_koelen_status` | `sensor.vierweg_status` |
+
+**Note:** "CV" has been renamed to "CH" (Central Heating) and "SWW" to "DHW" (Domestic Hot Water) for international clarity.
 
 ### Energy Statistics
 

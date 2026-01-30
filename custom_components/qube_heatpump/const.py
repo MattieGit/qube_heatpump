@@ -3,7 +3,7 @@
 DOMAIN = "qube_heatpump"
 PLATFORMS = ["binary_sensor", "button", "number", "select", "sensor", "switch"]
 
-TARIFF_OPTIONS = ("CV", "SWW")
+TARIFF_OPTIONS = ("CH", "DHW")
 
 CONF_HOST = "host"
 CONF_PORT = "port"
