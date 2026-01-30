@@ -248,6 +248,60 @@
             },
             "energy_total_thermic": {
                 "name": "Thermische opbrengst totaal"
+            },
+            "temp_supply": {
+                "name": "Aanvoertemperatuur CV"
+            },
+            "temp_return": {
+                "name": "Retourtemperatuur CV"
+            },
+            "temp_source_in": {
+                "name": "Temperatuur bron vanaf dak"
+            },
+            "temp_source_out": {
+                "name": "Temperatuur bron naar dak"
+            },
+            "temp_room": {
+                "name": "Ruimtetemperatuur"
+            },
+            "temp_dhw": {
+                "name": "Tapwatertemperatuur"
+            },
+            "temp_outside": {
+                "name": "Buitentemperatuur"
+            },
+            "cop_calc": {
+                "name": "COP (berekend)"
+            },
+            "status_code": {
+                "name": "Status code"
+            },
+            "power_thermic": {
+                "name": "Actueel thermisch vermogen"
+            },
+            "power_electric": {
+                "name": "Actueel elektrisch vermogen"
+            },
+            "compressor_speed": {
+                "name": "Actuele snelheid compressor"
+            },
+            "flow_rate": {
+                "name": "Debiet"
+            },
+            "setpoint_room_heat_day": {
+                "name": "Setpoint ruimte CV dag"
+            },
+            "setpoint_room_heat_night": {
+                "name": "Setpoint ruimte CV nacht"
+            },
+            "setpoint_room_cool_day": {
+                "name": "Setpoint ruimte Koel dag"
+            },
+            "setpoint_room_cool_night": {
+                "name": "Setpoint ruimte Koel nacht"
+            },
+            "setpoint_dhw": {
+                "name": "Ingesteld setpoint tapwater"
             }
         },
         "binary_sensor": {
@@ -315,7 +369,7 @@
                 "name": "Alarm Verzamelalarm Bron"
             },
             "glbal": {
-                "name": "Globaal alarm"
+                "name": "Alarm: Globaal"
             },
             "alarmmng_al_pwrplus": {
                 "name": "Alarm verzamelalarm compressor"

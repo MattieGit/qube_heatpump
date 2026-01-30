@@ -105,7 +105,7 @@
         "name": "Alarm: Collective alarm source"
       },
       "glbal": {
-        "name": "Global alarm"
+        "name": "Alarm: Global"
       },
       "alarmmng_al_pwrplus": {
         "name": "Alarm: Collective alarm compressor"
@@ -287,6 +287,66 @@
       "modbus_roomtemp": {
         "name": "Linq room temperature"
       },
+      "temp_supply": {
+        "name": "Supply temperature CV"
+      },
+      "temp_return": {
+        "name": "Return temperature CV"
+      },
+      "temp_source_in": {
+        "name": "Source temperature from roof"
+      },
+      "temp_source_out": {
+        "name": "Source temperature to roof"
+      },
+      "temp_room": {
+        "name": "Room temperature"
+      },
+      "temp_dhw": {
+        "name": "DHW temperature"
+      },
+      "temp_outside": {
+        "name": "Outside temperature"
+      },
+      "cop_calc": {
+        "name": "COP (calculated)"
+      },
+      "status_code": {
+        "name": "Status code"
+      },
+      "power_thermic": {
+        "name": "Current thermal power"
+      },
+      "power_electric": {
+        "name": "Current electric power"
+      },
+      "compressor_speed": {
+        "name": "Current compressor speed"
+      },
+      "energy_total_electric": {
+        "name": "Electric consumption total"
+      },
+      "energy_total_thermic": {
+        "name": "Thermic yield total"
+      },
+      "flow_rate": {
+        "name": "Flow rate"
+      },
+      "setpoint_room_heat_day": {
+        "name": "Room setpoint heating (day)"
+      },
+      "setpoint_room_heat_night": {
+        "name": "Room setpoint heating (night)"
+      },
+      "setpoint_room_cool_day": {
+        "name": "Room setpoint cooling (day)"
+      },
+      "setpoint_room_cool_night": {
+        "name": "Room setpoint cooling (night)"
+      },
+      "setpoint_dhw": {
+        "name": "User-defined DHW setpoint"
+      },
       "status_heatpump": {
         "name": "Heat pump status",
         "state": {
@@ -460,7 +520,7 @@
         "name": "Alarm: Collective alarm source"
       },
       "glbal": {
-        "name": "Global alarm"
+        "name": "Alarm: Global"
       },
       "alarmmng_al_pwrplus": {
         "name": "Alarm: Collective alarm compressor"

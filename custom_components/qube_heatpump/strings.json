@@ -105,7 +105,7 @@
         "name": "Alarm: Collective alarm source"
       },
       "glbal": {
-        "name": "Global alarm"
+        "name": "Alarm: Global"
       },
       "alarmmng_al_pwrplus": {
         "name": "Alarm: Collective alarm compressor"
@@ -520,7 +520,7 @@
         "name": "Alarm: Collective alarm source"
       },
       "glbal": {
-        "name": "Global alarm"
+        "name": "Alarm: Global"
       },
       "alarmmng_al_pwrplus": {
         "name": "Alarm: Collective alarm compressor"
