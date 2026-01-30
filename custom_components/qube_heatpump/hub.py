@@ -204,8 +204,6 @@ class QubeHub:
         self._err_read: int = 0
         self._resolved_ip: str | None = None
         self._translations: dict[str, Any] = {}
-        # Connection state
-        self._connected: bool = False
 
     def load_library_entities(self) -> None:
         """Load all entity definitions from the library."""
@@ -304,18 +302,18 @@ class QubeHub:
         self._resolved_ip = None
 
     async def async_connect(self) -> None:
-        """Connect to the Modbus server."""
+        """Connect to the Modbus server via the library client."""
         if self._client is None:
             self._client = QubeClient(self._host, self._port, self._unit)
 
-        if not self._connected:
+        if not self._client.is_connected:
             try:
-                self._connected = await self._client.connect()
+                connected = await self._client.connect()
             except Exception as exc:
                 self._err_connect += 1
                 raise ConnectionError(f"Failed to connect: {exc}") from exc
 
-            if not self._connected:
+            if not connected:
                 self._err_connect += 1
                 raise ConnectionError("Failed to connect to Modbus TCP server")
 
@@ -325,7 +323,6 @@ class QubeHub:
             with contextlib.suppress(Exception):
                 await self._client.close()
             self._client = None
-            self._connected = False
 
     def set_unit_id(self, unit_id: int) -> None:
         """Set unit ID."""
@@ -347,201 +344,83 @@ class QubeHub:
         """Increment read error count."""
         self._err_read += 1
 
-    async def async_read_value(self, ent: EntityDef) -> Any:
-        """Read a value from the device."""
+    async def async_get_all_entities(self) -> dict[str, Any]:
+        """Get all entity values from the library client."""
         if self._client is None:
             raise ConnectionError("Client not connected")
 
-        # Use library entity if available for type-specific reads
+        return await self._client.get_all_entities()
+
+    async def async_read_value(self, ent: EntityDef) -> Any:
+        """Read a single entity value via the library client."""
+        if self._client is None:
+            raise ConnectionError("Client not connected")
+
+        # Use library entity if available
         if ent._library_entity is not None:
             return await self._client.read_entity(ent._library_entity)
 
-        # Fallback: Use key-based reads if we have a unique_id
+        # Fallback: Use key-based reads
         if ent.unique_id:
             if ent.platform == "binary_sensor":
-                result = await self._client.read_binary_sensor(ent.unique_id)
-                if result is not None:
-                    return result
-            elif ent.platform == "switch":
-                result = await self._client.read_switch(ent.unique_id)
-                if result is not None:
-                    return result
-            elif ent.platform == "sensor":
-                result = await self._client.read_sensor(ent.unique_id)
-                if result is not None:
-                    return result
+                return await self._client.read_binary_sensor(ent.unique_id)
+            if ent.platform == "switch":
+                return await self._client.read_switch(ent.unique_id)
+            if ent.platform == "sensor":
+                return await self._client.read_sensor(ent.unique_id)
 
-        # Final fallback: Direct register read for custom entities
-        return await self._read_by_address(ent)
-
-    async def _read_by_address(self, ent: EntityDef) -> Any:
-        """Read value directly by address (fallback for custom entities)."""
-        if self._client is None or self._client._client is None:
-            raise ConnectionError("Client not connected")
-
-        # Use the underlying pymodbus client for direct access
-        client = self._client._client
-
-        if ent.platform == "binary_sensor":
-            input_type = (ent.input_type or "discrete_input").lower()
-            if input_type in ("discrete_input", "discrete"):
-                result = await client.read_discrete_inputs(
-                    ent.address, count=1, device_id=self._unit
-                )
-                if result.isError():
-                    return None
-                return bool(result.bits[0])
-            if input_type in ("coil", "coils"):
-                result = await client.read_coils(
-                    ent.address, count=1, device_id=self._unit
-                )
-                if result.isError():
-                    return None
-                return bool(result.bits[0])
-
-        if ent.platform == "switch":
-            write_type = (ent.write_type or "coil").lower()
-            if write_type in ("coil", "coils"):
-                result = await client.read_coils(
-                    ent.address, count=1, device_id=self._unit
-                )
-                if result.isError():
-                    return None
-                return bool(result.bits[0])
-
-        # Sensor - read registers
-        return await self._read_sensor_registers(ent)
-
-    async def _read_sensor_registers(self, ent: EntityDef) -> float | int | None:
-        """Read sensor registers."""
-        if self._client is None or self._client._client is None:
-            return None
-
-        client = self._client._client
-        count = 2 if ent.data_type in ("float32", "uint32", "int32") else 1
-        input_type = (ent.input_type or "holding").lower()
-
-        if input_type == "input":
-            result = await client.read_input_registers(
-                ent.address, count, device_id=self._unit
-            )
-        else:
-            result = await client.read_holding_registers(
-                ent.address, count, device_id=self._unit
-            )
-
-        if result.isError():
-            return None
-
-        regs = result.registers
-        return self._decode_and_transform(regs, ent)
-
-    def _decode_and_transform(
-        self, regs: list[int], ent: EntityDef
-    ) -> float | int | None:
-        """Decode registers and apply transformations."""
-        import struct
-
-        data_type = (ent.data_type or "uint16").lower()
-        val: float | int
-
-        if data_type == "float32" and len(regs) >= 2:
-            # Little endian word order
-            int_val = (regs[1] << 16) | regs[0]
-            val = float(struct.unpack(">f", struct.pack(">I", int_val))[0])
-        elif data_type == "int16":
-            val = regs[0]
-            if val > 32767:
-                val -= 65536
-        elif data_type == "uint16":
-            val = regs[0]
-        elif data_type == "uint32" and len(regs) >= 2:
-            val = (regs[1] << 16) | regs[0]
-        elif data_type == "int32" and len(regs) >= 2:
-            val = (regs[1] << 16) | regs[0]
-            if val > 2147483647:
-                val -= 4294967296
-        else:
-            val = regs[0]
-
-        # Apply scale and offset
-        if ent.scale is not None:
-            val = float(val) * float(ent.scale)
-        if ent.offset is not None:
-            val = float(val) + float(ent.offset)
-
-        return val
+        return None
 
     async def async_write_switch(self, ent: EntityDef, on: bool) -> None:
-        """Write a switch state."""
+        """Write a switch state via the library client."""
         if self._client is None:
             raise ConnectionError("Client not connected")
 
-        # Use library method if we have the unique_id
-        if ent.unique_id and ent.unique_id in SWITCHES:
+        # Use library write method
+        if ent.unique_id:
             success = await self._client.write_switch(ent.unique_id, on)
             if not success:
                 raise ConnectionError(f"Failed to write switch {ent.unique_id}")
             return
 
-        # Fallback: Direct coil write
-        if self._client._client is None:
-            raise ConnectionError("Client not connected")
-
-        result = await self._client._client.write_coil(
-            ent.address, on, device_id=self._unit
-        )
-        if result.isError():
-            raise ConnectionError(f"Failed to write coil at address {ent.address}")
+        raise ConnectionError(f"No unique_id for switch entity at address {ent.address}")
 
     async def async_write_setpoint(self, ent: EntityDef, value: float) -> None:
-        """Write a setpoint value."""
+        """Write a setpoint value via the library client."""
         if self._client is None:
             raise ConnectionError("Client not connected")
 
-        # Use library method if we have the unique_id
+        # Use library write method
         if ent.unique_id:
             success = await self._client.write_setpoint(ent.unique_id, value)
             if not success:
                 raise ConnectionError(f"Failed to write setpoint {ent.unique_id}")
             return
 
-        # Fallback: Direct register write using entity metadata
-        await self.async_write_register(
-            ent.address,
-            value,
-            ent.data_type or "float32",
-        )
+        raise ConnectionError(f"No unique_id for setpoint entity at address {ent.address}")
 
     async def async_write_register(
         self, address: int, value: float, data_type: str = "uint16"
     ) -> None:
-        """Write a value to a register."""
-        if self._client is None or self._client._client is None:
+        """Write a value to a register via the library client.
+
+        This is a low-level method for the write_register service.
+        """
+        if self._client is None:
             raise ConnectionError("Client not connected")
 
-        import struct
+        # Find the entity with this address to use library write methods
+        for ent in self.entities:
+            if ent.address == address and ent.writable:
+                if ent.platform == "switch":
+                    await self.async_write_switch(ent, bool(value))
+                    return
+                await self.async_write_setpoint(ent, value)
+                return
 
-        client = self._client._client
-        data_type = (data_type or "uint16").lower()
-
-        if data_type in ("float32", "float"):
-            packed = struct.pack(">f", float(value))
-            int_val = struct.unpack(">I", packed)[0]
-            regs = [int_val & 0xFFFF, (int_val >> 16) & 0xFFFF]
-            result = await client.write_registers(address, regs, device_id=self._unit)
-        elif data_type in ("int16", "int"):
-            int_val = round(float(value))
-            if int_val < 0:
-                int_val = int_val + 65536
-            result = await client.write_register(
-                address, int_val & 0xFFFF, device_id=self._unit
-            )
-        else:  # uint16
-            int_val = round(float(value))
-            result = await client.write_register(
-                address, int_val & 0xFFFF, device_id=self._unit
-            )
-
-        if result.isError():
-            raise ConnectionError(f"Failed to write register at address {address}")
+        # No matching entity found - this would require direct pymodbus access
+        # which we're avoiding. Raise an error instead.
+        raise ConnectionError(
+            f"No writable entity found at address {address}. "
+            "Use entity-specific methods instead."
+        )

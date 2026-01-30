@@ -9,6 +9,6 @@
   "issue_tracker": "https://github.com/MattieGit/qube_heatpump/issues",
   "loggers": ["homeassistant.components.qube_heatpump"],
   "quality_scale": "bronze",
-  "requirements": ["python-qube-heatpump>=1.3.0"],
-  "version": "2026.1.6"
+  "requirements": ["python-qube-heatpump>=1.4.0"],
+  "version": "2026.1.7"
 }
