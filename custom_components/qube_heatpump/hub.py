@@ -386,14 +386,14 @@ class QubeHub:
             input_type = (ent.input_type or "discrete_input").lower()
             if input_type in ("discrete_input", "discrete"):
                 result = await client.read_discrete_inputs(
-                    ent.address, count=1, slave=self._unit
+                    ent.address, count=1, device_id=self._unit
                 )
                 if result.isError():
                     return None
                 return bool(result.bits[0])
             if input_type in ("coil", "coils"):
                 result = await client.read_coils(
-                    ent.address, count=1, slave=self._unit
+                    ent.address, count=1, device_id=self._unit
                 )
                 if result.isError():
                     return None
@@ -403,7 +403,7 @@ class QubeHub:
             write_type = (ent.write_type or "coil").lower()
             if write_type in ("coil", "coils"):
                 result = await client.read_coils(
-                    ent.address, count=1, slave=self._unit
+                    ent.address, count=1, device_id=self._unit
                 )
                 if result.isError():
                     return None
@@ -423,11 +423,11 @@ class QubeHub:
 
         if input_type == "input":
             result = await client.read_input_registers(
-                ent.address, count, slave=self._unit
+                ent.address, count, device_id=self._unit
             )
         else:
             result = await client.read_holding_registers(
-                ent.address, count, slave=self._unit
+                ent.address, count, device_id=self._unit
             )
 
         if result.isError():
@@ -489,7 +489,7 @@ class QubeHub:
             raise ConnectionError("Client not connected")
 
         result = await self._client._client.write_coil(
-            ent.address, on, slave=self._unit
+            ent.address, on, device_id=self._unit
         )
         if result.isError():
             raise ConnectionError(f"Failed to write coil at address {ent.address}")
@@ -529,18 +529,18 @@ class QubeHub:
             packed = struct.pack(">f", float(value))
             int_val = struct.unpack(">I", packed)[0]
             regs = [int_val & 0xFFFF, (int_val >> 16) & 0xFFFF]
-            result = await client.write_registers(address, regs, slave=self._unit)
+            result = await client.write_registers(address, regs, device_id=self._unit)
         elif data_type in ("int16", "int"):
             int_val = round(float(value))
             if int_val < 0:
                 int_val = int_val + 65536
             result = await client.write_register(
-                address, int_val & 0xFFFF, slave=self._unit
+                address, int_val & 0xFFFF, device_id=self._unit
             )
         else:  # uint16
             int_val = round(float(value))
             result = await client.write_register(
-                address, int_val & 0xFFFF, slave=self._unit
+                address, int_val & 0xFFFF, device_id=self._unit
             )
 
         if result.isError():
