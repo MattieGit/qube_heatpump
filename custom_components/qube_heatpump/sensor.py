@@ -45,9 +45,9 @@ HIDDEN_VENDOR_IDS = {
 }
 
 STANDBY_POWER_WATTS = 17.0
-STANDBY_POWER_UNIQUE_BASE = "qube_standby_power"
-STANDBY_ENERGY_UNIQUE_BASE = "qube_standby_energy"
-TOTAL_ENERGY_UNIQUE_BASE = "qube_total_energy_with_standby"
+STANDBY_POWER_UNIQUE_BASE = "power_standby"
+STANDBY_ENERGY_UNIQUE_BASE = "energy_standby"
+TOTAL_ENERGY_UNIQUE_BASE = "energy_total_incl_standby"
 BINARY_TARIFF_UNIQUE_ID = "dout_threewayvlv_val"
 TARIFF_SENSOR_BASE = "qube_energy_tariff"
 THERMIC_TARIFF_SENSOR_BASE = "qube_thermic_energy_tariff"
@@ -111,17 +111,8 @@ async def async_setup_entry(
         QubeIPAddressSensor(coordinator, hub, apply_label, multi_device, version)
     )
 
-    # Diagnostic metrics
-    for kind in (
-        "errors_connect",
-        "errors_read",
-        "count_sensors",
-        "count_binary_sensors",
-        "count_switches",
-    ):
-        include = not kind.startswith("count_") or kind == "count_sensors"
-        if kind in ("count_sensors", "count_binary_sensors", "count_switches"):
-            include = False
+    # Diagnostic metrics (error counters only)
+    for kind in ("errors_connect", "errors_read"):
         _add_sensor_entity(
             QubeMetricSensor(
                 coordinator,
@@ -130,9 +121,9 @@ async def async_setup_entry(
                 multi_device,
                 version,
                 kind=kind,
-                counts_provider=_get_counts,
+                counts_provider=None,
             ),
-            include_in_sensor_total=include,
+            include_in_sensor_total=True,
         )
 
     for ent in hub.entities:
@@ -883,7 +874,7 @@ def _append_label(base: str, label: str | None, multi_device: bool) -> str:
 
 def _energy_unique_id(label: str | None, multi_device: bool) -> str:
     """Generate energy unique ID."""
-    base = "generalmng_acumulatedpwr"
+    base = "energy_total_electric"
     return _append_label(base, label, multi_device)
 
 
@@ -1206,7 +1197,7 @@ def _start_of_day(dt_value: datetime) -> datetime:
 
 
 def _thermic_energy_unique_id(label: str | None, multi_device: bool) -> str:
-    base = "generalmng_acumulatedthermic"
+    base = "energy_total_thermic"
     return _append_label(base, label, multi_device)
 
 

@@ -105,8 +105,12 @@ def _derive_state_class(unit: str | None, device_class: str | None, key: str) ->
     return None
 
 
-def _derive_precision(unit: str | None, data_type: str | None) -> int | None:
+def _derive_precision(unit: str | None, data_type: str | None, key: str | None = None) -> int | None:
     """Derive suggested display precision from unit and data type."""
+    # Special handling for COP sensor
+    if key and key == "cop_calc":
+        return 1
+
     if not unit:
         return None
 
@@ -155,7 +159,7 @@ def _library_to_ha_entity(lib_ent: LibraryEntityDef) -> EntityDef:
     data_type_str = lib_ent.data_type.value if lib_ent.data_type else None
     device_class = _derive_device_class(lib_ent.unit, lib_ent.key)
     state_class = _derive_state_class(lib_ent.unit, device_class, lib_ent.key)
-    precision = _derive_precision(lib_ent.unit, data_type_str)
+    precision = _derive_precision(lib_ent.unit, data_type_str, lib_ent.key)
 
     return EntityDef(
         platform=platform_map.get(lib_ent.platform, "sensor"),

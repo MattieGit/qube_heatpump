@@ -189,7 +189,7 @@
         "name": "Max buffer setpoint (cooling)"
       },
       "tapw_timeprogram_dhwsetp_nolinq": {
-        "name": "User-defined DHW setpoint"
+        "name": "DHW setpoint (manual)"
       },
       "aout_usrpmp_val": {
         "name": "User (CV) pump control %"
@@ -377,10 +377,10 @@
         }
       },
       "standby_power": {
-        "name": "Standby power"
+        "name": "Power standby"
       },
       "standby_energy": {
-        "name": "Standby energy"
+        "name": "Energy standby"
       },
       "total_energy_incl_standby": {
         "name": "Electric consumption total (incl. standby)"

@@ -31,10 +31,10 @@
                 }
             },
             "standby_power": {
-                "name": "Standby vermogen"
+                "name": "Vermogen standby"
             },
             "standby_energy": {
-                "name": "Standby energie"
+                "name": "Energie standby"
             },
             "total_energy_incl_standby": {
                 "name": "Elektriciteitsverbruik totaal (incl. standby)"
@@ -142,7 +142,7 @@
                 "name": "Maximaalwaarde buffer setpoint (koelbedrijf)"
             },
             "tapw_timeprogram_dhwsetp_nolinq": {
-                "name": "User-defined setpoint tapwater"
+                "name": "SWW setpoint (handmatig)"
             },
             "aout_usrpmp_val": {
                 "name": "Percentage sturing User (CV) pomp"
