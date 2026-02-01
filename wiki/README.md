@@ -64,7 +64,7 @@ The polling is handled by Home Assistant's `DataUpdateCoordinator` pattern, whic
 ### Manual Refresh
 
 To force an immediate data refresh:
-1. Use the **Reload** button entity (`button.qube1_qube_reload`)
+1. Use the **Reload** button entity (`button.qube1_reload`)
 2. Or reload the integration from Settings → Devices & Services
 
 ---
@@ -114,7 +114,7 @@ The integration exposes all readable Modbus registers as sensors:
 | **Energy** | `sensor.qube1_energy_total_electric`, `sensor.qube1_energy_total_thermic` |
 | **Setpoints** | `sensor.qube1_heatsetp_1`, `sensor.qube1_coolsetp_1`, `sensor.qube1_dhw_setp`, `sensor.qube1_regsetp` |
 | **Operating hours** | `sensor.qube1_workinghours_dhw_hrsret`, `sensor.qube1_workinghours_heat_hrsret`, `sensor.qube1_workinghours_cool_hrsret` |
-| **Diagnostics** | `sensor.qube1_qube_info`, `sensor.qube1_qube_ip_address`, `sensor.qube1_qube_metric_errors_connect` |
+| **Diagnostics** | `sensor.qube1_info`, `sensor.qube1_ip_address`, `sensor.qube1_metric_errors_connect` |
 
 ### Binary Sensors (37)
 
@@ -167,8 +167,8 @@ Beyond raw Modbus registers, the integration creates several computed sensors. A
 | `sensor.qube1_power_standby` | Fixed 17W standby power |
 | `sensor.qube1_energy_standby` | Accumulated standby consumption (kWh) |
 | `sensor.qube1_energy_total_incl_standby` | Total consumption including standby |
-| `sensor.qube1_qube_energy_tariff_ch` | Monthly CH (Central Heating) electrical consumption |
-| `sensor.qube1_qube_energy_tariff_dhw` | Monthly DHW (Domestic Hot Water) electrical consumption |
+| `sensor.qube1_energy_tariff_ch` | Monthly CH (Central Heating) electrical consumption |
+| `sensor.qube1_energy_tariff_dhw` | Monthly DHW (Domestic Hot Water) electrical consumption |
 | `sensor.qube1_thermische_opbrengst_maand` | Monthly total thermal yield |
 | `sensor.qube1_thermic_yield_ch_month` | Monthly CH thermal yield |
 | `sensor.qube1_thermic_yield_dhw_month` | Monthly DHW thermal yield |
@@ -541,7 +541,7 @@ All communication is local:
 **Symptoms**: Some or all entities show unknown/unavailable state
 
 **Solutions**:
-1. Check the `sensor.qube1_qube_metric_errors_read` for read error count
+1. Check the `sensor.qube1_metric_errors_read` for read error count
 2. Enable debug logging to see detailed error messages:
    ```yaml
    logger:

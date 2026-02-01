@@ -19,8 +19,8 @@ The example uses the default entity IDs created by the Qube integration. If you:
 
 - Run multiple heat pumps, append the hub label (e.g. `_qube1`, `_qube2`) to each entity ID so it matches the registry entries.
 - Renamed entities manually, update the YAML to match your preferred IDs.
-- The SG Ready controls now use `select.sgready_mode`. The integration keeps the underlying `switch.bms_sgready_a` and `switch.bms_sgready_b` entities hidden by default; expose them manually only if you need per-coil automation.
+- The SG Ready controls now use `select.qube1_sgready_mode`. The integration keeps the underlying `switch.qube1_bms_sgready_a` and `switch.qube1_bms_sgready_b` entities hidden by default; expose them manually only if you need per-coil automation.
 
 Once saved, the dashboard shows a System snapshot picture card (with state labels overlaying the included photo), followed by Controls and the grouped sensor sections (alarms, operating hours, temperature/setpoints, power/energy, performance metrics, binary inputs, and diagnostics).
 
-The integration also exposes `binary_sensor.qube_alarm_sensors`, which mirrors whether any alarm binary sensor is active; the example dashboard uses this helper for conditional visibility.
+The integration also exposes `binary_sensor.qube1_alarm_sensors`, which mirrors whether any alarm binary sensor is active; the example dashboard uses this helper for conditional visibility.
