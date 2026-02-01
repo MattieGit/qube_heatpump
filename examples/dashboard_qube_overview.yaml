@@ -9,7 +9,7 @@ sections:
         image: /local/qube_heatpump_dashboard.png
         elements:
           - type: state-label
-            entity: sensor.status_warmtepomp
+            entity: sensor.qube1_status_heatpump
             style:
               position: absolute
               transform: translate(0,0)
@@ -23,7 +23,7 @@ sections:
               border-radius: 8px
               padding: 2px 2px
           - type: state-label
-            entity: sensor.outtemp
+            entity: sensor.qube1_temp_outside
             style:
               position: absolute
               transform: translate(0,0)
@@ -41,7 +41,7 @@ sections:
             tap_action:
               action: more-info
           - type: state-label
-            entity: sensor.modbus_roomtemp
+            entity: sensor.qube1_modbus_roomtemp
             style:
               position: absolute
               transform: translate(0,0)
@@ -58,7 +58,7 @@ sections:
             tap_action:
               action: more-info
           - type: state-label
-            entity: sensor.srcintemp
+            entity: sensor.qube1_temp_source_in
             style:
               position: absolute
               transform: translate(0,0)
@@ -75,7 +75,7 @@ sections:
             tap_action:
               action: more-info
           - type: state-label
-            entity: sensor.srcouttemp
+            entity: sensor.qube1_temp_source_out
             style:
               position: absolute
               transform: translate(0,0)
@@ -92,7 +92,7 @@ sections:
             tap_action:
               action: more-info
           - type: state-label
-            entity: sensor.supplytemp
+            entity: sensor.qube1_temp_supply
             style:
               position: absolute
               transform: translate(0,0)
@@ -109,7 +109,7 @@ sections:
             tap_action:
               action: more-info
           - type: state-label
-            entity: sensor.rettemp
+            entity: sensor.qube1_temp_return
             style:
               position: absolute
               transform: translate(0,0)
@@ -126,7 +126,7 @@ sections:
             tap_action:
               action: more-info
           - type: state-label
-            entity: sensor.dhw_temp
+            entity: sensor.qube1_temp_dhw
             style:
               top: 35%
               left: 70%
@@ -146,33 +146,33 @@ sections:
         heading: Controls
         icon: mdi:tune-variant
       - type: tile
-        entity: switch.bms_summerwinter
+        entity: switch.qube1_bms_summerwinter
       - type: tile
-        entity: switch.tapw_timeprogram_bms_forced
+        entity: switch.qube1_tapw_timeprogram_bms_forced
       - type: tile
-        entity: switch.antilegionella_frcstart_ant
+        entity: switch.qube1_antilegionella_frcstart_ant
       - type: tile
-        entity: switch.en_plantsetp_compens
+        entity: switch.qube1_en_plantsetp_compens
       - type: tile
-        entity: select.sgready_mode
+        entity: select.qube1_sgready_mode
         name: SG Ready mode
         features:
           - type: select-options
       - type: tile
-        entity: switch.modbus_demand
+        entity: switch.qube1_modbus_demand
   - type: grid
     cards:
       - type: heading
         heading: Demand status
         icon: mdi:chart-line-variant
       - type: tile
-        entity: binary_sensor.bms_demand
+        entity: binary_sensor.qube1_bms_demand
       - type: tile
-        entity: binary_sensor.surplus_pv
+        entity: binary_sensor.qube1_surplus_pv
   - type: grid
     visibility:
       - condition: state
-        entity: binary_sensor.qube_alarm_sensors_active
+        entity: binary_sensor.qube1_alarm_sensors
         state: "on"
     cards:
       - type: heading
@@ -185,28 +185,28 @@ sections:
         card:
           type: entities
         entities:
-          - binary_sensor.glbal
-          - binary_sensor.usralrms
-          - binary_sensor.coolingalrms
-          - binary_sensor.heatingalrms
-          - binary_sensor.srsalrm
-          - binary_sensor.alarmmng_al_pwrplus
-          - binary_sensor.alarmmng_al_workinghour
-          - binary_sensor.alrm_flw
-          - binary_sensor.al_maxtime_antileg_active
-          - binary_sensor.al_maxtime_dhw_active
-          - binary_sensor.al_dewpoint_active
+          - binary_sensor.qube1_glbal
+          - binary_sensor.qube1_usralrms
+          - binary_sensor.qube1_coolingalrms
+          - binary_sensor.qube1_heatingalrms
+          - binary_sensor.qube1_srsalrm
+          - binary_sensor.qube1_alarmmng_al_pwrplus
+          - binary_sensor.qube1_alarmmng_al_workinghour
+          - binary_sensor.qube1_alrm_flw
+          - binary_sensor.qube1_al_maxtime_antileg_active
+          - binary_sensor.qube1_al_maxtime_dhw_active
+          - binary_sensor.qube1_al_dewpoint_active
   - type: grid
     visibility:
       - condition: state
-        entity: binary_sensor.qube_alarm_sensors_active
+        entity: binary_sensor.qube1_alarm_sensors
         state: "off"
     cards:
       - type: heading
         heading: Alarm sensors
         icon: mdi:alarm-light
       - type: tile
-        entity: binary_sensor.qube_alarm_sensors_active
+        entity: binary_sensor.qube1_alarm_sensors
         name: No active alarms
         icon: mdi:alarm-off
         color: green
@@ -216,115 +216,115 @@ sections:
         heading: Operating hours
         icon: mdi:clock-time-four-outline
       - type: tile
-        entity: sensor.workinghours_dhw_hrsret
+        entity: sensor.qube1_workinghours_dhw_hrsret
       - type: tile
-        entity: sensor.workinghours_heat_hrsret
+        entity: sensor.qube1_workinghours_heat_hrsret
       - type: tile
-        entity: sensor.workinghours_cool_hrsret
+        entity: sensor.qube1_workinghours_cool_hrsret
       - type: tile
-        entity: sensor.workinghours_heater1_hrs
+        entity: sensor.qube1_workinghours_heater1_hrs
       - type: tile
-        entity: sensor.workinghours_heater2_hrs
+        entity: sensor.qube1_workinghours_heater2_hrs
       - type: tile
-        entity: sensor.workinghours_heater3_hrs
+        entity: sensor.qube1_workinghours_heater3_hrs
   - type: grid
     cards:
       - type: heading
         heading: Temperature & setpoints
         icon: mdi:thermometer
       - type: tile
-        entity: sensor.modbus_roomtemp
+        entity: sensor.qube1_modbus_roomtemp
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.outtemp
+        entity: sensor.qube1_temp_outside
       - type: tile
-        entity: sensor.dhw_temp
+        entity: sensor.qube1_temp_dhw
       - type: tile
-        entity: sensor.supplytemp
+        entity: sensor.qube1_temp_supply
       - type: tile
-        entity: sensor.rettemp
+        entity: sensor.qube1_temp_return
       - type: tile
-        entity: sensor.srcintemp
+        entity: sensor.qube1_temp_source_in
       - type: tile
-        entity: sensor.srcouttemp
+        entity: sensor.qube1_temp_source_out
       - type: tile
-        entity: sensor.thermostat_heatsetp_day
+        entity: sensor.qube1_thermostat_heatsetp_day
       - type: tile
-        entity: sensor.thermostat_heatsetp_night
+        entity: sensor.qube1_thermostat_heatsetp_night
       - type: tile
-        entity: sensor.heatsetp_1
+        entity: sensor.qube1_heatsetp_1
       - type: tile
-        entity: sensor.coolsetp_1
+        entity: sensor.qube1_coolsetp_1
       - type: tile
-        entity: sensor.dhw_setp
+        entity: sensor.qube1_dhw_setp
   - type: grid
     cards:
       - type: heading
         heading: Power & energy
         icon: mdi:lightning-bolt
       - type: tile
-        entity: sensor.generalmng_eletricpwr
+        entity: sensor.qube1_power_electric
       - type: tile
-        entity: sensor.generalmng_acumulatedpwr
+        entity: sensor.qube1_energy_total_electric
       - type: tile
-        entity: sensor.generalmng_acumulatedthermic
+        entity: sensor.qube1_energy_total_thermic
       - type: tile
-        entity: sensor.qube_total_energy_with_standby
+        entity: sensor.qube1_energy_total_incl_standby
       - type: tile
-        entity: sensor.qube_standby_power
+        entity: sensor.qube1_power_standby
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_standby_energy
+        entity: sensor.qube1_energy_standby
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_energy_tariff_ch
+        entity: sensor.qube1_energy_tariff_ch
       - type: tile
-        entity: sensor.qube_energy_tariff_dhw
+        entity: sensor.qube1_energy_tariff_dhw
   - type: grid
     cards:
       - type: heading
         heading: Heat pump performance
         icon: mdi:gauge
       - type: tile
-        entity: sensor.bldc_evd_powerplus_info_pump
+        entity: sensor.qube1_compressor_speed
         name: Compressor speed
       - type: tile
-        entity: sensor.flow
+        entity: sensor.qube1_flow
         name: Flow rate
       - type: tile
-        entity: sensor.comppwrreq
+        entity: sensor.qube1_comppwrreq
         name: Compressor demand
       - type: tile
-        entity: sensor.dhw_regreq
+        entity: sensor.qube1_dhw_regreq
         name: DHW demand
       - type: tile
-        entity: sensor.tapw_timeprogram_dt_bms
+        entity: sensor.qube1_tapw_timeprogram_dt_bms
         name: DHW delta T
       - type: tile
-        entity: sensor.plantsetp
+        entity: sensor.qube1_plantsetp
         name: Plant setpoint
       - type: tile
-        entity: sensor.regsetp
+        entity: sensor.qube1_regsetp
         name: Regulation setpoint
       - type: tile
-        entity: sensor.generalmng_thermic_pwr
+        entity: sensor.qube1_power_thermic
         name: Thermal power
       - type: tile
-        entity: sensor.modbus_roomtemp
+        entity: sensor.qube1_modbus_roomtemp
         name: Room temperature (Linq)
       - type: tile
-        entity: sensor.status_warmtepomp
+        entity: sensor.qube1_status_heatpump
         name: Heat pump status
       - type: tile
-        entity: sensor.driewegklep_ssw_cv_status
+        entity: sensor.qube1_drieweg_status
         name: 3-way valve status
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.vierwegklep_verwarmen_koelen_status
+        entity: sensor.qube1_vierweg_status
         name: 4-way valve status
   - type: grid
     cards:
@@ -332,59 +332,53 @@ sections:
         heading: Binary inputs & states
         icon: mdi:toggle-switch-variant
       - type: tile
-        entity: binary_sensor.dout_srcpmp_val
+        entity: binary_sensor.qube1_dout_srcpmp_val
       - type: tile
-        entity: binary_sensor.dout_usrpmp_val
+        entity: binary_sensor.qube1_dout_usrpmp_val
       - type: tile
-        entity: binary_sensor.dout_bufferpmp_val
+        entity: binary_sensor.qube1_dout_bufferpmp_val
       - type: tile
-        entity: binary_sensor.dout_fourwayvlv_val
+        entity: binary_sensor.qube1_dout_fourwayvlv_val
       - type: tile
-        entity: binary_sensor.dout_threewayvlv_val
+        entity: binary_sensor.qube1_dout_threewayvlv_val
       - type: tile
-        entity: binary_sensor.dout_heaterstep1_val
+        entity: binary_sensor.qube1_dout_heaterstep1_val
       - type: tile
-        entity: binary_sensor.dout_heaterstep2_val
+        entity: binary_sensor.qube1_dout_heaterstep2_val
       - type: tile
-        entity: binary_sensor.dout_heaterstep3_val
+        entity: binary_sensor.qube1_dout_heaterstep3_val
       - type: tile
-        entity: binary_sensor.roomprb_en
+        entity: binary_sensor.qube1_roomprb_en
       - type: tile
-        entity: binary_sensor.plantdemand
+        entity: binary_sensor.qube1_plantdemand
       - type: tile
-        entity: binary_sensor.req_antileg_1
+        entity: binary_sensor.qube1_req_antileg_1
       - type: tile
-        entity: binary_sensor.daynightmode
+        entity: binary_sensor.qube1_daynightmode
       - type: tile
-        entity: binary_sensor.dewpoint
+        entity: binary_sensor.qube1_dewpoint
       - type: tile
-        entity: binary_sensor.srcflw
+        entity: binary_sensor.qube1_srcflw
   - type: grid
     cards:
       - type: heading
         heading: Diagnostics & status
         icon: mdi:information
       - type: tile
-        entity: sensor.qube_info
+        entity: sensor.qube1_info
       - type: tile
-        entity: sensor.qube_ip_address
+        entity: sensor.qube1_ip_address
       - type: tile
-        entity: sensor.qube_metric_errors_connect
+        entity: sensor.qube1_metric_errors_connect
       - type: tile
-        entity: sensor.qube_metric_errors_read
-      - type: tile
-        entity: sensor.qube_metric_count_sensors
-      - type: tile
-        entity: sensor.qube_metric_count_binary_sensors
-      - type: tile
-        entity: sensor.qube_metric_count_switches
+        entity: sensor.qube1_metric_errors_read
   - type: grid
     cards:
       - type: heading
         heading: DHW setpoint control
         icon: mdi:water-thermometer
       - type: tile
-        entity: number.setpoint_dhw
+        entity: number.qube1_setpoint_dhw_setpoint
         name: DHW temperature setpoint
         features:
           - type: numeric-input

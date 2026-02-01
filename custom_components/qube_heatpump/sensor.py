@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 VENDOR_SLUG_OVERRIDES = {
-    "unitstatus": "qube_status_heatpump",
+    "unitstatus": "status_heatpump",
 }
 
 HIDDEN_VENDOR_IDS = {
@@ -272,6 +272,7 @@ async def async_setup_entry(
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
+            object_base="energy_tariff_ch",
         )
     )
     _add_sensor_entity(
@@ -284,6 +285,7 @@ async def async_setup_entry(
             show_label=apply_label,
             multi_device=multi_device,
             version=version,
+            object_base="energy_tariff_dhw",
         )
     )
     _add_sensor_entity(
@@ -561,7 +563,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         )
         self._state = "ok"
         # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{label}_qube_info")
+        self._attr_suggested_object_id = _slugify(f"{label}_info")
 
     def set_counts(self, counts: dict[str, int]) -> None:
         """Update total entity counts."""
@@ -669,7 +671,7 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
             f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
         )
         # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{label}_{base_uid}")
+        self._attr_suggested_object_id = _slugify(f"{label}_ip_address")
         if hasattr(SensorDeviceClass, "IP"):
             self._attr_device_class = SensorDeviceClass.IP
         else:
@@ -725,7 +727,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
         )
         # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{label}_{base_uid}")
+        self._attr_suggested_object_id = _slugify(f"{label}_metric_{kind}")
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.MEASUREMENT
 

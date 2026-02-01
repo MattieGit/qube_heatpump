@@ -236,7 +236,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_icon = "mdi:alarm-light"
         self._keys = [_entity_state_key(ent) for ent in alarm_entities]
         # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = f"{self._label}_qube_alarm_sensors"
+        self._attr_suggested_object_id = f"{self._label}_alarm_sensors"
 
     @property
     def device_info(self) -> DeviceInfo:

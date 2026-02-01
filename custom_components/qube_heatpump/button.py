@@ -83,8 +83,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         )
         self._attr_entity_category = EntityCategory.CONFIG
         # Always include label prefix in entity IDs
-        base_object = "qube_reload"
-        self._attr_suggested_object_id = _slugify(f"{label}_{base_object}")
+        self._attr_suggested_object_id = _slugify(f"{label}_reload")
 
     @property
     def device_info(self) -> DeviceInfo:
