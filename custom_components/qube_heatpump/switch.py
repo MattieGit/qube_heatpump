@@ -98,10 +98,9 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
                 f"{base_uid}_{self._hub.label}" if multi_device else base_uid
             )
         if getattr(ent, "vendor_id", None):
-            candidate = ent.vendor_id
-            if self._show_label:
-                candidate = f"{candidate}_{self._hub.label}"
-            self._attr_suggested_object_id = _slugify(str(candidate))
+            # Always include label prefix in entity IDs
+            label = self._hub.label or "qube1"
+            self._attr_suggested_object_id = _slugify(f"{label}_{ent.vendor_id}")
 
     @property
     def device_info(self) -> DeviceInfo:

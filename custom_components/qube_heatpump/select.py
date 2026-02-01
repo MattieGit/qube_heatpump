@@ -119,10 +119,8 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         if self._multi_device:
             unique_base = f"{unique_base}_{self._entry_id}"
         self._attr_unique_id = unique_base
-        suggested = "sgready_mode"
-        if self._show_label:
-            suggested = _slugify(f"{self._label}_{suggested}")
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = _slugify(f"{self._label}_sgready_mode")
 
     @property
     def device_info(self) -> DeviceInfo:

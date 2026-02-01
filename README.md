@@ -5,52 +5,19 @@
 
 This Home Assistant integration connects to your Qube heat pump via Modbus/TCP and exposes the full set of registers as native entities (sensors, binary sensors, switches, numbers, buttons). It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library for standardized protocol-level entity definitions.
 
-## Version 2.0.0 - Breaking Changes
+## Entity Naming
 
-**v2.0.0 is a breaking release** that restructures the integration to align with Home Assistant's official integration architecture. This prepares the path toward becoming an official HA core integration.
+All entity IDs include a heat pump label prefix (e.g., `qube1`) for clear identification:
 
-### What Changed
+```
+sensor.qube1_temp_supply
+sensor.qube1_temp_return
+sensor.qube1_energy_total_electric
+switch.qube1_bms_summerwinter
+select.qube1_sgready_mode
+```
 
-| Feature | v1.x | v2.0.0 |
-|---------|------|--------|
-| Entity definitions | YAML file (modbus.yaml) | Python library |
-| Entity IDs | Mixed Dutch/English | Consistent English keys |
-| DHW setpoint control | `qube_heatpump.write_register` service | `number.setpoint_dhw` entity |
-| Multi-device support | Custom labels and options flow | Single device per entry |
-| Coordinator pattern | Custom polling | `DataUpdateCoordinator` |
-
-### Migration Guide
-
-1. **Entity IDs will change** - Automations and dashboards referencing old entity IDs need updating
-2. **Remove and re-add the integration** - A clean install is recommended
-3. **Update dashboards** - See `examples/dashboard_qube_overview.yaml` for updated entity IDs
-4. **Update automations** - Replace `qube_heatpump.write_register` calls with entity actions:
-   ```yaml
-   # Old (v1.x)
-   service: qube_heatpump.write_register
-   data:
-     address: 173
-     value: 52
-     data_type: float32
-
-   # New (v2.0.0)
-   service: number.set_value
-   target:
-     entity_id: number.setpoint_dhw
-   data:
-     value: 52
-   ```
-
-### Key Entity ID Changes
-
-| Old Entity ID | New Entity ID |
-|---------------|---------------|
-| `sensor.status_warmtepomp` | `sensor.status_heatpump` |
-| `sensor.standby_verbruik` | `sensor.qube_standby_energy` |
-| `sensor.elektrisch_verbruik_cv_maand` | `sensor.qube_energy_tariff_ch` |
-| `sensor.elektrisch_verbruik_sww_maand` | `sensor.qube_energy_tariff_dhw` |
-
-**Note:** "CV" has been renamed to "CH" (Central Heating) and "SWW" to "DHW" (Domestic Hot Water) for international clarity.
+The label is derived from the integration entry title and ensures consistent naming across single and multi-device setups.
 
 ## Installation
 
@@ -92,7 +59,7 @@ Beyond raw Modbus values, the integration provides:
 
 - **Standby power/energy** - Fixed 17W standby consumption tracking
 - **Total energy (incl. standby)** - Combined active + standby consumption
-- **Monthly energy splits** - CV and SWW consumption separated
+- **Monthly energy splits** - CH and DHW consumption separated
 - **SCOP calculations** - Daily and monthly efficiency ratios
 - **Status sensors** - Human-readable heat pump and valve states
 

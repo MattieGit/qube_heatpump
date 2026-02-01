@@ -496,9 +496,8 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             self._attr_entity_registry_enabled_default = False
         if vendor_id:
             vendor_slug = VENDOR_SLUG_OVERRIDES.get(vendor_id, vendor_id)
-            desired = vendor_slug
-            if self._show_label:
-                desired = f"{self._label}_{desired}"
+            # Always include label prefix in entity IDs
+            desired = f"{self._label}_{vendor_slug}"
             self._attr_suggested_object_id = _slugify(desired)
         self._attr_device_class = cast("SensorDeviceClass | None", ent.device_class)
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
@@ -561,9 +560,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             else "qube_info_sensor"
         )
         self._state = "ok"
-        self._attr_suggested_object_id = "qube_info"
-        if self._show_label:
-            self._attr_suggested_object_id = _slugify(f"{label}_qube_info")
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = _slugify(f"{label}_qube_info")
 
     def set_counts(self, counts: dict[str, int]) -> None:
         """Update total entity counts."""
@@ -670,9 +668,8 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = (
             f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
         )
-        self._attr_suggested_object_id = base_uid
-        if self._show_label:
-            self._attr_suggested_object_id = _slugify(f"{label}_{base_uid}")
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = _slugify(f"{label}_{base_uid}")
         if hasattr(SensorDeviceClass, "IP"):
             self._attr_device_class = SensorDeviceClass.IP
         else:
@@ -727,9 +724,8 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = (
             f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
         )
-        self._attr_suggested_object_id = _slugify(base_uid)
-        if self._show_label:
-            self._attr_suggested_object_id = _slugify(f"{label}_{base_uid}")
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = _slugify(f"{label}_{base_uid}")
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -840,10 +836,8 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
         self._attr_has_entity_name = True
         unique = _append_label(STANDBY_POWER_UNIQUE_BASE, hub.entry_id, multi_device)
         self._attr_unique_id = unique
-        suggested = STANDBY_POWER_UNIQUE_BASE
-        if self._show_label:
-            suggested = f"{self._label}_{suggested}"
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{STANDBY_POWER_UNIQUE_BASE}"
         self._attr_device_class = SensorDeviceClass.POWER
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -888,10 +882,8 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._attr_has_entity_name = True
         unique = _append_label(STANDBY_ENERGY_UNIQUE_BASE, hub.entry_id, multi_device)
         self._attr_unique_id = unique
-        suggested = STANDBY_ENERGY_UNIQUE_BASE
-        if self._show_label:
-            suggested = f"{self._label}_{suggested}"
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{STANDBY_ENERGY_UNIQUE_BASE}"
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -977,10 +969,8 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self._attr_has_entity_name = True
         unique = _append_label(TOTAL_ENERGY_UNIQUE_BASE, hub.entry_id, multi_device)
         self._attr_unique_id = unique
-        suggested = TOTAL_ENERGY_UNIQUE_BASE
-        if self._show_label:
-            suggested = f"{self._label}_{suggested}"
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{TOTAL_ENERGY_UNIQUE_BASE}"
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1050,9 +1040,8 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = (
             f"{base_unique}_{self._hub.entry_id}" if self._multi_device else base_unique
         )
-        self._attr_suggested_object_id = self._object_base
-        if self._show_label:
-            self._attr_suggested_object_id = f"{self._label}_{self._object_base}"
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{self._object_base}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1255,10 +1244,8 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
         self._attr_unique_id = _append_label(base_uid, hub.entry_id, multi_device)
         suggested_base = object_base or base_uid
-        suggested = suggested_base
-        if self._show_label:
-            suggested = f"{self._label}_{suggested}"
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{suggested_base}"
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1344,10 +1331,8 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = translation_key
         self._attr_has_entity_name = True
         self._attr_unique_id = _append_label(base_unique, hub.entry_id, multi_device)
-        suggested = object_base
-        if self._show_label:
-            suggested = f"{self._label}_{suggested}"
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{object_base}"
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1417,10 +1402,8 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         if multi_device:
             base_uid = f"{base_uid}_{self._hub.entry_id}"
         self._attr_unique_id = base_uid
-        suggested = object_base
-        if self._show_label:
-            suggested = f"{self._label}_{suggested}"
-        self._attr_suggested_object_id = suggested
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_{object_base}"
         self._attr_suggested_display_precision = 1
         self._attr_native_unit_of_measurement = "CoP"
         with contextlib.suppress(Exception):

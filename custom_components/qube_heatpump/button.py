@@ -82,11 +82,9 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
             f"qube_reload_{self._entry_id}" if self._multi_device else "qube_reload"
         )
         self._attr_entity_category = EntityCategory.CONFIG
-        # Suggest a stable object_id reflecting multi-device label when needed
+        # Always include label prefix in entity IDs
         base_object = "qube_reload"
-        self._attr_suggested_object_id = (
-            _slugify(f"{label}_{base_object}") if self._show_label else base_object
-        )
+        self._attr_suggested_object_id = _slugify(f"{label}_{base_object}")
 
     @property
     def device_info(self) -> DeviceInfo:

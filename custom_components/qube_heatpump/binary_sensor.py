@@ -178,10 +178,8 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         if entity_category:
             self._attr_entity_category = entity_category
         if vendor_id:
-            candidate = vendor_id
-            if self._show_label:
-                candidate = f"{candidate}_{self._label}"
-            self._attr_suggested_object_id = _slugify(candidate)
+            # Always include label prefix in entity IDs
+            self._attr_suggested_object_id = _slugify(f"{self._label}_{vendor_id}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -237,9 +235,8 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_has_entity_name = True
         self._attr_icon = "mdi:alarm-light"
         self._keys = [_entity_state_key(ent) for ent in alarm_entities]
-        self._attr_suggested_object_id = "qube_alarm_sensors"
-        if self._show_label:
-            self._attr_suggested_object_id = f"{self._label}_qube_alarm_sensors"
+        # Always include label prefix in entity IDs
+        self._attr_suggested_object_id = f"{self._label}_qube_alarm_sensors"
 
     @property
     def device_info(self) -> DeviceInfo:

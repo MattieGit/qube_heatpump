@@ -112,13 +112,12 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
                 f"{base_uid}_{hub.entry_id}" if multi_device else base_uid
             )
 
-        # Suggested object ID
+        # Suggested object ID - always include label prefix
         vendor_id = ent.vendor_id
         if vendor_id:
-            candidate = f"{vendor_id}_setpoint"
-            if self._show_label:
-                candidate = f"{self._label}_{candidate}"
-            self._attr_suggested_object_id = _slugify(candidate)
+            self._attr_suggested_object_id = _slugify(
+                f"{self._label}_{vendor_id}_setpoint"
+            )
 
         # Number configuration
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
