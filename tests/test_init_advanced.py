@@ -309,7 +309,7 @@ async def test_write_register_no_hub(
 async def test_write_register_write_fails(
     hass: HomeAssistant,
 ) -> None:
-    """Test write_register handles write failure."""
+    """Test write_register handles write failure for non-existent address."""
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
     ) as mock_client_cls:
@@ -337,10 +337,6 @@ async def test_write_register_write_fails(
         client._client.read_discrete_inputs = AsyncMock(
             return_value=MagicMock(isError=lambda: False, bits=[False])
         )
-        # Write will fail
-        client._client.write_register = AsyncMock(
-            return_value=MagicMock(isError=lambda: True)
-        )
 
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -353,7 +349,8 @@ async def test_write_register_write_fails(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        # Write should raise an exception
+        # Write to non-existent address should raise HomeAssistantError
+        # (hub now requires a matching writable entity)
         with pytest.raises(HomeAssistantError):
             await hass.services.async_call(
                 DOMAIN,

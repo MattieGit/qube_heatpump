@@ -415,7 +415,7 @@ async def test_switch_vendor_id_suggested_object_id(
     ent.unique_id = "test_unique"
     ent.translation_key = None
 
-    # Without show_label
+    # Without show_label - entity ID still includes label prefix
     switch = QubeSwitch(
         coordinator=coordinator,
         hub=hub,
@@ -423,7 +423,8 @@ async def test_switch_vendor_id_suggested_object_id(
         multi_device=False,
         ent=ent,
     )
-    assert switch._attr_suggested_object_id == "my_vendor_switch"
+    # Entity IDs always include label prefix now
+    assert switch._attr_suggested_object_id == "qube1_my_vendor_switch"
 
     # With show_label
     switch2 = QubeSwitch(
@@ -433,7 +434,7 @@ async def test_switch_vendor_id_suggested_object_id(
         multi_device=True,
         ent=ent,
     )
-    assert "qube1" in switch2._attr_suggested_object_id
+    assert switch2._attr_suggested_object_id == "qube1_my_vendor_switch"
 
 
 async def test_binary_sensor_hidden_vendor_ids(

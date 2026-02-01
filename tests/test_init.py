@@ -226,15 +226,15 @@ def test_alarm_group_object_id() -> None:
 
 
 def test_derive_label_from_title() -> None:
-    """Test _derive_label_from_title function."""
-    from custom_components.qube_heatpump import _derive_label_from_title
+    """Test derive_label_from_title function."""
+    from custom_components.qube_heatpump.helpers import derive_label_from_title
 
     # With parentheses
-    assert _derive_label_from_title("Qube Heat Pump (qube.local)") == "qube_local"
-    assert _derive_label_from_title("Qube Heat Pump (192.168.1.50)") == "192_168_1_50"
+    assert derive_label_from_title("Qube Heat Pump (qube.local)") == "qube_local"
+    assert derive_label_from_title("Qube Heat Pump (192.168.1.50)") == "192_168_1_50"
 
     # Without parentheses - fallback to slug
-    assert _derive_label_from_title("My Heat Pump") == "my_heat_pump"
+    assert derive_label_from_title("My Heat Pump") == "my_heat_pump"
 
 
 async def test_resolve_entry_by_label(

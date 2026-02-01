@@ -204,6 +204,9 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
             data["value"],
             data_type,
         )
+    except ConnectionError as err:
+        _LOGGER.error("Write_register: %s", err)
+        raise HomeAssistantError(str(err)) from err
     except Exception:
         _LOGGER.exception("Write_register: failed to write address %s", data["address"])
         raise
