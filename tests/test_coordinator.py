@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
-
-from freezegun.api import FrozenDateTimeFactory
-
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import STATE_UNAVAILABLE
-from homeassistant.core import HomeAssistant
 
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
 )
+
+from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import STATE_UNAVAILABLE
+
+if TYPE_CHECKING:
+    from freezegun.api import FrozenDateTimeFactory
+
+    from homeassistant.core import HomeAssistant
 
 
 async def test_coordinator_fetches_data(
@@ -224,7 +227,10 @@ def test_is_working_hours_entity_bedrijfsuren() -> None:
 
     # Test workinghours vendor_id
     ent2 = EntityDef(
-        platform="sensor", name="Working Hours", address=101, vendor_id="workinghours_comp"
+        platform="sensor",
+        name="Working Hours",
+        address=101,
+        vendor_id="workinghours_comp",
     )
     assert _is_working_hours_entity(ent2) is True
 
@@ -255,9 +261,7 @@ def test_entity_key_generation() -> None:
     assert _entity_key(ent) == "test_sensor"
 
     # Test without unique_id (fallback to address-based key)
-    ent2 = EntityDef(
-        platform="sensor", name="Test", address=100, input_type="holding"
-    )
+    ent2 = EntityDef(platform="sensor", name="Test", address=100, input_type="holding")
     assert _entity_key(ent2) == "sensor_holding_100"
 
 

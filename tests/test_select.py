@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
+
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from custom_components.qube_heatpump.select import (
@@ -10,9 +13,9 @@ from custom_components.qube_heatpump.select import (
     MODE_TO_BITS,
     SGREADY_OPTIONS,
 )
-from homeassistant.core import HomeAssistant
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 def test_sgready_options() -> None:
@@ -112,9 +115,10 @@ async def test_select_current_option(
         client.connect = AsyncMock(return_value=True)
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
+
         # Return values for SG Ready mode
         def read_entity_side_effect(ent):
-            if hasattr(ent, 'vendor_id'):
+            if hasattr(ent, "vendor_id"):
                 if ent.vendor_id == "bms_sgready_a":
                     return False
                 if ent.vendor_id == "bms_sgready_b":

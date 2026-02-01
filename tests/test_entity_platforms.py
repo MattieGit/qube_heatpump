@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.core import HomeAssistant
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 class TestSwitchUniqueIdFallback:
@@ -154,12 +156,10 @@ class TestSwitchUniqueIdFallback:
 class TestBinarySensorUniqueIdFallback:
     """Tests for binary_sensor unique_id fallback logic."""
 
-    async def test_binary_sensor_unique_id_fallback(
-        self, hass: HomeAssistant
-    ) -> None:
+    async def test_binary_sensor_unique_id_fallback(self, hass: HomeAssistant) -> None:
         """Test binary sensor uses input_type in unique_id when unique_id not set."""
-        from custom_components.qube_heatpump.hub import EntityDef
         from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
+        from custom_components.qube_heatpump.hub import EntityDef
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -194,8 +194,8 @@ class TestBinarySensorUniqueIdFallback:
         self, hass: HomeAssistant
     ) -> None:
         """Test binary sensor unique_id includes label in multi_device mode."""
-        from custom_components.qube_heatpump.hub import EntityDef
         from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
+        from custom_components.qube_heatpump.hub import EntityDef
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -230,8 +230,8 @@ class TestBinarySensorUniqueIdFallback:
         self, hass: HomeAssistant
     ) -> None:
         """Test binary sensor uses translation_key when set."""
-        from custom_components.qube_heatpump.hub import EntityDef
         from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
+        from custom_components.qube_heatpump.hub import EntityDef
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -440,8 +440,8 @@ async def test_binary_sensor_hidden_vendor_ids(
     hass: HomeAssistant,
 ) -> None:
     """Test binary sensor with hidden vendor IDs."""
-    from custom_components.qube_heatpump.hub import EntityDef
     from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
+    from custom_components.qube_heatpump.hub import EntityDef
 
     hub = MagicMock()
     hub.host = "1.2.3.4"

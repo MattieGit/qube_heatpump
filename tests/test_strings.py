@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
+import re
 
 import pytest
-
 
 # Allowed abbreviations and proper nouns that can be capitalized
 ALLOWED_CAPITALS = {
@@ -60,7 +59,7 @@ def _is_sentence_case(text: str) -> bool:
     # Each part after colon can start with capital
     parts = text.split(":")
 
-    for part_idx, part in enumerate(parts):
+    for _part_idx, part in enumerate(parts):
         part = part.strip()
         if not part:
             continue
@@ -92,10 +91,13 @@ def _is_sentence_case(text: str) -> bool:
 
             # First word of each part (after colon) can be capitalized
             if i == 0:
-                if clean_word and not clean_word[0].isupper():
+                if (
+                    clean_word
+                    and not clean_word[0].isupper()
+                    and clean_word.lower() not in [a.lower() for a in ALLOWED_CAPITALS]
+                ):
                     # Exception for technical terms like "dT"
-                    if clean_word.lower() not in [a.lower() for a in ALLOWED_CAPITALS]:
-                        return False
+                    return False
                 continue
 
             # Subsequent words should be lowercase (unless all caps = abbreviation)

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 async def test_write_register_service_registered(
@@ -87,8 +90,7 @@ async def test_write_register_service_with_writable_entity(
         # Get the hub to find a writable entity address
         hub = entry.runtime_data.hub
         writable_sensors = [
-            e for e in hub.entities
-            if e.writable and e.platform == "sensor"
+            e for e in hub.entities if e.writable and e.platform == "sensor"
         ]
 
         if writable_sensors:
@@ -138,7 +140,7 @@ async def test_write_register_service_no_matching_entity(
 
         # Call write_register with an address that doesn't match any writable entity
         # This should raise an error since the hub now requires matching entities
-        with pytest.raises(Exception):
+        with pytest.raises(HomeAssistantError):
             await hass.services.async_call(
                 DOMAIN,
                 "write_register",
@@ -264,8 +266,7 @@ async def test_write_register_with_label(
         # Get the hub to find a writable entity address
         hub = entry.runtime_data.hub
         writable_sensors = [
-            e for e in hub.entities
-            if e.writable and e.platform == "sensor"
+            e for e in hub.entities if e.writable and e.platform == "sensor"
         ]
 
         if writable_sensors:
@@ -317,8 +318,7 @@ async def test_write_register_switch_entity(
         # Get the hub to find a writable switch entity address
         hub = entry.runtime_data.hub
         writable_switches = [
-            e for e in hub.entities
-            if e.writable and e.platform == "switch"
+            e for e in hub.entities if e.writable and e.platform == "switch"
         ]
 
         if writable_switches:

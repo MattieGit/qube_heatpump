@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from freezegun.api import FrozenDateTimeFactory
 import pytest
-
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
-
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
 )
+
+from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from homeassistant.helpers import device_registry as dr
+
+if TYPE_CHECKING:
+    from freezegun.api import FrozenDateTimeFactory
+
+    from homeassistant.core import HomeAssistant
 
 
 async def test_sensor_setup(
@@ -239,7 +242,8 @@ async def test_sensor_energy_entities(
 
     states = hass.states.async_all()
     energy_sensors = [
-        s for s in states
+        s
+        for s in states
         if s.entity_id.startswith("sensor.")
         and s.attributes.get("device_class") == SensorDeviceClass.ENERGY
     ]
@@ -267,7 +271,8 @@ async def test_sensor_temperature_entities(
 
     states = hass.states.async_all()
     temp_sensors = [
-        s for s in states
+        s
+        for s in states
         if s.entity_id.startswith("sensor.")
         and s.attributes.get("device_class") == SensorDeviceClass.TEMPERATURE
     ]
@@ -292,10 +297,7 @@ async def test_sensor_qube_info_entity(
     await hass.async_block_till_done()
 
     states = hass.states.async_all()
-    info_sensors = [
-        s for s in states
-        if "qube_info" in s.entity_id
-    ]
+    info_sensors = [s for s in states if "qube_info" in s.entity_id]
     # Should have info sensor
     assert len(info_sensors) > 0
     # Info sensor should have attributes

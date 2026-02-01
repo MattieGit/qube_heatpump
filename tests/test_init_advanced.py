@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 async def test_wp_qube_title_rename(
@@ -88,9 +90,7 @@ async def test_service_reconfigure_no_entry_id_multiple_entries(
         await hass.async_block_till_done()
 
         # Call reconfigure without entry_id - should log warning
-        with patch(
-            "custom_components.qube_heatpump._LOGGER.warning"
-        ) as mock_warning:
+        with patch("custom_components.qube_heatpump._LOGGER.warning") as mock_warning:
             await hass.services.async_call(
                 DOMAIN,
                 "reconfigure",
@@ -120,24 +120,24 @@ async def test_service_reconfigure_flow_error(
     await hass.async_block_till_done()
 
     # Mock flow to raise HomeAssistantError
-    with patch.object(
-        hass.config_entries.flow,
-        "async_init",
-        side_effect=HomeAssistantError("Flow error"),
+    with (
+        patch.object(
+            hass.config_entries.flow,
+            "async_init",
+            side_effect=HomeAssistantError("Flow error"),
+        ),
+        patch("custom_components.qube_heatpump._LOGGER.warning") as mock_warning,
     ):
-        with patch(
-            "custom_components.qube_heatpump._LOGGER.warning"
-        ) as mock_warning:
-            await hass.services.async_call(
-                DOMAIN,
-                "reconfigure",
-                {},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
+        await hass.services.async_call(
+            DOMAIN,
+            "reconfigure",
+            {},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
 
-            # Should have logged warning about flow not available
-            mock_warning.assert_called()
+        # Should have logged warning about flow not available
+        mock_warning.assert_called()
 
 
 async def test_service_reconfigure_unexpected_error(
@@ -157,24 +157,24 @@ async def test_service_reconfigure_unexpected_error(
     await hass.async_block_till_done()
 
     # Mock flow to raise unexpected error
-    with patch.object(
-        hass.config_entries.flow,
-        "async_init",
-        side_effect=RuntimeError("Unexpected"),
+    with (
+        patch.object(
+            hass.config_entries.flow,
+            "async_init",
+            side_effect=RuntimeError("Unexpected"),
+        ),
+        patch("custom_components.qube_heatpump._LOGGER.warning") as mock_warning,
     ):
-        with patch(
-            "custom_components.qube_heatpump._LOGGER.warning"
-        ) as mock_warning:
-            await hass.services.async_call(
-                DOMAIN,
-                "reconfigure",
-                {},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
+        await hass.services.async_call(
+            DOMAIN,
+            "reconfigure",
+            {},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
 
-            # Should have logged warning about unexpected error
-            mock_warning.assert_called()
+        # Should have logged warning about unexpected error
+        mock_warning.assert_called()
 
 
 async def test_write_register_no_runtime_data(
@@ -227,9 +227,7 @@ async def test_write_register_no_runtime_data(
         original_data = entry.runtime_data
         entry.runtime_data = None
 
-        with patch(
-            "custom_components.qube_heatpump._LOGGER.error"
-        ) as mock_error:
+        with patch("custom_components.qube_heatpump._LOGGER.error") as mock_error:
             await hass.services.async_call(
                 DOMAIN,
                 "write_register",
@@ -292,9 +290,7 @@ async def test_write_register_no_hub(
         original_hub = entry.runtime_data.hub
         entry.runtime_data.hub = None
 
-        with patch(
-            "custom_components.qube_heatpump._LOGGER.error"
-        ) as mock_error:
+        with patch("custom_components.qube_heatpump._LOGGER.error") as mock_error:
             await hass.services.async_call(
                 DOMAIN,
                 "write_register",
@@ -358,7 +354,7 @@ async def test_write_register_write_fails(
         await hass.async_block_till_done()
 
         # Write should raise an exception
-        with pytest.raises(Exception):
+        with pytest.raises(HomeAssistantError):
             await hass.services.async_call(
                 DOMAIN,
                 "write_register",
@@ -434,9 +430,7 @@ async def test_options_update_listener(
     with patch.object(
         hass.config_entries, "async_reload", new_callable=AsyncMock
     ) as mock_reload:
-        hass.config_entries.async_update_entry(
-            entry, options={"test_option": "value"}
-        )
+        hass.config_entries.async_update_entry(entry, options={"test_option": "value"})
         await hass.async_block_till_done()
 
         # Reload should have been called
@@ -549,16 +543,18 @@ async def test_integration_version_fallback(
         entry.add_to_hass(hass)
 
         # Mock async_get_loaded_integration to return None
-        with patch(
-            "custom_components.qube_heatpump.async_get_loaded_integration",
-            return_value=None,
-        ):
-            with patch(
+        with (
+            patch(
+                "custom_components.qube_heatpump.async_get_loaded_integration",
+                return_value=None,
+            ),
+            patch(
                 "custom_components.qube_heatpump.async_get_integration",
                 return_value=MagicMock(version="2.0.0"),
-            ):
-                await hass.config_entries.async_setup(entry.entry_id)
-                await hass.async_block_till_done()
+            ),
+        ):
+            await hass.config_entries.async_setup(entry.entry_id)
+            await hass.async_block_till_done()
 
-                assert entry.state is ConfigEntryState.LOADED
-                assert entry.runtime_data.version == "2.0.0"
+            assert entry.state is ConfigEntryState.LOADED
+            assert entry.runtime_data.version == "2.0.0"

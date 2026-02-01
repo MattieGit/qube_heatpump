@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from typing import TYPE_CHECKING
+
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from custom_components.qube_heatpump.diagnostics import (
     TO_REDACT,
     async_get_config_entry_diagnostics,
 )
-from homeassistant.core import HomeAssistant
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    from unittest.mock import MagicMock
+
+    from homeassistant.core import HomeAssistant
 
 
 async def test_diagnostics_returns_redacted_data(

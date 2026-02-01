@@ -2,10 +2,10 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.core import HomeAssistant
-
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
 async def test_setup_with_entities(
@@ -34,9 +34,7 @@ async def test_setup_with_entities(
     assert entry.runtime_data is not None
 
 
-async def test_full_lifecycle(
-    hass: HomeAssistant, mock_qube_client: MagicMock
-) -> None:
+async def test_full_lifecycle(hass: HomeAssistant, mock_qube_client: MagicMock) -> None:
     """Test setup, state update, and unload."""
     entry = MockConfigEntry(
         domain=DOMAIN,

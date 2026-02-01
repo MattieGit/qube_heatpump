@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.core import HomeAssistant
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 async def test_binary_sensor_entities_created(
@@ -28,7 +31,9 @@ async def test_binary_sensor_entities_created(
 
     # Check binary sensor entities exist
     states = hass.states.async_all()
-    binary_sensor_states = [s for s in states if s.entity_id.startswith("binary_sensor.")]
+    binary_sensor_states = [
+        s for s in states if s.entity_id.startswith("binary_sensor.")
+    ]
     assert len(binary_sensor_states) > 0
 
 
@@ -78,7 +83,9 @@ async def test_binary_sensor_is_on(
 
         # Check binary sensor states
         states = hass.states.async_all()
-        binary_sensor_states = [s for s in states if s.entity_id.startswith("binary_sensor.")]
+        binary_sensor_states = [
+            s for s in states if s.entity_id.startswith("binary_sensor.")
+        ]
         assert len(binary_sensor_states) > 0
 
 
@@ -128,7 +135,9 @@ async def test_binary_sensor_is_off(
 
         # Check binary sensor states are off
         states = hass.states.async_all()
-        binary_sensor_states = [s for s in states if s.entity_id.startswith("binary_sensor.")]
+        binary_sensor_states = [
+            s for s in states if s.entity_id.startswith("binary_sensor.")
+        ]
         off_states = [s for s in binary_sensor_states if s.state == "off"]
         assert len(off_states) > 0
 
@@ -176,7 +185,13 @@ async def test_binary_sensor_alarm_entities(
 
     # Check binary sensor entities exist
     states = hass.states.async_all()
-    binary_sensor_states = [s for s in states if s.entity_id.startswith("binary_sensor.")]
+    binary_sensor_states = [
+        s for s in states if s.entity_id.startswith("binary_sensor.")
+    ]
     # Some should be alarm entities
-    alarm_states = [s for s in binary_sensor_states if "alarm" in s.entity_id.lower() or "alrm" in s.entity_id.lower()]
+    alarm_states = [
+        s
+        for s in binary_sensor_states
+        if "alarm" in s.entity_id.lower() or "alrm" in s.entity_id.lower()
+    ]
     assert len(alarm_states) >= 0  # May or may not have alarms

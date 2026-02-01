@@ -4,13 +4,12 @@ import socket
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from homeassistant import config_entries
 from custom_components.qube_heatpump.const import CONF_HOST, CONF_PORT, DOMAIN
+from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
 @pytest.fixture
@@ -323,7 +322,9 @@ async def test_form_empty_host(hass: HomeAssistant) -> None:
     assert result2["errors"] == {"base": "cannot_connect"}
 
 
-async def test_resolve_host_dns(hass: HomeAssistant, mock_setup_entry: MagicMock) -> None:
+async def test_resolve_host_dns(
+    hass: HomeAssistant, mock_setup_entry: MagicMock
+) -> None:
     """Test DNS resolution during config flow."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}

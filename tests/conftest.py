@@ -1,8 +1,8 @@
 """Common fixtures for the Qube Heat Pump tests."""
 
 from collections.abc import Generator
-import sys
 from pathlib import Path
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,9 +10,9 @@ import pytest
 # Add custom_components to path so integration can be found
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from custom_components.qube_heatpump.const import CONF_HOST, CONF_PORT, DOMAIN
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.qube_heatpump.const import CONF_HOST, CONF_PORT, DOMAIN
 
 
 @pytest.fixture(autouse=True)

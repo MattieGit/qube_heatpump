@@ -3,25 +3,27 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from custom_components.qube_heatpump.sensor import (
+    SCOP_MAX_EXPECTED,
     TariffEnergyTracker,
+    _append_label,
     _find_binary_by_address,
     _find_status_source,
     _slugify,
-    _append_label,
-    _start_of_month,
     _start_of_day,
-    SCOP_MAX_EXPECTED,
+    _start_of_month,
 )
-from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 def test_slugify() -> None:
@@ -74,9 +76,7 @@ def test_find_status_source_fallback_enum() -> None:
     from custom_components.qube_heatpump.hub import EntityDef
 
     hub = MagicMock()
-    ent1 = EntityDef(
-        platform="sensor", name="Other", address=100, device_class="enum"
-    )
+    ent1 = EntityDef(platform="sensor", name="Other", address=100, device_class="enum")
     hub.entities = [ent1]
     result = _find_status_source(hub)
     assert result == ent1
@@ -684,11 +684,15 @@ class TestQubeSCOPSensorEdgeCases:
 
         electric_tracker = MagicMock()
         electric_tracker.tariffs = ["CH", "DHW"]
-        electric_tracker.get_total = MagicMock(side_effect=lambda t: 5.0 if t == "CH" else 3.0)
+        electric_tracker.get_total = MagicMock(
+            side_effect=lambda t: 5.0 if t == "CH" else 3.0
+        )
 
         thermic_tracker = MagicMock()
         thermic_tracker.tariffs = ["CH", "DHW"]
-        thermic_tracker.get_total = MagicMock(side_effect=lambda t: 20.0 if t == "CH" else 12.0)
+        thermic_tracker.get_total = MagicMock(
+            side_effect=lambda t: 20.0 if t == "CH" else 12.0
+        )
 
         sensor = QubeSCOPSensor(
             coordinator=coordinator,
@@ -714,7 +718,10 @@ class TestQubeComputedSensorStatusMappings:
     async def test_computed_sensor_status_standby(self, hass: HomeAssistant) -> None:
         """Test computed sensor returns standby for codes 1, 14, 18."""
         from custom_components.qube_heatpump.hub import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeComputedSensor, _entity_key
+        from custom_components.qube_heatpump.sensor import (
+            QubeComputedSensor,
+            _entity_key,
+        )
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -750,7 +757,10 @@ class TestQubeComputedSensorStatusMappings:
     async def test_computed_sensor_status_mappings(self, hass: HomeAssistant) -> None:
         """Test computed sensor status code mappings."""
         from custom_components.qube_heatpump.hub import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeComputedSensor, _entity_key
+        from custom_components.qube_heatpump.sensor import (
+            QubeComputedSensor,
+            _entity_key,
+        )
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -798,7 +808,10 @@ class TestQubeComputedSensorStatusMappings:
     async def test_computed_sensor_drieweg(self, hass: HomeAssistant) -> None:
         """Test computed sensor drieweg (3-way valve) mapping."""
         from custom_components.qube_heatpump.hub import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeComputedSensor, _entity_key
+        from custom_components.qube_heatpump.sensor import (
+            QubeComputedSensor,
+            _entity_key,
+        )
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -838,7 +851,10 @@ class TestQubeComputedSensorStatusMappings:
     async def test_computed_sensor_vierweg(self, hass: HomeAssistant) -> None:
         """Test computed sensor vierweg (4-way valve) mapping."""
         from custom_components.qube_heatpump.hub import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeComputedSensor, _entity_key
+        from custom_components.qube_heatpump.sensor import (
+            QubeComputedSensor,
+            _entity_key,
+        )
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -950,9 +966,7 @@ class TestQubeTotalEnergyWithStandby:
 class TestQubeIPAddressSensorDeviceClass:
     """Tests for QubeIPAddressSensor device class handling."""
 
-    async def test_ip_sensor_without_ip_device_class(
-        self, hass: HomeAssistant
-    ) -> None:
+    async def test_ip_sensor_without_ip_device_class(self, hass: HomeAssistant) -> None:
         """Test IP sensor handles missing SensorDeviceClass.IP."""
         from custom_components.qube_heatpump.sensor import QubeIPAddressSensor
         from homeassistant.components.sensor import SensorDeviceClass

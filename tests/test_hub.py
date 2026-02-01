@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import contextlib
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from custom_components.qube_heatpump.hub import QubeHub
-from homeassistant.core import HomeAssistant
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 async def test_hub_properties(hass: HomeAssistant) -> None:
@@ -77,10 +81,8 @@ async def test_hub_connect_failure_increments_error(hass: HomeAssistant) -> None
         client.connect = AsyncMock(return_value=False)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
-        try:
+        with contextlib.suppress(ConnectionError):
             await hub.async_connect()
-        except ConnectionError:
-            pass
 
         assert hub.err_connect == 1
 
@@ -126,9 +128,7 @@ async def test_hub_set_unit_id(hass: HomeAssistant) -> None:
 
 async def test_hub_resolve_ip_with_ip_address(hass: HomeAssistant) -> None:
     """Test hub async_resolve_ip with IP address."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "192.168.1.100", 502, "test_entry_id", 1, "qube1")
         await hub.async_resolve_ip()
 
@@ -137,9 +137,7 @@ async def test_hub_resolve_ip_with_ip_address(hass: HomeAssistant) -> None:
 
 async def test_hub_load_library_entities(hass: HomeAssistant) -> None:
     """Test hub load_library_entities."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         hub.load_library_entities()
 
@@ -172,18 +170,12 @@ async def test_hub_read_value(hass: HomeAssistant) -> None:
 
 async def test_hub_translations(hass: HomeAssistant) -> None:
     """Test hub set and get translations."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
 
         # Set translations
         translations = {
-            "entity": {
-                "sensor": {
-                    "temp_supply": {"name": "Supply Temperature"}
-                }
-            }
+            "entity": {"sensor": {"temp_supply": {"name": "Supply Temperature"}}}
         }
         hub.set_translations(translations)
 
@@ -198,9 +190,7 @@ async def test_hub_translations(hass: HomeAssistant) -> None:
 
 async def test_hub_inc_read_error(hass: HomeAssistant) -> None:
     """Test hub inc_read_error and err_read."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
 
         assert hub.err_read == 0
@@ -235,9 +225,7 @@ async def test_hub_resolve_ip_dns(hass: HomeAssistant) -> None:
     """Test hub async_resolve_ip with DNS resolution."""
     import socket
 
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "qube.local", 502, "test_entry_id", 1, "qube1")
 
         with patch("asyncio.get_running_loop") as mock_loop:
@@ -253,9 +241,7 @@ async def test_hub_resolve_ip_dns(hass: HomeAssistant) -> None:
 
 async def test_hub_resolve_ip_dns_failure(hass: HomeAssistant) -> None:
     """Test hub async_resolve_ip handles DNS failure."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "invalid.host", 502, "test_entry_id", 1, "qube1")
 
         with patch("asyncio.get_running_loop") as mock_loop:
@@ -269,15 +255,19 @@ async def test_hub_resolve_ip_ipv6_mapped(hass: HomeAssistant) -> None:
     """Test hub async_resolve_ip handles IPv6 mapped addresses."""
     import socket
 
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "qube.local", 502, "test_entry_id", 1, "qube1")
 
         with patch("asyncio.get_running_loop") as mock_loop:
             mock_loop.return_value.getaddrinfo = AsyncMock(
                 return_value=[
-                    (socket.AF_INET6, socket.SOCK_STREAM, 0, "", ("::ffff:192.168.1.50", 0))
+                    (
+                        socket.AF_INET6,
+                        socket.SOCK_STREAM,
+                        0,
+                        "",
+                        ("::ffff:192.168.1.50", 0),
+                    )
                 ]
             )
             await hub.async_resolve_ip()
@@ -337,9 +327,7 @@ async def test_hub_read_value_not_connected(hass: HomeAssistant) -> None:
     """Test hub async_read_value raises when not connected."""
     import pytest
 
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         hub.load_library_entities()
 
@@ -351,9 +339,7 @@ async def test_hub_read_value_not_connected(hass: HomeAssistant) -> None:
 
 async def test_hub_get_friendly_name_none_key(hass: HomeAssistant) -> None:
     """Test hub get_friendly_name with None key."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         hub.set_translations({"entity": {"sensor": {"test": {"name": "Test"}}}})
 
@@ -364,9 +350,7 @@ async def test_hub_get_friendly_name_none_key(hass: HomeAssistant) -> None:
 
 async def test_hub_get_friendly_name_no_translations(hass: HomeAssistant) -> None:
     """Test hub get_friendly_name with no translations set."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         # Don't set translations
 
@@ -461,6 +445,7 @@ async def test_hub_write_switch_success(hass: HomeAssistant) -> None:
 async def test_hub_write_switch_failure(hass: HomeAssistant) -> None:
     """Test hub async_write_switch handles failure."""
     import pytest
+
     from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
@@ -492,6 +477,7 @@ async def test_hub_write_switch_failure(hass: HomeAssistant) -> None:
 async def test_hub_write_switch_no_unique_id(hass: HomeAssistant) -> None:
     """Test hub async_write_switch raises with no unique_id."""
     import pytest
+
     from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
@@ -550,6 +536,7 @@ async def test_hub_write_setpoint_success(hass: HomeAssistant) -> None:
 async def test_hub_write_setpoint_failure(hass: HomeAssistant) -> None:
     """Test hub async_write_setpoint handles failure."""
     import pytest
+
     from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
@@ -580,6 +567,7 @@ async def test_hub_write_setpoint_failure(hass: HomeAssistant) -> None:
 async def test_hub_write_setpoint_no_unique_id(hass: HomeAssistant) -> None:
     """Test hub async_write_setpoint raises with no unique_id."""
     import pytest
+
     from custom_components.qube_heatpump.hub import EntityDef
 
     with patch(
@@ -625,8 +613,7 @@ async def test_hub_write_register_with_entity(hass: HomeAssistant) -> None:
 
         # Find a writable sensor entity
         writable_sensors = [
-            e for e in hub.entities
-            if e.writable and e.platform == "sensor"
+            e for e in hub.entities if e.writable and e.platform == "sensor"
         ]
         if writable_sensors:
             ent = writable_sensors[0]
@@ -661,9 +648,7 @@ async def test_hub_write_register_not_connected(hass: HomeAssistant) -> None:
     """Test hub async_write_register raises when not connected."""
     import pytest
 
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         # Don't connect
 
@@ -696,9 +681,7 @@ async def test_hub_get_all_entities_not_connected(hass: HomeAssistant) -> None:
     """Test hub async_get_all_entities raises when not connected."""
     import pytest
 
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ):
+    with patch("custom_components.qube_heatpump.hub.QubeClient", autospec=True):
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         # Don't connect
 
