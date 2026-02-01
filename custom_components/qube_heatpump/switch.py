@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity
@@ -12,6 +11,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -32,6 +32,7 @@ async def async_setup_entry(
     coordinator = data.coordinator
     apply_label = data.apply_label_in_name
     multi_device = data.multi_device
+    version = data.version or "unknown"
 
     entities: list[SwitchEntity] = []
     for ent in hub.entities:
@@ -39,7 +40,7 @@ async def async_setup_entry(
             continue
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             continue
-        entities.append(QubeSwitch(coordinator, hub, apply_label, multi_device, ent))
+        entities.append(QubeSwitch(coordinator, hub, apply_label, multi_device, ent, version))
 
     async_add_entities(entities)
 
@@ -51,25 +52,6 @@ async def async_setup_entry(
         entity_id = registry.async_get_entity_id("switch", DOMAIN, uid)
         if entity_id:
             registry.async_remove(entity_id)
-
-
-async def _async_ensure_entity_id(
-    hass: HomeAssistant, entity_id: str, desired_obj: str | None
-) -> None:
-    """Ensure the entity has the desired object ID."""
-    if not desired_obj:
-        return
-    registry = er.async_get(hass)
-    current = registry.async_get(entity_id)
-    if not current:
-        return
-    desired_eid = f"{current.domain}.{desired_obj}"
-    if current.entity_id == desired_eid:
-        return
-    if registry.async_get(desired_eid):
-        return
-    with contextlib.suppress(Exception):
-        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
 
 
 class QubeSwitch(CoordinatorEntity, SwitchEntity):
@@ -85,12 +67,14 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         show_label: bool,
         multi_device: bool,
         ent: EntityDef,
+        version: str = "unknown",
     ) -> None:
         """Initialize the switch."""
         super().__init__(coordinator)
         self._ent = ent
         self._hub = hub
         self._show_label = bool(show_label)
+        self._version = version
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             self._attr_entity_registry_visible_default = False
         if ent.translation_key:
@@ -125,6 +109,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=self._version,
         )
 
     @property
@@ -149,20 +134,3 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         await self._hub.async_write_switch(self._ent, False)
         await self.coordinator.async_request_refresh()
 
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired = self._ent.vendor_id or self._attr_unique_id
-        if (
-            desired
-            and self._show_label
-            and not str(desired).startswith(f"{self._hub.label}_")
-        ):
-            desired = f"{self._hub.label}_{desired}"
-        desired_slug = _slugify(str(desired)) if desired else None
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
-
-
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()

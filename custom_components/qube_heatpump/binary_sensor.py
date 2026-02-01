@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.binary_sensor import (
@@ -10,11 +9,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -97,6 +96,7 @@ async def async_setup_entry(
     coordinator = data.coordinator
     apply_label = data.apply_label_in_name
     multi_device = data.multi_device
+    version = data.version or "unknown"
 
     entities: list[BinarySensorEntity] = []
     alarm_entities: list[EntityDef] = []
@@ -104,7 +104,7 @@ async def async_setup_entry(
         if ent.platform != "binary_sensor":
             continue
         entities.append(
-            QubeBinarySensor(coordinator, hub, apply_label, multi_device, ent)
+            QubeBinarySensor(coordinator, hub, apply_label, multi_device, ent, version)
         )
         if _is_alarm_entity(ent):
             alarm_entities.append(ent)
@@ -117,29 +117,11 @@ async def async_setup_entry(
                 apply_label,
                 multi_device,
                 alarm_entities,
+                version,
             )
         )
 
     async_add_entities(entities)
-
-
-async def _async_ensure_entity_id(
-    hass: HomeAssistant, entity_id: str, desired_obj: str | None
-) -> None:
-    """Ensure the entity has the desired object ID."""
-    if not desired_obj:
-        return
-    registry = er.async_get(hass)
-    current = registry.async_get(entity_id)
-    if not current:
-        return
-    desired_eid = f"{current.domain}.{desired_obj}"
-    if current.entity_id == desired_eid:
-        return
-    if registry.async_get(desired_eid):
-        return
-    with contextlib.suppress(Exception):
-        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
 
 
 class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
@@ -154,6 +136,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         show_label: bool,
         multi_device: bool,
         ent: EntityDef,
+        version: str = "unknown",
     ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
@@ -161,6 +144,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._hub = hub
         self._label = hub.label or "qube1"
         self._show_label = bool(show_label)
+        self._version = version
         if ent.translation_key:
             manual_name = hub.get_friendly_name("binary_sensor", ent.translation_key)
             if manual_name:
@@ -205,6 +189,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=self._version,
         )
 
     @property
@@ -216,20 +201,6 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         )
         val = self.coordinator.data.get(key)
         return None if val is None else bool(val)
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition to Home Assistant."""
-        await super().async_added_to_hass()
-        desired = self._ent.vendor_id or self._attr_unique_id
-        if (
-            desired
-            and self._show_label
-            and not str(desired).startswith(f"{self._label}_")
-        ):
-            desired = f"{self._label}_{desired}"
-        desired_slug = _slugify(str(desired)) if desired else None
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
-
 
 class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Aggregate binary sensor for Qube alarm status."""
@@ -245,6 +216,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         show_label: bool,
         multi_device: bool,
         alarm_entities: list[EntityDef],
+        version: str = "unknown",
     ) -> None:
         """Initialize the alarm status binary sensor."""
         super().__init__(coordinator)
@@ -252,6 +224,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._label = hub.label or "qube1"
         self._show_label = bool(show_label)
         self._multi_device = bool(multi_device)
+        self._version = version
         self._tied_entities = list(alarm_entities)
         base_unique = "qube_alarm_sensors_state"
         self._attr_unique_id = (
@@ -273,6 +246,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             name=(self._hub.label or "Qube Heatpump"),
             manufacturer="Qube",
             model="Heatpump",
+            sw_version=self._version,
         )
 
     @property
@@ -284,19 +258,6 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             if isinstance(val, bool) and val:
                 return True
         return False
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition to Home Assistant."""
-        await super().async_added_to_hass()
-        desired = self._attr_suggested_object_id
-        if desired:
-            await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(desired))
-
-
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
-
 
 def _is_alarm_entity(ent: EntityDef) -> bool:
     """Check if entity is an alarm."""

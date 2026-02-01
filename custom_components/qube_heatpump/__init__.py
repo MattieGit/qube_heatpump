@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
+import re
 from typing import TYPE_CHECKING, Any, cast
 
 import voluptuous as vol
@@ -32,6 +33,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import QubeCoordinator
+from .helpers import derive_label_from_title, slugify
 from .hub import EntityDef, QubeHub
 
 
@@ -61,11 +63,6 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in str(text)).strip("_").lower()
-
-
 def _suggest_object_id(
     ent: EntityDef,
     label: str | None,
@@ -82,7 +79,7 @@ def _suggest_object_id(
     # Apply label prefix when multiple devices are configured
     if multi_device and label and not base.startswith(f"{label}_"):
         base = f"{label}_{base}"
-    return _slugify(base)
+    return slugify(base)
 
 
 def _is_alarm_entity(ent: EntityDef) -> bool:
@@ -215,28 +212,6 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
         await coordinator_target.async_request_refresh()
 
 
-def _derive_label_from_title(title: str) -> str:
-    """Derive a label slug from the config entry title.
-
-    Examples:
-        "Qube Heat Pump (qube.local)" -> "qube_local"
-        "Qube Heat Pump (192.168.1.50)" -> "192_168_1_50"
-        "My Heat Pump" -> "my_heat_pump"
-    """
-    # Try to extract content from parentheses first
-    import re
-
-    match = re.search(r"\(([^)]+)\)", title)
-    if match:
-        content = match.group(1)
-    else:
-        # Use the full title if no parentheses
-        content = title
-
-    # Slugify the content
-    return _slugify(content)
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:  # noqa: C901
     """Set up Qube Heat Pump from a config entry."""
     host = entry.data[CONF_HOST]
@@ -253,13 +228,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     multi_device = len(existing_entries) >= 1
 
     # Derive label from entry.title (user can rename in UI to customize)
-    label = _derive_label_from_title(entry.title)
+    label = derive_label_from_title(entry.title)
 
     # Rename existing entries from "WP Qube" to "Qube Heat Pump"
     if entry.title.startswith("WP Qube"):
         new_title = entry.title.replace("WP Qube", "Qube Heat Pump")
         hass.config_entries.async_update_entry(entry, title=new_title)
-        label = _derive_label_from_title(new_title)
+        label = derive_label_from_title(new_title)
 
     hub = QubeHub(hass, host, port, entry.entry_id, unit_id, label)
 

@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -186,32 +185,3 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
         return f"switch_{suffix}"
 
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired = self._attr_suggested_object_id or "sgready_mode"
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired)
-
-
-async def _async_ensure_entity_id(
-    hass: HomeAssistant, entity_id: str, desired_obj: str | None
-) -> None:
-    """Ensure the entity has the desired object ID."""
-    if not desired_obj:
-        return
-    registry = er.async_get(hass)
-    current = registry.async_get(entity_id)
-    if not current:
-        return
-    desired_eid = f"{current.domain}.{desired_obj}"
-    if current.entity_id == desired_eid:
-        return
-    if registry.async_get(desired_eid):
-        return
-    with contextlib.suppress(Exception):
-        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
-
-
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()

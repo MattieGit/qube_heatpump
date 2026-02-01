@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import EntityCategory
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -46,25 +45,6 @@ async def async_setup_entry(
             ),
         ]
     )
-
-
-async def _async_ensure_entity_id(
-    hass: HomeAssistant, entity_id: str, desired_obj: str | None
-) -> None:
-    """Ensure the entity has the desired object ID."""
-    if not desired_obj:
-        return
-    registry = er.async_get(hass)
-    current = registry.async_get(entity_id)
-    if not current:
-        return
-    desired_eid = f"{current.domain}.{desired_obj}"
-    if current.entity_id == desired_eid:
-        return
-    if registry.async_get(desired_eid):
-        return
-    with contextlib.suppress(Exception):
-        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
 
 
 class QubeReloadButton(CoordinatorEntity, ButtonEntity):
@@ -123,16 +103,3 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         """Handle the button press to reload the config entry."""
         await self.hass.config_entries.async_reload(self._entry_id)
 
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition to Home Assistant."""
-        await super().async_added_to_hass()
-        label = self._hub.label or "qube1"
-        desired_obj = _slugify(
-            f"qube_reload_{label}" if self._show_label else "qube_reload"
-        )
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
-
-
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()

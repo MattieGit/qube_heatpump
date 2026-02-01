@@ -13,13 +13,13 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_integration, async_get_loaded_integration
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, TARIFF_OPTIONS
+from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -102,9 +102,6 @@ async def async_setup_entry(
 
     # Use a container for counts to pass to sensors
     counts_holder: dict[str, dict[str, int] | None] = {"value": None}
-
-    def _get_counts() -> dict[str, int] | None:
-        return counts_holder["value"]
 
     # Surface the resolved host IP as its own diagnostic sensor
     _add_sensor_entity(
@@ -445,25 +442,6 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-async def _async_ensure_entity_id(
-    hass: HomeAssistant, entity_id: str, desired_obj: str | None
-) -> None:
-    """Ensure the entity_id aligns with the desired object id when possible."""
-    if not desired_obj:
-        return
-    registry = er.async_get(hass)
-    current = registry.async_get(entity_id)
-    if not current:
-        return
-    desired_eid = f"{current.domain}.{desired_obj}"
-    if current.entity_id == desired_eid:
-        return
-    if registry.async_get(desired_eid):
-        return
-    with contextlib.suppress(Exception):
-        registry.async_update_entity(current.entity_id, new_entity_id=desired_eid)
-
-
 class QubeSensor(CoordinatorEntity, SensorEntity):
     """Qube generic sensor."""
 
@@ -550,20 +528,6 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         )
         return self.coordinator.data.get(key)
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired = self._ent.vendor_id or self._attr_unique_id
-        if (
-            desired
-            and self._show_label
-            and not str(desired).startswith(f"{self._label}_")
-        ):
-            desired = f"{self._label}_{desired}"
-        desired_slug = _slugify(str(desired)) if desired else None
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_slug)
-
 
 class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     """Diagnostic info sensor."""
@@ -660,12 +624,6 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity addition."""
         await super().async_added_to_hass()
-        desired_obj = self._attr_suggested_object_id or "qube_info"
-        if self._show_label:
-            desired_obj = _slugify(f"{self._hub.label}_qube_info")
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
-        # We could add version refresh logic here, but avoiding blind exceptions
-        # requires careful handling. Simplified for now.
         with contextlib.suppress(Exception):
             await self._async_refresh_integration_version()
 
@@ -735,15 +693,6 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return IP address."""
         return self._hub.resolved_ip or self._hub.host
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired_obj = self._attr_suggested_object_id or "qube_ip_address"
-        if self._show_label:
-            desired_obj = _slugify(f"{self._hub.label}_qube_ip_address")
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
-
 
 class QubeMetricSensor(CoordinatorEntity, SensorEntity):
     """Metric sensor."""
@@ -818,26 +767,12 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             return sum(1 for e in hub.entities if e.platform == "switch")
         return None
 
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired_obj = self._attr_suggested_object_id or _slugify(
-            f"qube_metric_{self._kind}"
-        )
-        await _async_ensure_entity_id(self.hass, self.entity_id, desired_obj)
-
-
 def _entity_key(ent: EntityDef) -> str:
     """Generate entity key."""
     return (
         ent.unique_id
         or f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
     )
-
-
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in text).strip("_").lower()
 
 
 def _find_status_source(hub: QubeHub) -> EntityDef | None:
@@ -923,15 +858,6 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
             sw_version=self._version,
         )
 
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired_obj = self._attr_suggested_object_id or STANDBY_POWER_UNIQUE_BASE
-        await _async_ensure_entity_id(
-            self.hass, self.entity_id, _slugify(str(desired_obj))
-        )
-
-
 class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
     """Standby energy sensor."""
 
@@ -979,10 +905,6 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             self._last_update = last_state.last_changed
         if self._last_update is None:
             self._last_update = dt_util.utcnow()
-        desired_obj = self._attr_suggested_object_id or STANDBY_ENERGY_UNIQUE_BASE
-        await _async_ensure_entity_id(
-            self.hass, self.entity_id, _slugify(str(desired_obj))
-        )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1075,14 +997,6 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Return value."""
         return None if self._total_energy is None else round(self._total_energy, 3)
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired_obj = self._attr_suggested_object_id or TOTAL_ENERGY_UNIQUE_BASE
-        await _async_ensure_entity_id(
-            self.hass, self.entity_id, _slugify(str(desired_obj))
-        )
 
     def _handle_coordinator_update(self) -> None:
         base_value = self.coordinator.data.get(self._base_unique_id)
@@ -1177,16 +1091,6 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
                 # Verwarmen (True) vs Koelen (False) -> heating/cooling
                 return "heating" if bool(val) else "cooling"
         return None
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        if self._show_label:
-            desired = f"{self._label}_{self._object_base}"
-        else:
-            desired = self._object_base
-        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)))
-
 
 def _start_of_month(dt_value: datetime) -> datetime:
     return dt_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -1378,11 +1282,6 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
                     if parsed is not None:
                         last_reset = parsed
             self._tracker.restore_total(self._tariff, value, last_reset)
-        desired_obj = self._attr_suggested_object_id
-        if desired_obj:
-            await _async_ensure_entity_id(
-                self.hass, self.entity_id, _slugify(str(desired_obj))
-            )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1476,14 +1375,6 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         self._tracker.update(data, token)
         super()._handle_coordinator_update()
 
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired_obj = self._attr_suggested_object_id or self._attr_unique_id
-        await _async_ensure_entity_id(
-            self.hass, self.entity_id, _slugify(str(desired_obj))
-        )
-
 
 class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
     """SCOP sensor."""
@@ -1529,14 +1420,6 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = "CoP"
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.TOTAL
-
-    async def async_added_to_hass(self) -> None:
-        """Handle entity addition."""
-        await super().async_added_to_hass()
-        desired = self._object_base
-        if self._show_label:
-            desired = f"{desired}_{self._label}"
-        await _async_ensure_entity_id(self.hass, self.entity_id, _slugify(str(desired)))
 
     @property
     def device_info(self) -> DeviceInfo:
