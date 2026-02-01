@@ -40,7 +40,9 @@ async def async_setup_entry(
             continue
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             continue
-        entities.append(QubeSwitch(coordinator, hub, apply_label, multi_device, ent, version))
+        entities.append(
+            QubeSwitch(coordinator, hub, apply_label, multi_device, ent, version)
+        )
 
     async_add_entities(entities)
 
@@ -133,4 +135,3 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         await self._hub.async_connect()
         await self._hub.async_write_switch(self._ent, False)
         await self.coordinator.async_request_refresh()
-

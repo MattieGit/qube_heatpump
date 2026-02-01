@@ -158,4 +158,3 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
         await self._hub.async_connect()
         await self._hub.async_write_setpoint(self._ent, value)
         await self.coordinator.async_request_refresh()
-

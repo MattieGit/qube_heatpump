@@ -102,4 +102,3 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Handle the button press to reload the config entry."""
         await self.hass.config_entries.async_reload(self._entry_id)
-

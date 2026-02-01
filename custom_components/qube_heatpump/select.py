@@ -184,4 +184,3 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
             return ent.unique_id
         suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
         return f"switch_{suffix}"
-

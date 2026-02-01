@@ -56,7 +56,9 @@ RUNNING_VENDOR_IDS = {
 }
 
 
-def _derive_binary_device_class(vendor_id: str | None) -> BinarySensorDeviceClass | None:
+def _derive_binary_device_class(
+    vendor_id: str | None,
+) -> BinarySensorDeviceClass | None:
     """Derive device class from vendor ID."""
     if not vendor_id:
         return None
@@ -202,6 +204,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         val = self.coordinator.data.get(key)
         return None if val is None else bool(val)
 
+
 class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Aggregate binary sensor for Qube alarm status."""
 
@@ -258,6 +261,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             if isinstance(val, bool) and val:
                 return True
         return False
+
 
 def _is_alarm_entity(ent: EntityDef) -> bool:
     """Check if entity is an alarm."""

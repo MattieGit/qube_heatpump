@@ -9,6 +9,42 @@
 - Add tests in `tests/` mirroring `src/` structure (e.g., `tests/test_validate_config.py`).
 - Keep sample fixtures in `tests/fixtures/` and any non-code assets in `assets/`.
 
+## External Library: python-qube-heatpump
+
+This integration depends on the **python-qube-heatpump** library, which is a separate PyPI package maintained in a sibling repository.
+
+### Library Repository
+- **GitHub**: https://github.com/MattieGit/python-qube-heatpump
+- **PyPI**: https://pypi.org/project/python-qube-heatpump/
+- **Local path** (when working on both): `/Users/matthijskeij/Github/python-qube-heatpump`
+
+### Relationship Between Library and Integration
+| Component | Repository | Purpose |
+|-----------|------------|---------|
+| `python-qube-heatpump` | python-qube-heatpump | Low-level async Modbus client for Qube heat pumps. Handles connection, register reading/writing, FLOAT32 decoding (big endian ABCD), entity definitions. |
+| `qube_heatpump` | qube_heatpump (this repo) | Home Assistant HACS integration. Uses the library for Modbus communication, adds HA-specific entity classes, translations, config flow, coordinator pattern. |
+
+### Version Synchronization
+- The integration's `manifest.json` specifies the minimum required library version in `requirements`.
+- When making changes to the library that affect the integration:
+  1. Make and test changes in `python-qube-heatpump`
+  2. Run `ruff check . && ruff format --check .` and `pytest` before committing
+  3. Bump version in library's `pyproject.toml`, commit, tag (e.g., `v1.4.8`), and push
+  4. Create GitHub release to trigger PyPI publish
+  5. Update `manifest.json` in this integration to require the new version
+  6. Bump integration version and release
+
+### Key Library Components Used by Integration
+- `QubeClient`: Async Modbus TCP client for connecting and reading/writing registers
+- `EntityDef`: Dataclass defining sensors, binary sensors, switches with addresses, data types, scaling
+- `SENSORS`, `BINARY_SENSORS`, `SWITCHES`: Pre-defined entity dictionaries from `entities/` module
+- `DataType`, `InputType`, `Platform`: Enums for entity configuration
+
+### Common Issues
+- **Byte order**: Library uses big endian (ABCD) for FLOAT32: `int_val = (regs[0] << 16) | regs[1]`
+- **Percentage scaling**: Pump sensors scale 0-1 raw values to 0-100% via `scale=100.0`
+- **Test failures after library changes**: Ensure test mock data matches the byte order used in client.py
+
 ## Build, Test, and Development Commands
 - Lint YAML: `yamllint conf_modbus.yaml` (ensure two-space indentation, no tabs).
 - Run linters/hooks (if configured): `pre-commit run --all-files`.

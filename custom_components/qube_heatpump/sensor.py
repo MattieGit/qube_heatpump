@@ -529,6 +529,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         )
         return self.coordinator.data.get(key)
 
+
 class QubeInfoSensor(CoordinatorEntity, SensorEntity):
     """Diagnostic info sensor."""
 
@@ -694,6 +695,7 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         """Return IP address."""
         return self._hub.resolved_ip or self._hub.host
 
+
 class QubeMetricSensor(CoordinatorEntity, SensorEntity):
     """Metric sensor."""
 
@@ -766,6 +768,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
                 return counts.get("switch", 0)
             return sum(1 for e in hub.entities if e.platform == "switch")
         return None
+
 
 def _entity_key(ent: EntityDef) -> str:
     """Generate entity key."""
@@ -857,6 +860,7 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
             model="Heatpump",
             sw_version=self._version,
         )
+
 
 class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
     """Standby energy sensor."""
@@ -1091,6 +1095,7 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
                 # Verwarmen (True) vs Koelen (False) -> heating/cooling
                 return "heating" if bool(val) else "cooling"
         return None
+
 
 def _start_of_month(dt_value: datetime) -> datetime:
     return dt_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

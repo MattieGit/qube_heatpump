@@ -84,7 +84,9 @@ def _derive_device_class(unit: str | None, key: str) -> str | None:
     return None
 
 
-def _derive_state_class(unit: str | None, device_class: str | None, key: str) -> str | None:
+def _derive_state_class(
+    unit: str | None, device_class: str | None, key: str
+) -> str | None:
     """Derive Home Assistant state_class from unit and device_class."""
     if device_class == "enum":
         return None
@@ -105,7 +107,9 @@ def _derive_state_class(unit: str | None, device_class: str | None, key: str) ->
     return None
 
 
-def _derive_precision(unit: str | None, data_type: str | None, key: str | None = None) -> int | None:
+def _derive_precision(
+    unit: str | None, data_type: str | None, key: str | None = None
+) -> int | None:
     """Derive suggested display precision from unit and data type."""
     # Special handling for COP sensor
     if key and key == "cop_calc":
@@ -166,7 +170,9 @@ def _library_to_ha_entity(lib_ent: LibraryEntityDef) -> EntityDef:
         name=lib_ent.name,
         address=lib_ent.address,
         vendor_id=lib_ent.key,
-        input_type=input_type_map.get(lib_ent.input_type) if lib_ent.input_type else None,
+        input_type=input_type_map.get(lib_ent.input_type)
+        if lib_ent.input_type
+        else None,
         write_type=write_type,
         data_type=data_type_str,
         unit_of_measurement=lib_ent.unit,
@@ -387,7 +393,9 @@ class QubeHub:
                 raise ConnectionError(f"Failed to write switch {ent.unique_id}")
             return
 
-        raise ConnectionError(f"No unique_id for switch entity at address {ent.address}")
+        raise ConnectionError(
+            f"No unique_id for switch entity at address {ent.address}"
+        )
 
     async def async_write_setpoint(self, ent: EntityDef, value: float) -> None:
         """Write a setpoint value via the library client."""
@@ -401,7 +409,9 @@ class QubeHub:
                 raise ConnectionError(f"Failed to write setpoint {ent.unique_id}")
             return
 
-        raise ConnectionError(f"No unique_id for setpoint entity at address {ent.address}")
+        raise ConnectionError(
+            f"No unique_id for setpoint entity at address {ent.address}"
+        )
 
     async def async_write_register(
         self, address: int, value: float, data_type: str = "uint16"
