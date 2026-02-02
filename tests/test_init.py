@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from custom_components.qube_heatpump.const import (
+    CONF_ENTITY_PREFIX,
+    CONF_HOST,
+    DEFAULT_ENTITY_PREFIX,
+    DOMAIN,
+)
 from homeassistant.config_entries import ConfigEntryState
 
 if TYPE_CHECKING:
@@ -126,15 +131,16 @@ async def test_async_setup_entry_multi_device(
         assert entry2.runtime_data.multi_device is True
 
 
-async def test_async_setup_entry_label_from_title(
+async def test_async_setup_entry_label_from_options(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
 ) -> None:
-    """Test label is derived from entry title."""
+    """Test label is taken from entity_prefix option."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (my_qube)",
+        options={CONF_ENTITY_PREFIX: "my_qube"},
     )
     entry.add_to_hass(hass)
 
@@ -145,11 +151,11 @@ async def test_async_setup_entry_label_from_title(
     assert entry.runtime_data.label == "my_qube"
 
 
-async def test_async_setup_entry_label_fallback(
+async def test_async_setup_entry_label_default(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
 ) -> None:
-    """Test label falls back to slugified title when no parentheses."""
+    """Test label uses default when no option set."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "1.2.3.4"},
@@ -161,7 +167,7 @@ async def test_async_setup_entry_label_fallback(
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.runtime_data.label == "my_qube_device"
+    assert entry.runtime_data.label == DEFAULT_ENTITY_PREFIX
 
 
 def test_suggest_object_id_none_base() -> None:
@@ -173,7 +179,7 @@ def test_suggest_object_id_none_base() -> None:
     ent.vendor_id = None
     ent.unique_id = None
 
-    result = _suggest_object_id(ent, "qube1", True)
+    result = _suggest_object_id(ent, "qube1")
     assert result is None
 
 
@@ -184,7 +190,7 @@ def test_suggest_object_id_unitstatus() -> None:
 
     ent = EntityDef(platform="sensor", name="Test", address=100, vendor_id="UnitStatus")
 
-    result = _suggest_object_id(ent, None, False)
+    result = _suggest_object_id(ent, None)
     assert result == "qube_status_heatpump"
 
 
@@ -249,6 +255,7 @@ async def test_resolve_entry_by_label(
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (testlabel)",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
+        options={CONF_ENTITY_PREFIX: "testlabel"},
     )
     entry.add_to_hass(hass)
 
@@ -273,6 +280,7 @@ async def test_resolve_entry_no_match(
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (testlabel)",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
+        options={CONF_ENTITY_PREFIX: "testlabel"},
     )
     entry.add_to_hass(hass)
 
@@ -285,6 +293,7 @@ async def test_resolve_entry_no_match(
         data={CONF_HOST: "1.2.3.5"},
         title="Qube Heat Pump (other)",
         unique_id=f"{DOMAIN}-1.2.3.5-502",
+        options={CONF_ENTITY_PREFIX: "other"},
     )
     entry2.add_to_hass(hass)
     await hass.config_entries.async_setup(entry2.entry_id)
@@ -307,12 +316,13 @@ async def test_resolve_entry_by_hub_label(
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (qube1)",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
+        options={CONF_ENTITY_PREFIX: "qube1"},
     )
     entry.add_to_hass(hass)
 
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    # The hub should have label set from title
+    # The hub should have label set from options
     result = _resolve_entry(hass, None, "qube1")
     assert result is not None
