@@ -109,16 +109,16 @@
                 "name": "Qube aantal binaire sensoren"
             },
             "thermostat_heatsetp_day": {
-                "name": "Setpoint ruimte CV dag"
+                "name": "LinQ setpoint CV dag"
             },
             "thermostat_heatsetp_night": {
-                "name": "Setpoint ruimte CV nacht"
+                "name": "LinQ setpoint CV nacht"
             },
             "thermostat_coolsetp_day": {
-                "name": "Setpoint ruimte Koel dag"
+                "name": "LinQ setpoint koelen dag"
             },
             "thermostat_coolsetp_night": {
-                "name": "Setpoint ruimte Koel nacht"
+                "name": "LinQ setpoint koelen nacht"
             },
             "tapw_timeprogram_dt_bms": {
                 "name": "dT aanvoertemperatuur tapwater"
@@ -455,10 +455,10 @@
         },
         "number": {
             "tapw_timeprogram_dhwsetp_nolinq": {
-                "name": "SWW instelpunt"
+                "name": "SWW instelpunt (handmatig)"
             },
             "setpoint_dhw": {
-                "name": "SWW instelpunt"
+                "name": "SWW instelpunt (gebruiker)"
             }
         }
     },

@@ -156,16 +156,16 @@
         "name": "PV surplus active"
       },
       "thermostat_heatsetp_day": {
-        "name": "Room setpoint heating (day)"
+        "name": "LinQ setpoint heating (day)"
       },
       "thermostat_heatsetp_night": {
-        "name": "Room setpoint heating (night)"
+        "name": "LinQ setpoint heating (night)"
       },
       "thermostat_coolsetp_day": {
-        "name": "Room setpoint cooling (day)"
+        "name": "LinQ setpoint cooling (day)"
       },
       "thermostat_coolsetp_night": {
-        "name": "Room setpoint cooling (night)"
+        "name": "LinQ setpoint cooling (night)"
       },
       "tapw_timeprogram_dt_bms": {
         "name": "dT flow temperature DHW"
@@ -609,10 +609,10 @@
     },
     "number": {
       "tapw_timeprogram_dhwsetp_nolinq": {
-        "name": "DHW setpoint"
+        "name": "DHW setpoint (manual override)"
       },
       "setpoint_dhw": {
-        "name": "DHW setpoint"
+        "name": "DHW setpoint (user)"
       }
     }
   },

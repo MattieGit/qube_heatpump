@@ -44,6 +44,16 @@ HIDDEN_VENDOR_IDS = {
     "dout_fourwayvlv_val",
 }
 
+# Sensors that should clamp values to minimum 0 (percentages, flow rates)
+CLAMP_TO_ZERO_KEYS = frozenset({
+    "dhw_regreq",
+    "flow",
+    "flow_rate",
+})
+
+# Value indicating room sensor is not installed (-999)
+ROOM_SENSOR_NOT_INSTALLED = -999
+
 STANDBY_POWER_WATTS = 17.0
 STANDBY_POWER_UNIQUE_BASE = "power_standby"
 STANDBY_ENERGY_UNIQUE_BASE = "energy_standby"
@@ -330,6 +340,92 @@ async def async_setup_entry(
         )
     )
 
+    # Daily electric consumption sensors
+    _add_sensor_entity(
+        QubeTariffTotalEnergySensor(
+            coordinator,
+            hub,
+            daily_electric_tracker,
+            translation_key="electric_consumption_day",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique="qube_electric_energy_daily",
+            object_base="electric_consumption_day",
+        )
+    )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            daily_electric_tracker,
+            tariff="CH",
+            translation_key="electric_consumption_ch_day",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique="qube_energy_tariff_daily",
+            object_base="electric_consumption_ch_day",
+        )
+    )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            daily_electric_tracker,
+            tariff="DHW",
+            translation_key="electric_consumption_dhw_day",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique="qube_energy_tariff_daily",
+            object_base="electric_consumption_dhw_day",
+        )
+    )
+
+    # Daily thermic yield sensors
+    _add_sensor_entity(
+        QubeTariffTotalEnergySensor(
+            coordinator,
+            hub,
+            daily_thermic_tracker,
+            translation_key="thermic_yield_day",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique="qube_thermic_energy_daily",
+            object_base="thermic_yield_day",
+        )
+    )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            daily_thermic_tracker,
+            tariff="CH",
+            translation_key="thermic_yield_ch_day",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique="qube_thermic_tariff_daily",
+            object_base="thermic_yield_ch_day",
+        )
+    )
+    _add_sensor_entity(
+        QubeTariffEnergySensor(
+            coordinator,
+            hub,
+            daily_thermic_tracker,
+            tariff="DHW",
+            translation_key="thermic_yield_dhw_day",
+            show_label=apply_label,
+            multi_device=multi_device,
+            version=version,
+            base_unique="qube_thermic_tariff_daily",
+            object_base="thermic_yield_dhw_day",
+        )
+    )
+
     _add_sensor_entity(
         QubeSCOPSensor(
             coordinator,
@@ -496,6 +592,9 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         if vendor_id in HIDDEN_VENDOR_IDS:
             self._attr_entity_registry_visible_default = False
             self._attr_entity_registry_enabled_default = False
+        # Disable temp_room by default (most users use LinQ thermostat instead)
+        if ent.translation_key == "temp_room" or ent.unique_id == "temp_room":
+            self._attr_entity_registry_enabled_default = False
         if vendor_id:
             vendor_slug = VENDOR_SLUG_OVERRIDES.get(vendor_id, vendor_id)
             # Always include label prefix in entity IDs
@@ -528,7 +627,28 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             self._ent.unique_id
             or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
         )
-        return self.coordinator.data.get(key)
+        value = self.coordinator.data.get(key)
+        if value is None:
+            return None
+
+        # Handle temp_room showing -999 when sensor not installed
+        if (
+            self._ent.translation_key == "temp_room" or self._ent.unique_id == "temp_room"
+        ) and value == ROOM_SENSOR_NOT_INSTALLED:
+            return None
+
+        # Clamp values that should never be negative (percentages, flow rates)
+        translation_key = self._ent.translation_key or ""
+        unique_id = self._ent.unique_id or ""
+        if translation_key in CLAMP_TO_ZERO_KEYS or unique_id in CLAMP_TO_ZERO_KEYS:
+            try:
+                num_value = float(value)
+                if num_value < 0:
+                    return 0.0
+            except (TypeError, ValueError):
+                pass
+
+        return value
 
 
 class QubeInfoSensor(CoordinatorEntity, SensorEntity):
