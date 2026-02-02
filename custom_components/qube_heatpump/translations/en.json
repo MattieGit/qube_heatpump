@@ -609,10 +609,10 @@
     },
     "number": {
       "tapw_timeprogram_dhwsetp_nolinq": {
-        "name": "DHW setpoint"
+        "name": "DHW setpoint (manual override)"
       },
       "setpoint_dhw": {
-        "name": "DHW setpoint"
+        "name": "DHW setpoint (user)"
       }
     }
   },

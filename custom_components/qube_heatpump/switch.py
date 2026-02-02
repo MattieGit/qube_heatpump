@@ -56,11 +56,19 @@ async def async_setup_entry(
             registry.async_remove(entity_id)
 
 
+# Switches that should appear in Controls (no entity_category) instead of Configuration
+CONTROL_SWITCHES = frozenset({
+    "modbus_demand",
+    "tapw_timeprogram_bms_forced",
+    "bms_summerwinter",
+    "antilegionella_frcstart_ant",
+})
+
+
 class QubeSwitch(CoordinatorEntity, SwitchEntity):
     """Qube switch entity."""
 
     _attr_should_poll = False
-    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -77,6 +85,9 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         self._hub = hub
         self._show_label = bool(show_label)
         self._version = version
+        # Control switches go in Controls section, others in Configuration
+        if ent.vendor_id not in CONTROL_SWITCHES:
+            self._attr_entity_category = EntityCategory.CONFIG
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             self._attr_entity_registry_visible_default = False
         if ent.translation_key:
