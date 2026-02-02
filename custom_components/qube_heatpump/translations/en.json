@@ -568,8 +568,8 @@
       "surplus_pv": {
         "name": "PV surplus active"
       },
-      "qube_alarm_sensors_active": {
-        "name": "Qube alarm sensors active"
+      "alarm_sensors_active": {
+        "name": "Alarm sensors active"
       }
     },
     "switch": {

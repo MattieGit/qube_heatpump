@@ -677,9 +677,9 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = "info"
         self._attr_has_entity_name = True
         self._attr_unique_id = (
-            f"qube_info_sensor_{hub.entry_id}"
+            f"info_sensor_{hub.entry_id}"
             if self._multi_device
-            else "qube_info_sensor"
+            else "info_sensor"
         )
         self._state = "ok"
         # Always include label prefix in entity IDs
@@ -786,7 +786,7 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         label = hub.label or "qube1"
         self._attr_translation_key = "ip_address"
         self._attr_has_entity_name = True
-        base_uid = "qube_ip_address"
+        base_uid = "ip_address"
         self._attr_unique_id = (
             f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
         )
@@ -842,12 +842,12 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         label = hub.label or "qube1"
         self._attr_translation_key = f"metric_{kind}"
         self._attr_has_entity_name = True
-        base_uid = f"qube_metric_{kind}"
+        base_uid = f"metric_{kind}"
         self._attr_unique_id = (
             f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
         )
         # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{label}_metric_{kind}")
+        self._attr_suggested_object_id = _slugify(f"{label}_{kind}")
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.MEASUREMENT
 

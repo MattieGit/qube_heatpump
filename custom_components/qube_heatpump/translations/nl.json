@@ -305,8 +305,8 @@
             }
         },
         "binary_sensor": {
-            "qube_alarm_sensors_active": {
-                "name": "Qube alarm sensoren actief"
+            "alarm_sensors_active": {
+                "name": "Alarm sensoren actief"
             },
             "dout_srcpmp_val": {
                 "name": "Voeding Bron pomp"
