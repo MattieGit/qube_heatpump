@@ -199,6 +199,7 @@ class QubeHub:
         entry_id: str,
         unit_id: int = 1,
         label: str | None = None,
+        device_name: str | None = None,
     ) -> None:
         """Initialize the hub."""
         self._hass = hass
@@ -207,6 +208,7 @@ class QubeHub:
         self.entry_id = entry_id
         self._unit = unit_id
         self._label = label or "qube1"
+        self._device_name = device_name or "Qube Heatpump"
         self._client: QubeClient | None = None
         self.entities: list[EntityDef] = []
         # Error counters
@@ -274,8 +276,13 @@ class QubeHub:
 
     @property
     def label(self) -> str:
-        """Return label."""
+        """Return label for entity ID prefixes."""
         return self._label
+
+    @property
+    def device_name(self) -> str:
+        """Return device name for DeviceInfo."""
+        return self._device_name
 
     @property
     def resolved_ip(self) -> str | None:

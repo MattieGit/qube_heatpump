@@ -236,7 +236,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         hass.config_entries.async_update_entry(entry, title=new_title)
         label = derive_label_from_title(new_title)
 
-    hub = QubeHub(hass, host, port, entry.entry_id, unit_id, label)
+    hub = QubeHub(hass, host, port, entry.entry_id, unit_id, label, entry.title)
 
     # Load fallback translations (manual resolution to avoid device prefix)
     translations_path = Path(__file__).parent / "translations" / "en.json"

@@ -561,6 +561,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         self._host = hub.host
         self._unit = hub.unit
         self._label = hub.label
+        self._device_name = hub.device_name
         self._show_label = bool(show_label)
         self._multi_device = bool(multi_device)
         self._version = version
@@ -614,7 +615,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
-            name=(self._label or "Qube Heatpump"),
+            name=self._device_name,
             manufacturer="Qube",
             model="Heatpump",
             sw_version=self._version,
@@ -694,7 +695,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
+            name=self._hub.device_name,
             manufacturer="Qube",
             model="Heatpump",
             sw_version=self._version,
@@ -803,7 +804,7 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
+            name=self._hub.device_name,
             manufacturer="Qube",
             model="Heatpump",
             sw_version=self._version,
@@ -856,7 +857,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
+            name=self._hub.device_name,
             manufacturer="Qube",
             model="Heatpump",
             sw_version=self._version,
@@ -1170,7 +1171,7 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
+            name=self._hub.device_name,
             manufacturer="Qube",
             model="Heatpump",
             sw_version=self._version,

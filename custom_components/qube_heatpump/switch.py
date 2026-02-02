@@ -118,7 +118,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         """Return device information."""
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=(self._hub.label or "Qube Heatpump"),
+            name=self._hub.device_name,
             manufacturer="Qube",
             model="Heatpump",
             sw_version=self._version,
