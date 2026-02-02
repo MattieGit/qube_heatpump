@@ -195,9 +195,6 @@
       }
     },
     "number": {
-      "setpoint_dhw": {
-        "default": "mdi:water-thermometer"
-      },
       "tapw_timeprogram_dhwsetp_nolinq": {
         "default": "mdi:water-thermometer"
       }

@@ -638,13 +638,13 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             return None
 
         # Clamp values that should never be negative (percentages, flow rates)
+        # Use max() to handle -0.0 which equals 0 but displays as negative
         translation_key = self._ent.translation_key or ""
         unique_id = self._ent.unique_id or ""
         if translation_key in CLAMP_TO_ZERO_KEYS or unique_id in CLAMP_TO_ZERO_KEYS:
             try:
                 num_value = float(value)
-                if num_value < 0:
-                    return 0.0
+                return max(0.0, num_value)
             except (TypeError, ValueError):
                 pass
 

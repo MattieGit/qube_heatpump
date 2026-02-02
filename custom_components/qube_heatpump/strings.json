@@ -378,7 +378,7 @@
         "name": "Power standby"
       },
       "standby_energy": {
-        "name": "Energy standby"
+        "name": "Electric consumption standby"
       },
       "total_energy_incl_standby": {
         "name": "Electric consumption total (incl. standby)"
@@ -608,9 +608,6 @@
     "number": {
       "tapw_timeprogram_dhwsetp_nolinq": {
         "name": "DHW setpoint (manual override)"
-      },
-      "setpoint_dhw": {
-        "name": "DHW setpoint (user)"
       }
     }
   },

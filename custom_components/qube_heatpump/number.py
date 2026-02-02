@@ -25,6 +25,11 @@ DEFAULT_MIN_TEMP = 20.0
 DEFAULT_MAX_TEMP = 65.0
 DEFAULT_STEP = 0.5
 
+# Redundant number entities to skip (already covered by other entities)
+SKIP_NUMBER_VENDOR_IDS = frozenset({
+    "setpoint_dhw",  # Redundant - use tapw_timeprogram_dhwsetp_nolinq instead
+})
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -47,6 +52,9 @@ async def async_setup_entry(
             continue
         # Only create number entities for temperature setpoints
         if ent.unit_of_measurement not in ("°C", "C"):
+            continue
+        # Skip redundant entities
+        if ent.vendor_id in SKIP_NUMBER_VENDOR_IDS:
             continue
 
         entities.append(

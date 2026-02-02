@@ -34,7 +34,7 @@
                 "name": "Vermogen standby"
             },
             "standby_energy": {
-                "name": "Energie standby"
+                "name": "Elektriciteitsverbruik standby"
             },
             "total_energy_incl_standby": {
                 "name": "Elektriciteitsverbruik totaal (incl. standby)"
@@ -456,9 +456,6 @@
         "number": {
             "tapw_timeprogram_dhwsetp_nolinq": {
                 "name": "SWW instelpunt (handmatig)"
-            },
-            "setpoint_dhw": {
-                "name": "SWW instelpunt (gebruiker)"
             }
         }
     },
