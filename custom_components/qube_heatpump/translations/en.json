@@ -30,14 +30,12 @@
     "step": {
       "init": {
         "title": "Options",
-        "description": "Update the host if the heat pump IP changed.\nNeed help? See the [documentation]({docs_url}).\n\nTo customize entity ID prefixes for multi-device setups, rename the integration entry in Home Assistant (three-dot menu → Rename).\n\nCurrent IP: {resolved_ip}.",
+        "description": "Update the host if the heat pump IP changed.\nNeed help? See the [documentation]({docs_url}).\n\nTo customize entity ID prefixes, rename the integration entry in Home Assistant (three-dot menu → Rename).\n\nCurrent IP: {resolved_ip}.",
         "data": {
-          "host": "Host/IP",
-          "friendly_name_language": "Language for entity names"
+          "host": "Host/IP"
         },
         "data_description": {
-          "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
-          "friendly_name_language": "Choose the language used for entity names. Note: Existing entities won't be renamed automatically."
+          "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50)."
         }
       }
     }

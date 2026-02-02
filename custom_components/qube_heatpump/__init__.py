@@ -23,11 +23,9 @@ from homeassistant.loader import async_get_integration, async_get_loaded_integra
 from homeassistant.setup import async_setup_component
 
 from .const import (
-    CONF_FRIENDLY_NAME_LANGUAGE,
     CONF_HOST,
     CONF_PORT,
     CONF_UNIT_ID,
-    DEFAULT_FRIENDLY_NAME_LANGUAGE,
     DEFAULT_PORT,
     DOMAIN,
     PLATFORMS,
@@ -48,7 +46,6 @@ class QubeData:
     version: str
     multi_device: bool
     alarm_group_object_id: str
-    friendly_name_language: str
     tariff_tracker: Any | None = None
     thermic_tariff_tracker: Any | None = None
     daily_tariff_tracker: Any | None = None
@@ -320,9 +317,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         version=version,
         multi_device=multi_device,
         alarm_group_object_id=alarm_group_object_id,
-        friendly_name_language=options.get(
-            CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE
-        ),
     )
 
     with contextlib.suppress(Exception):

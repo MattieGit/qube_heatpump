@@ -17,11 +17,9 @@ from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
-    CONF_FRIENDLY_NAME_LANGUAGE,
     CONF_HOST,
     CONF_PORT,
     CONF_UNIT_ID,
-    DEFAULT_FRIENDLY_NAME_LANGUAGE,
     DEFAULT_PORT,
     DOMAIN,
 )
@@ -278,9 +276,6 @@ class OptionsFlowHandler(OptionsFlow):
             if not errors:
                 opts = dict(self._entry.options)
                 opts.pop(CONF_UNIT_ID, None)
-                opts[CONF_FRIENDLY_NAME_LANGUAGE] = user_input.get(
-                    CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE
-                )
 
                 update_kwargs: dict[str, Any] = {"options": opts}
                 if host_changed:
@@ -302,16 +297,9 @@ class OptionsFlowHandler(OptionsFlow):
                     await self.hass.config_entries.async_reload(self._entry.entry_id)
                 return self.async_create_entry(title="", data=opts)
 
-        current_language = self._entry.options.get(
-            CONF_FRIENDLY_NAME_LANGUAGE, DEFAULT_FRIENDLY_NAME_LANGUAGE
-        )
-
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=current_host): str,
-                vol.Optional(
-                    CONF_FRIENDLY_NAME_LANGUAGE, default=current_language
-                ): vol.In(["en", "nl"]),
             }
         )
 
