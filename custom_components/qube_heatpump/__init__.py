@@ -23,9 +23,11 @@ from homeassistant.loader import async_get_integration, async_get_loaded_integra
 from homeassistant.setup import async_setup_component
 
 from .const import (
+    CONF_ENTITY_PREFIX,
     CONF_HOST,
     CONF_PORT,
     CONF_UNIT_ID,
+    DEFAULT_ENTITY_PREFIX,
     DEFAULT_PORT,
     DOMAIN,
     PLATFORMS,
@@ -63,7 +65,6 @@ _LOGGER = logging.getLogger(__name__)
 def _suggest_object_id(
     ent: EntityDef,
     label: str | None,
-    multi_device: bool,
 ) -> str | None:
     """Suggest an entity ID slug."""
     base: str | None = ent.vendor_id or ent.unique_id
@@ -73,8 +74,8 @@ def _suggest_object_id(
     if base == "unitstatus":
         base = "qube_status_heatpump"
 
-    # Apply label prefix when multiple devices are configured
-    if multi_device and label and not base.startswith(f"{label}_"):
+    # Always apply label prefix for consistent entity IDs
+    if label and not base.startswith(f"{label}_"):
         base = f"{label}_{base}"
     return slugify(base)
 
@@ -227,14 +228,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     ]
     multi_device = len(existing_entries) >= 1
 
-    # Derive label from entry.title (user can rename in UI to customize)
-    label = derive_label_from_title(entry.title)
+    # Get entity ID prefix from options (or use default)
+    label = str(options.get(CONF_ENTITY_PREFIX, DEFAULT_ENTITY_PREFIX)).strip().lower()
+    # Sanitize: only alphanumeric and underscores
+    label = "".join(ch if ch.isalnum() else "_" for ch in label).strip("_")
+    if not label:
+        # Fallback: derive from title for backwards compatibility
+        label = derive_label_from_title(entry.title)
 
     # Rename existing entries from "WP Qube" to "Qube Heat Pump"
     if entry.title.startswith("WP Qube"):
         new_title = entry.title.replace("WP Qube", "Qube Heat Pump")
         hass.config_entries.async_update_entry(entry, title=new_title)
-        label = derive_label_from_title(new_title)
 
     hub = QubeHub(hass, host, port, entry.entry_id, unit_id, label, entry.title)
 
@@ -261,7 +266,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         if not ent.unique_id:
             continue
         domain = ent.platform
-        slug = _suggest_object_id(ent, label, multi_device)
+        slug = _suggest_object_id(ent, label)
         try:
             registry_entry = ent_reg.async_get_or_create(
                 domain,

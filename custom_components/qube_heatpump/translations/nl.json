@@ -1,4 +1,47 @@
 {
+    "config": {
+        "abort": {
+            "already_configured": "Apparaat is al geconfigureerd.",
+            "duplicate_ip": "Een andere Qube warmtepomp is al geconfigureerd met dit IP-adres. Configureer elke hub met een uniek IP."
+        },
+        "error": {
+            "cannot_connect": "Kan niet verbinden. Controleer host en poort.",
+            "duplicate_ip": "Een Qube warmtepomp met dit IP-adres bestaat al. Kies een andere host."
+        },
+        "step": {
+            "user": {
+                "title": "Qube warmtepomp",
+                "description": "Voer het IP-adres of de hostnaam van de warmtepomp in.\nHulp nodig? Bekijk de [documentatie]({docs_url}).",
+                "data": {
+                    "host": "Host/IP"
+                },
+                "data_description": {
+                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50)."
+                }
+            }
+        }
+    },
+    "options": {
+        "error": {
+            "duplicate_ip": "Een andere Qube warmtepomp gebruikt dit IP-adres al.",
+            "cannot_connect": "Kan niet verbinden met Qube. Controleer het IP-adres.",
+            "invalid_host": "Voer een geldig host- of IP-adres in."
+        },
+        "step": {
+            "init": {
+                "title": "Opties",
+                "description": "Werk de host bij als het IP-adres van de warmtepomp is gewijzigd.\nHulp nodig? Bekijk de [documentatie]({docs_url}).\n\nHuidig IP: {resolved_ip}.",
+                "data": {
+                    "host": "Host/IP",
+                    "entity_prefix": "Entiteit ID prefix"
+                },
+                "data_description": {
+                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
+                    "entity_prefix": "Prefix voor entiteit ID's (bijv. 'qube' → sensor.qube_temp_supply). Gebruik dezelfde waarde als je apparaatnaam voor consistentie."
+                }
+            }
+        }
+    },
     "entity": {
         "sensor": {
             "status_heatpump": {

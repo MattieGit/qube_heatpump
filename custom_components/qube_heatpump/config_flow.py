@@ -17,9 +17,11 @@ from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
+    CONF_ENTITY_PREFIX,
     CONF_HOST,
     CONF_PORT,
     CONF_UNIT_ID,
+    DEFAULT_ENTITY_PREFIX,
     DEFAULT_PORT,
     DOMAIN,
 )
@@ -238,6 +240,9 @@ class OptionsFlowHandler(OptionsFlow):
         current_unit = int(
             self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
         )
+        current_prefix = str(
+            self._entry.options.get(CONF_ENTITY_PREFIX, DEFAULT_ENTITY_PREFIX)
+        ).strip().lower()
 
         hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         resolved_ip = None
@@ -252,6 +257,13 @@ class OptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             user_input = dict(user_input)
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
+            new_prefix = str(
+                user_input.get(CONF_ENTITY_PREFIX, current_prefix)
+            ).strip().lower()
+            # Sanitize prefix: only alphanumeric and underscores
+            new_prefix = "".join(
+                ch if ch.isalnum() else "_" for ch in new_prefix
+            ).strip("_") or DEFAULT_ENTITY_PREFIX
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -261,6 +273,7 @@ class OptionsFlowHandler(OptionsFlow):
                     errors[CONF_HOST] = "duplicate_ip"
 
             host_changed = new_host != current_host
+            prefix_changed = new_prefix != current_prefix
             if host_changed and CONF_HOST not in errors:
                 try:
                     _, writer = await asyncio.wait_for(
@@ -276,6 +289,7 @@ class OptionsFlowHandler(OptionsFlow):
             if not errors:
                 opts = dict(self._entry.options)
                 opts.pop(CONF_UNIT_ID, None)
+                opts[CONF_ENTITY_PREFIX] = new_prefix
 
                 update_kwargs: dict[str, Any] = {"options": opts}
                 if host_changed:
@@ -294,12 +308,14 @@ class OptionsFlowHandler(OptionsFlow):
                     old_device = device_registry.async_get_device(identifiers)
                     if old_device:
                         device_registry.async_remove_device(old_device.id)
+                if host_changed or prefix_changed:
                     await self.hass.config_entries.async_reload(self._entry.entry_id)
                 return self.async_create_entry(title="", data=opts)
 
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=current_host): str,
+                vol.Required(CONF_ENTITY_PREFIX, default=current_prefix): str,
             }
         )
 
