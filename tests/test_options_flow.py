@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import (
-    CONF_FRIENDLY_NAME_LANGUAGE,
+    CONF_ENTITY_PREFIX,
+    DEFAULT_ENTITY_PREFIX,
     DOMAIN,
 )
 from homeassistant.const import CONF_HOST
@@ -36,12 +37,12 @@ async def test_options_flow_updates_options(
         init_result["flow_id"],
         user_input={
             CONF_HOST: entry.data[CONF_HOST],
-            CONF_FRIENDLY_NAME_LANGUAGE: "en",
+            CONF_ENTITY_PREFIX: "myheatpump",
         },
     )
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options[CONF_FRIENDLY_NAME_LANGUAGE] == "en"
+    assert entry.options[CONF_ENTITY_PREFIX] == "myheatpump"
 
     await hass.async_block_till_done()
 
@@ -49,10 +50,10 @@ async def test_options_flow_updates_options(
     await hass.async_block_till_done()
 
 
-async def test_options_flow_dutch_language(
+async def test_options_flow_default_prefix(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
-    """Test that options flow can set Dutch language."""
+    """Test that options flow uses default prefix."""
     entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "192.0.2.10"})
     entry.add_to_hass(hass)
 
@@ -66,12 +67,12 @@ async def test_options_flow_dutch_language(
         init_result["flow_id"],
         user_input={
             CONF_HOST: entry.data[CONF_HOST],
-            CONF_FRIENDLY_NAME_LANGUAGE: "nl",
+            CONF_ENTITY_PREFIX: DEFAULT_ENTITY_PREFIX,
         },
     )
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options[CONF_FRIENDLY_NAME_LANGUAGE] == "nl"
+    assert entry.options[CONF_ENTITY_PREFIX] == DEFAULT_ENTITY_PREFIX
 
     await hass.async_block_till_done()
 
@@ -96,7 +97,7 @@ async def test_options_flow_empty_host_error(
         init_result["flow_id"],
         user_input={
             CONF_HOST: "",
-            CONF_FRIENDLY_NAME_LANGUAGE: "en",
+            CONF_ENTITY_PREFIX: DEFAULT_ENTITY_PREFIX,
         },
     )
 
@@ -139,7 +140,7 @@ async def test_options_flow_duplicate_ip_error(
             init_result["flow_id"],
             user_input={
                 CONF_HOST: "qube-new.local",
-                CONF_FRIENDLY_NAME_LANGUAGE: "en",
+                CONF_ENTITY_PREFIX: DEFAULT_ENTITY_PREFIX,
             },
         )
 
@@ -174,7 +175,7 @@ async def test_options_flow_cannot_connect_error(
             init_result["flow_id"],
             user_input={
                 CONF_HOST: "192.0.2.99",
-                CONF_FRIENDLY_NAME_LANGUAGE: "en",
+                CONF_ENTITY_PREFIX: DEFAULT_ENTITY_PREFIX,
             },
         )
 
@@ -213,7 +214,7 @@ async def test_options_flow_host_change_success(
             init_result["flow_id"],
             user_input={
                 CONF_HOST: "192.0.2.99",
-                CONF_FRIENDLY_NAME_LANGUAGE: "en",
+                CONF_ENTITY_PREFIX: DEFAULT_ENTITY_PREFIX,
             },
         )
 
