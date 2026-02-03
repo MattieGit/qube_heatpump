@@ -9,7 +9,7 @@ sections:
         image: /local/qube_heatpump_dashboard.png
         elements:
           - type: state-label
-            entity: sensor.qube_status_heatpump
+            entity: sensor.qube_heat_pump_status
             style:
               position: absolute
               transform: translate(0,0)
@@ -143,81 +143,6 @@ sections:
   - type: grid
     cards:
       - type: heading
-        heading: Efficiency (COP/SCOP)
-        icon: mdi:gauge
-      - type: gauge
-        entity: sensor.qube_cop_calc
-        name: Current COP
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-      - type: gauge
-        entity: sensor.qube_scop_day
-        name: SCOP (day)
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-      - type: gauge
-        entity: sensor.qube_scop_month
-        name: SCOP (month)
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-      - type: gauge
-        entity: sensor.qube_scop_ch_day
-        name: SCOP CH (day)
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-      - type: gauge
-        entity: sensor.qube_scop_ch_month
-        name: SCOP CH (month)
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-      - type: gauge
-        entity: sensor.qube_scop_dhw_day
-        name: SCOP DHW (day)
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-      - type: gauge
-        entity: sensor.qube_scop_dhw_month
-        name: SCOP DHW (month)
-        min: 0
-        max: 10
-        severity:
-          red: 0
-          yellow: 3
-          green: 5
-        needle: true
-  - type: grid
-    cards:
-      - type: heading
         heading: Controls
         icon: mdi:tune-variant
       - type: tile
@@ -229,10 +154,12 @@ sections:
       - type: tile
         entity: switch.qube_en_plantsetp_compens
       - type: tile
-        entity: select.qube_sgready_mode
+        entity: select.sg_ready_mode
         name: SG Ready mode
+        vertical: false
         features:
           - type: select-options
+        features_position: bottom
       - type: tile
         entity: switch.qube_modbus_demand
   - type: grid
@@ -281,10 +208,12 @@ sections:
         heading: Alarm sensors
         icon: mdi:alarm-light
       - type: tile
-        entity: binary_sensor.qube_alarm_sensors
+        entity: group.qube_alarm_sensors
         name: No active alarms
         icon: mdi:alarm-off
         color: green
+        vertical: false
+        features_position: bottom
   - type: grid
     cards:
       - type: heading
@@ -345,9 +274,7 @@ sections:
       - type: tile
         entity: sensor.qube_energy_total_thermic
       - type: tile
-        entity: sensor.qube_energy_total_incl_standby
-      - type: tile
-        entity: sensor.qube_power_standby
+        entity: sensor.qube_energy_total_electric
         vertical: false
         features_position: bottom
       - type: tile
@@ -355,9 +282,15 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_energy_tariff_ch
+        entity: sensor.qube_electric_consumption_total_incl_standby
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: sensor.qube_energy_tariff_dhw
+        entity: sensor.qube_electric_consumption_ch_day
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: sensor.qube_electric_consumption_dhw_day
   - type: grid
     cards:
       - type: heading
@@ -391,16 +324,20 @@ sections:
         entity: sensor.qube_modbus_roomtemp
         name: Room temperature (Linq)
       - type: tile
-        entity: sensor.qube_status_heatpump
+        entity: sensor.qube_heat_pump_status
         name: Heat pump status
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: sensor.qube_drieweg_status
+        entity: sensor.qube_three_way_valve_status
         name: 3-way valve status
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_vierweg_status
+        entity: sensor.qube_four_way_valve_status
         name: 4-way valve status
+        vertical: false
+        features_position: bottom
   - type: grid
     cards:
       - type: heading
@@ -440,23 +377,99 @@ sections:
         heading: Diagnostics & status
         icon: mdi:information
       - type: tile
-        entity: sensor.qube_info
+        entity: sensor.qube_qube_info_2
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: sensor.qube_ip_address
+        entity: sensor.qube_qube_ip_address_2
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: sensor.qube_metric_errors_connect
+        entity: sensor.qube_qube_connect_errors_2
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: sensor.qube_metric_errors_read
+        entity: sensor.qube_qube_read_errors_2
+        vertical: false
+        features_position: bottom
   - type: grid
     cards:
       - type: heading
         heading: DHW setpoint control
         icon: mdi:water-thermometer
       - type: tile
-        entity: number.qube_setpoint_dhw_setpoint
+        entity: number.dhw_setpoint_manual_override
         name: DHW temperature setpoint
+        vertical: false
         features:
           - type: numeric-input
+        features_position: bottom
+  - type: grid
+    cards:
+      - type: heading
+        heading: Efficiency (COP/SCOP)
+        icon: mdi:gauge
+      - type: gauge
+        entity: sensor.qube_scop_day
+        name: SCOP (day)
+        min: 0
+        max: 10
+        severity:
+          red: 0
+          yellow: 3
+          green: 5
+        needle: true
+      - type: gauge
+        entity: sensor.qube_scop_month
+        name: SCOP (month)
+        min: 0
+        max: 10
+        severity:
+          red: 0
+          yellow: 3
+          green: 5
+        needle: true
+      - type: gauge
+        entity: sensor.qube_scop_ch_day
+        name: SCOP CH (day)
+        min: 0
+        max: 10
+        severity:
+          red: 0
+          yellow: 3
+          green: 5
+        needle: true
+      - type: gauge
+        entity: sensor.qube_scop_ch_month
+        name: SCOP CH (month)
+        min: 0
+        max: 10
+        severity:
+          red: 0
+          yellow: 3
+          green: 5
+        needle: true
+      - type: gauge
+        entity: sensor.qube_scop_dhw_day
+        name: SCOP DHW (day)
+        min: 0
+        max: 10
+        severity:
+          red: 0
+          yellow: 3
+          green: 5
+        needle: true
+      - type: gauge
+        entity: sensor.qube_scop_dhw_month
+        name: SCOP DHW (month)
+        min: 0
+        max: 10
+        severity:
+          red: 0
+          yellow: 3
+          green: 5
+        needle: true
+    column_span: 2
 cards: []
 type: sections
 max_columns: 2
