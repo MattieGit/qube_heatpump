@@ -302,6 +302,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
                         registry_entry.entity_id, new_entity_id=desired_eid
                     )
 
+    # Pre-register button and select entities with correct suggested_object_id
+    extra_entities = [
+        ("button", "qube_reload", f"{label}_reload"),
+        ("select", "sgready_mode", f"{label}_sgready_mode"),
+    ]
+    for domain, base_uid, slug in extra_entities:
+        scoped_uid = (
+            f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
+        )
+        with contextlib.suppress(Exception):
+            reg_entry = ent_reg.async_get_or_create(
+                domain, DOMAIN, scoped_uid, config_entry=entry, suggested_object_id=slug
+            )
+            if reg_entry.suggested_object_id != slug:
+                ent_reg.async_update_entity(reg_entry.entity_id, suggested_object_id=slug)
+
     version = "unknown"
     with contextlib.suppress(Exception):
         integration = async_get_loaded_integration(hass, DOMAIN)

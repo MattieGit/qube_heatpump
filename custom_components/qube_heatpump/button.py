@@ -77,9 +77,11 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         else:
             self._attr_has_entity_name = True
 
-        # Stable unique ID
+        # Stable unique ID - scope per device in multi-device setups
         self._attr_unique_id = (
-            f"qube_reload_{self._entry_id}" if self._multi_device else "qube_reload"
+            f"{self._hub.host}_{self._hub.unit}_qube_reload"
+            if self._multi_device
+            else "qube_reload"
         )
         self._attr_entity_category = EntityCategory.CONFIG
         # Always include label prefix in entity IDs
