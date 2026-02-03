@@ -601,6 +601,9 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         # Disable temp_room by default (most users use LinQ thermostat instead)
         if ent.translation_key == "temp_room" or ent.unique_id == "temp_room":
             self._attr_entity_registry_enabled_default = False
+        # Disable real-time COP sensors by default (SCOP averages are more useful)
+        if ent.translation_key in COP_THROTTLE_KEYS or ent.unique_id in COP_THROTTLE_KEYS:
+            self._attr_entity_registry_enabled_default = False
         if vendor_id:
             vendor_slug = VENDOR_SLUG_OVERRIDES.get(vendor_id, vendor_id)
             # Always include label prefix in entity IDs
