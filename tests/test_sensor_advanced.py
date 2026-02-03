@@ -350,7 +350,7 @@ class TestQubeSensorUniqueIdFallback:
         assert sensor._attr_unique_id == "qube_sensor_holding_200"
 
     async def test_sensor_unique_id_multi_device(self, hass: HomeAssistant) -> None:
-        """Test sensor unique_id includes entry_id in multi_device mode."""
+        """Test sensor unique_id includes host_unit prefix in multi_device mode."""
         from custom_components.qube_heatpump.hub import EntityDef
         from custom_components.qube_heatpump.sensor import QubeSensor
 
@@ -382,7 +382,8 @@ class TestQubeSensorUniqueIdFallback:
             ent=ent,
         )
 
-        assert "test_entry_id" in sensor._attr_unique_id
+        # Multi-device unique_id has host_unit prefix for isolation
+        assert sensor._attr_unique_id.startswith("1.2.3.4_1_")
 
 
 class TestQubeInfoSensorCountsFallback:

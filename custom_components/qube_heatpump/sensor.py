@@ -596,7 +596,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             suffix = "_".join(str(part) for part in suffix_parts if part)
             unique_base = f"qube_{ent.platform}_{suffix}".lower()
             if self._multi_device:
-                unique_base = f"{unique_base}_{self._hub.entry_id}"
+                unique_base = f"{self._host}_{self._unit}_{unique_base}"
             self._attr_unique_id = unique_base
         vendor_id = getattr(ent, "vendor_id", None)
         if vendor_id in HIDDEN_VENDOR_IDS:

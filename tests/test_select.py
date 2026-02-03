@@ -184,3 +184,61 @@ async def test_select_device_info(
     device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
     assert device is not None
     assert device.manufacturer == "Qube"
+
+
+async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
+    """Test select unique_id uses host_unit prefix in multi_device mode."""
+    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.select import QubeSGReadyModeSelect
+
+    hub = MagicMock()
+    hub.host = "192.168.1.100"
+    hub.unit = 2
+    hub.label = "qube1"
+    hub.device_name = "Qube Heat Pump"
+    hub.get_friendly_name = MagicMock(return_value=None)
+
+    coordinator = MagicMock()
+    coordinator.data = {}
+
+    sgready_a = EntityDef(
+        platform="switch",
+        name="SG Ready A",
+        address=100,
+    )
+    sgready_a.unique_id = "bms_sgready_a"
+    sgready_a.vendor_id = "bms_sgready_a"
+
+    sgready_b = EntityDef(
+        platform="switch",
+        name="SG Ready B",
+        address=101,
+    )
+    sgready_b.unique_id = "bms_sgready_b"
+    sgready_b.vendor_id = "bms_sgready_b"
+
+    # Single device - no prefix
+    select_single = QubeSGReadyModeSelect(
+        coordinator=coordinator,
+        hub=hub,
+        show_label=True,
+        multi_device=False,
+        version="1.0",
+        sgready_a=sgready_a,
+        sgready_b=sgready_b,
+        entry_id="test_entry_id",
+    )
+    assert select_single._attr_unique_id == "sgready_mode"
+
+    # Multi device - host_unit prefix
+    select_multi = QubeSGReadyModeSelect(
+        coordinator=coordinator,
+        hub=hub,
+        show_label=True,
+        multi_device=True,
+        version="1.0",
+        sgready_a=sgready_a,
+        sgready_b=sgready_b,
+        entry_id="test_entry_id",
+    )
+    assert select_multi._attr_unique_id == "192.168.1.100_2_sgready_mode"

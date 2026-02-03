@@ -197,3 +197,52 @@ async def test_number_device_info(
     device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
     assert device is not None
     assert device.manufacturer == "Qube"
+
+
+async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
+    """Test number unique_id uses host_unit prefix in multi_device mode."""
+    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.number import QubeSetpointNumber
+
+    hub = MagicMock()
+    hub.host = "192.168.1.100"
+    hub.unit = 2
+    hub.label = "qube1"
+    hub.entry_id = "test_entry_id"
+    hub.get_friendly_name = MagicMock(return_value=None)
+
+    coordinator = MagicMock()
+    coordinator.data = {}
+
+    ent = EntityDef(
+        platform="sensor",
+        name="Test Setpoint",
+        address=100,
+    )
+    ent.unique_id = "setpoint_heat_day"
+    ent.translation_key = "setpoint_heat_day"
+    ent.input_type = "holding"
+    ent.vendor_id = "setpoint_heat_day"
+    ent.min_value = 15.0
+
+    # Single device - no prefix
+    number_single = QubeSetpointNumber(
+        coordinator=coordinator,
+        hub=hub,
+        show_label=True,
+        multi_device=False,
+        version="1.0",
+        ent=ent,
+    )
+    assert number_single._attr_unique_id == "setpoint_heat_day_setpoint"
+
+    # Multi device - host_unit prefix
+    number_multi = QubeSetpointNumber(
+        coordinator=coordinator,
+        hub=hub,
+        show_label=True,
+        multi_device=True,
+        version="1.0",
+        ent=ent,
+    )
+    assert number_multi._attr_unique_id == "192.168.1.100_2_setpoint_heat_day_setpoint"
