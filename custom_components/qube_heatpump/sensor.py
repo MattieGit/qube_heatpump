@@ -54,6 +54,11 @@ CLAMP_TO_ZERO_KEYS = frozenset({
 # Value indicating room sensor is not installed (-999)
 ROOM_SENSOR_NOT_INSTALLED = -999
 
+# COP sensor throttling - reduce update frequency since daily/monthly SCOP is more useful
+COP_THROTTLE_KEYS = frozenset({"cop_calc", "generalmng_cop"})
+COP_THROTTLE_SECONDS = 30  # Minimum seconds between state updates
+COP_THROTTLE_THRESHOLD = 0.2  # Force update if value changes by more than this
+
 STANDBY_POWER_WATTS = 17.0
 STANDBY_POWER_UNIQUE_BASE = "power_standby"
 STANDBY_ENERGY_UNIQUE_BASE = "energy_standby"
@@ -610,6 +615,10 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             with contextlib.suppress(Exception):
                 self._attr_suggested_display_precision = int(ent.precision)
 
+        # Throttling for COP sensors to reduce update frequency
+        self._throttle_last_value: float | None = None
+        self._throttle_last_update: datetime | None = None
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
@@ -655,7 +664,33 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             try:
                 precision = int(self._ent.precision)
                 num_value = float(value)
-                return round(num_value, precision)
+                value = round(num_value, precision)
+            except (TypeError, ValueError):
+                pass
+
+        # Throttle COP sensors to reduce update frequency
+        # Only update if enough time passed or value changed significantly
+        if unique_id in COP_THROTTLE_KEYS or translation_key in COP_THROTTLE_KEYS:
+            now = dt_util.utcnow()
+            try:
+                current_value = float(value)
+                # Check if we should throttle this update
+                if (
+                    self._throttle_last_value is not None
+                    and self._throttle_last_update is not None
+                ):
+                    time_diff = (now - self._throttle_last_update).total_seconds()
+                    value_diff = abs(current_value - self._throttle_last_value)
+                    # Return cached value if not enough time passed and value stable
+                    if (
+                        time_diff < COP_THROTTLE_SECONDS
+                        and value_diff < COP_THROTTLE_THRESHOLD
+                    ):
+                        return self._throttle_last_value
+                # Update throttle cache
+                self._throttle_last_value = current_value
+                self._throttle_last_update = now
+                return current_value
             except (TypeError, ValueError):
                 pass
 
