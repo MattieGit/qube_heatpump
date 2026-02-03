@@ -285,6 +285,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
             # If entity creation fails, skip it
             continue
         if slug:
+            # Update suggested_object_id if it doesn't match (for existing entities)
+            if registry_entry.suggested_object_id != slug:
+                with contextlib.suppress(Exception):
+                    ent_reg.async_update_entity(
+                        registry_entry.entity_id, suggested_object_id=slug
+                    )
+            # Update entity_id if it doesn't match desired format
             desired_eid = f"{domain}.{slug}"
             if (
                 registry_entry.entity_id != desired_eid
