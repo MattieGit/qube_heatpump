@@ -83,7 +83,8 @@ class TestSwitchUniqueIdFallback:
             ent=ent,
         )
 
-        assert "qube1" in switch._attr_unique_id
+        # Multi-device unique_id has host_unit prefix for isolation
+        assert switch._attr_unique_id.startswith("1.2.3.4_1_")
 
     async def test_switch_translation_key_fallback(self, hass: HomeAssistant) -> None:
         """Test switch uses translation_key when set."""
@@ -224,7 +225,8 @@ class TestBinarySensorUniqueIdFallback:
             ent=ent,
         )
 
-        assert "qube1" in sensor._attr_unique_id
+        # Multi-device unique_id has host_unit prefix for isolation
+        assert sensor._attr_unique_id.startswith("1.2.3.4_1_")
 
     async def test_binary_sensor_translation_key_fallback(
         self, hass: HomeAssistant

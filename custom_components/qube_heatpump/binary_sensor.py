@@ -146,6 +146,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._hub = hub
         self._label = hub.label or "qube1"
         self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
         self._version = version
         if ent.translation_key:
             manual_name = hub.get_friendly_name("binary_sensor", ent.translation_key)
@@ -158,12 +159,20 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         else:
             self._attr_name = str(ent.name)
         if ent.unique_id:
-            self._attr_unique_id = ent.unique_id
+            # Scope unique_id per device in multi-device setups
+            if self._multi_device:
+                self._attr_unique_id = (
+                    f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
+                )
+            else:
+                self._attr_unique_id = ent.unique_id
         else:
             suffix = f"{ent.input_type or 'input'}_{ent.address}".lower()
             base_uid = f"qube_binary_{suffix}"
             self._attr_unique_id = (
-                f"{base_uid}_{self._label}" if multi_device else base_uid
+                f"{self._hub.host}_{self._hub.unit}_{base_uid}"
+                if self._multi_device
+                else base_uid
             )
         vendor_id = getattr(ent, "vendor_id", None)
         if vendor_id in HIDDEN_VENDOR_IDS:

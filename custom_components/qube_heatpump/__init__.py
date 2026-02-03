@@ -267,11 +267,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
             continue
         domain = ent.platform
         slug = _suggest_object_id(ent, label)
+        # Scope unique_id per device in multi-device setups
+        scoped_uid = (
+            f"{hub.host}_{hub.unit}_{ent.unique_id}"
+            if multi_device
+            else ent.unique_id
+        )
         try:
             registry_entry = ent_reg.async_get_or_create(
                 domain,
                 DOMAIN,
-                ent.unique_id,
+                scoped_uid,
                 config_entry=entry,
                 suggested_object_id=slug,
             )

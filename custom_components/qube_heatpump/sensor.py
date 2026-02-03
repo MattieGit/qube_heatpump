@@ -581,7 +581,11 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         else:
             self._attr_name = str(ent.name)
         if ent.unique_id:
-            self._attr_unique_id = ent.unique_id
+            # Scope unique_id per device in multi-device setups
+            if self._multi_device:
+                self._attr_unique_id = f"{self._host}_{self._unit}_{ent.unique_id}"
+            else:
+                self._attr_unique_id = ent.unique_id
         else:
             suffix_parts = []
             if ent.input_type:

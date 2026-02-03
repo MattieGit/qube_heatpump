@@ -84,6 +84,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         self._ent = ent
         self._hub = hub
         self._show_label = bool(show_label)
+        self._multi_device = bool(multi_device)
         self._version = version
         # Control switches go in Controls section, others in Configuration
         if ent.vendor_id not in CONTROL_SWITCHES:
@@ -101,12 +102,20 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         else:
             self._attr_name = str(ent.name)
         if ent.unique_id:
-            self._attr_unique_id = ent.unique_id
+            # Scope unique_id per device in multi-device setups
+            if self._multi_device:
+                self._attr_unique_id = (
+                    f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
+                )
+            else:
+                self._attr_unique_id = ent.unique_id
         else:
             suffix = f"{ent.write_type or 'coil'}_{ent.address}".lower()
             base_uid = f"qube_switch_{suffix}"
             self._attr_unique_id = (
-                f"{base_uid}_{self._hub.label}" if multi_device else base_uid
+                f"{self._hub.host}_{self._hub.unit}_{base_uid}"
+                if self._multi_device
+                else base_uid
             )
         if getattr(ent, "vendor_id", None):
             # Always include label prefix in entity IDs
