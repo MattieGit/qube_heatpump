@@ -64,7 +64,7 @@ The polling is handled by Home Assistant's `DataUpdateCoordinator` pattern, whic
 ### Manual Refresh
 
 To force an immediate data refresh:
-1. Use the **Reload** button entity (`button.qube1_reload`)
+1. Use the **Reload** button entity (`button.qube_reload`)
 2. Or reload the integration from Settings → Devices & Services
 
 ---
@@ -86,7 +86,7 @@ To force an immediate data refresh:
 | Limitation | Description | Notes |
 |------------|-------------|-------|
 | **Energy counter glitches** | Heat pump occasionally reports invalid energy values | Handled by monotonic clamping (see below) |
-| **Entity ID changes** | Renaming the integration entry changes entity IDs | Update automations/dashboards after rename |
+| **Entity ID changes** | Changing the entity prefix changes entity IDs | Update automations/dashboards after change |
 | **10-second resolution** | Data is polled every 10 seconds | Sub-second changes may be missed |
 
 ### Not Supported
@@ -101,62 +101,59 @@ To force an immediate data refresh:
 
 ## Entity Reference
 
-All entity IDs include a heat pump label prefix (e.g., `qube1`) for clear identification. The label is derived from the integration entry title.
+All entity IDs include a configurable prefix (default: `qube`) for clear identification. The prefix can be customized via the integration's Options.
 
-### Sensors (50+)
+### Sensors
 
 The integration exposes all readable Modbus registers as sensors:
 
 | Category | Examples |
 |----------|----------|
-| **Temperatures** | `sensor.qube1_temp_outside`, `sensor.qube1_temp_supply`, `sensor.qube1_temp_return`, `sensor.qube1_temp_dhw`, `sensor.qube1_temp_room` |
-| **Power** | `sensor.qube1_power_electric`, `sensor.qube1_power_thermic` |
-| **Energy** | `sensor.qube1_energy_total_electric`, `sensor.qube1_energy_total_thermic` |
-| **Setpoints** | `sensor.qube1_heatsetp_1`, `sensor.qube1_coolsetp_1`, `sensor.qube1_dhw_setp`, `sensor.qube1_regsetp` |
-| **Operating hours** | `sensor.qube1_workinghours_dhw_hrsret`, `sensor.qube1_workinghours_heat_hrsret`, `sensor.qube1_workinghours_cool_hrsret` |
-| **Diagnostics** | `sensor.qube1_info`, `sensor.qube1_ip_address`, `sensor.qube1_metric_errors_connect` |
+| **Temperatures** | `sensor.qube_temp_outside`, `sensor.qube_temp_supply`, `sensor.qube_temp_return`, `sensor.qube_temp_dhw`, `sensor.qube_temp_room` |
+| **Power** | `sensor.qube_power_electric`, `sensor.qube_power_thermic` |
+| **Energy** | `sensor.qube_energy_total_electric`, `sensor.qube_energy_total_thermic` |
+| **Setpoints** | `sensor.qube_heatsetp_1`, `sensor.qube_coolsetp_1`, `sensor.qube_dhw_setp`, `sensor.qube_regsetp` |
+| **Operating hours** | `sensor.qube_workinghours_dhw_hrsret`, `sensor.qube_workinghours_heat_hrsret`, `sensor.qube_workinghours_cool_hrsret` |
+| **Diagnostics** | `sensor.qube_info`, `sensor.qube_ip_address`, `sensor.qube_metric_errors_connect` |
 
-### Binary Sensors (37)
+### Binary Sensors
 
 | Category | Examples |
 |----------|----------|
-| **Alarms** | `binary_sensor.qube1_glbal`, `binary_sensor.qube1_usralrms`, `binary_sensor.qube1_alrm_flw` |
-| **Valve outputs** | `binary_sensor.qube1_dout_threewayvlv_val`, `binary_sensor.qube1_dout_fourwayvlv_val` |
-| **Pump outputs** | `binary_sensor.qube1_dout_srcpmp_val`, `binary_sensor.qube1_dout_usrpmp_val` |
-| **Heater outputs** | `binary_sensor.qube1_dout_heaterstep1_val`, `binary_sensor.qube1_dout_heaterstep2_val` |
-| **Digital inputs** | `binary_sensor.qube1_dewpoint`, `binary_sensor.qube1_srcflw`, `binary_sensor.qube1_id_demand` |
-| **Status** | `binary_sensor.qube1_bms_demand`, `binary_sensor.qube1_surplus_pv`, `binary_sensor.qube1_daynightmode` |
+| **Alarms** | `binary_sensor.qube_glbal`, `binary_sensor.qube_usralrms`, `binary_sensor.qube_alrm_flw` |
+| **Valve outputs** | `binary_sensor.qube_dout_threewayvlv_val`, `binary_sensor.qube_dout_fourwayvlv_val` |
+| **Pump outputs** | `binary_sensor.qube_dout_srcpmp_val`, `binary_sensor.qube_dout_usrpmp_val` |
+| **Heater outputs** | `binary_sensor.qube_dout_heaterstep1_val`, `binary_sensor.qube_dout_heaterstep2_val` |
+| **Digital inputs** | `binary_sensor.qube_dewpoint`, `binary_sensor.qube_srcflw`, `binary_sensor.qube_id_demand` |
+| **Status** | `binary_sensor.qube_bms_demand`, `binary_sensor.qube_surplus_pv`, `binary_sensor.qube_daynightmode` |
 
-### Switches (7)
+### Switches
 
 | Entity | Description |
 |--------|-------------|
-| `switch.qube1_bms_summerwinter` | Enable summer/cooling mode |
-| `switch.qube1_tapw_timeprogram_bms_forced` | Force DHW heating |
-| `switch.qube1_antilegionella_frcstart_ant` | Start anti-legionella cycle |
-| `switch.qube1_en_plantsetp_compens` | Enable heating curve |
-| `switch.qube1_modbus_demand` | Trigger heat demand |
-| `switch.qube1_bms_sgready_a` | SG Ready signal A (hidden) |
-| `switch.qube1_bms_sgready_b` | SG Ready signal B (hidden) |
+| `switch.qube_modbus_demand` | Trigger heat demand |
+| `switch.qube_bms_summerwinter` | Enable summer/cooling mode |
+| `switch.qube_tapw_timeprogram_bms_forced` | Force DHW heating |
+| `switch.qube_antilegionella_frcstart_ant` | Start anti-legionella cycle |
+| `switch.qube_en_plantsetp_compens` | Enable heating curve |
 
-### Number Entities (2)
+### Number Entities
 
 | Entity | Description | Range |
 |--------|-------------|-------|
-| `number.qube1_setpoint_dhw_setpoint` | DHW temperature setpoint | 40-60°C |
-| `number.qube1_tapw_timeprogram_dhwsetp_nolinq_setpoint` | User-defined DHW setpoint | 40-60°C |
+| `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` | DHW temperature setpoint (manual) | 20-65°C |
 
-### Select Entity (1)
+### Select Entity
 
 | Entity | Options |
 |--------|---------|
-| `select.qube1_sgready_mode` | Off, Block, Plus, Max |
+| `select.qube_sgready_mode` | Off, Block, Plus, Max |
 
 ---
 
 ## Computed & Derived Entities
 
-Beyond raw Modbus registers, the integration creates several computed sensors. All entities include the heat pump label prefix (e.g., `qube1`).
+Beyond raw Modbus registers, the integration creates several computed sensors. All entities include the configured prefix (default: `qube`).
 
 ### Energy Tracking
 
@@ -164,25 +161,25 @@ Beyond raw Modbus registers, the integration creates several computed sensors. A
 
 | Entity | Description |
 |--------|-------------|
-| `sensor.qube1_power_standby` | Fixed 17W standby power |
-| `sensor.qube1_energy_standby` | Accumulated standby consumption (kWh) |
-| `sensor.qube1_energy_total_incl_standby` | Total consumption including standby |
-| `sensor.qube1_energy_tariff_ch` | Monthly CH (Central Heating) electrical consumption |
-| `sensor.qube1_energy_tariff_dhw` | Monthly DHW (Domestic Hot Water) electrical consumption |
-| `sensor.qube1_thermische_opbrengst_maand` | Monthly total thermal yield |
-| `sensor.qube1_thermic_yield_ch_month` | Monthly CH thermal yield |
-| `sensor.qube1_thermic_yield_dhw_month` | Monthly DHW thermal yield |
+| `sensor.qube_standby_power` | Fixed 17W standby power |
+| `sensor.qube_standby_energy` | Accumulated standby consumption (kWh) |
+| `sensor.qube_total_energy_incl_standby` | Total consumption including standby |
+| `sensor.qube_electric_consumption_ch_month` | Monthly CH (Central Heating) electrical consumption |
+| `sensor.qube_electric_consumption_dhw_month` | Monthly DHW (Domestic Hot Water) electrical consumption |
+| `sensor.qube_thermic_yield_month` | Monthly total thermal yield |
+| `sensor.qube_thermic_yield_ch_month` | Monthly CH thermal yield |
+| `sensor.qube_thermic_yield_dhw_month` | Monthly DHW thermal yield |
 
 #### Daily Energy Sensors
 
 | Entity | Description |
 |--------|-------------|
-| `sensor.qube1_electric_consumption_day` | Daily total electrical consumption |
-| `sensor.qube1_electric_consumption_ch_day` | Daily CH electrical consumption |
-| `sensor.qube1_electric_consumption_dhw_day` | Daily DHW electrical consumption |
-| `sensor.qube1_thermic_yield_day` | Daily total thermal yield |
-| `sensor.qube1_thermic_yield_ch_day` | Daily CH thermal yield |
-| `sensor.qube1_thermic_yield_dhw_day` | Daily DHW thermal yield |
+| `sensor.qube_electric_consumption_day` | Daily total electrical consumption |
+| `sensor.qube_electric_consumption_ch_day` | Daily CH electrical consumption |
+| `sensor.qube_electric_consumption_dhw_day` | Daily DHW electrical consumption |
+| `sensor.qube_thermic_yield_day` | Daily total thermal yield |
+| `sensor.qube_thermic_yield_ch_day` | Daily CH thermal yield |
+| `sensor.qube_thermic_yield_dhw_day` | Daily DHW thermal yield |
 
 Daily sensors reset at midnight (local time). Use these for daily statistics and energy dashboards.
 
@@ -190,12 +187,12 @@ Daily sensors reset at midnight (local time). Use these for daily statistics and
 
 | Entity | Period | Scope |
 |--------|--------|-------|
-| `sensor.qube1_scop_maand` | Monthly | Total |
-| `sensor.qube1_scop_ch_month` | Monthly | CH only |
-| `sensor.qube1_scop_dhw_month` | Monthly | DHW only |
-| `sensor.qube1_scop_dag` | Daily | Total |
-| `sensor.qube1_scop_ch_day` | Daily | CH only |
-| `sensor.qube1_scop_dhw_day` | Daily | DHW only |
+| `sensor.qube_scop_month` | Monthly | Total |
+| `sensor.qube_scop_ch_month` | Monthly | CH only |
+| `sensor.qube_scop_dhw_month` | Monthly | DHW only |
+| `sensor.qube_scop_day` | Daily | Total |
+| `sensor.qube_scop_ch_day` | Daily | CH only |
+| `sensor.qube_scop_dhw_day` | Daily | DHW only |
 
 SCOP values are calculated by dividing thermal yield by electrical consumption. Values outside the 0-10 range are filtered as implausible.
 
@@ -203,15 +200,15 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 
 | Entity | Values |
 |--------|--------|
-| `sensor.qube1_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, unknown |
-| `sensor.qube1_drieweg_status` | dhw, ch |
-| `sensor.qube1_vierweg_status` | heating, cooling |
+| `sensor.qube_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, unknown |
+| `sensor.qube_drieweg_status` | dhw, ch |
+| `sensor.qube_vierweg_status` | heating, cooling |
 
 ---
 
 ## SG Ready Signals
 
-The heat pump supports SG Ready signals for smart grid integration. The `select.qube1_sgready_mode` entity provides a user-friendly interface:
+The heat pump supports SG Ready signals for smart grid integration. The `select.qube_sgready_mode` entity provides a user-friendly interface:
 
 | Mode | SG Ready A | SG Ready B | Behavior |
 |------|------------|------------|----------|
@@ -220,7 +217,7 @@ The heat pump supports SG Ready signals for smart grid integration. The `select.
 | **Plus** | Off | On | Regular heating curve, room +1K, DHW day mode |
 | **Max** | On | On | Anti-legionella once, surplus curve, room +1K |
 
-The underlying `switch.qube1_bms_sgready_a` and `switch.qube1_bms_sgready_b` entities are hidden by default but remain available for advanced automations.
+The underlying SG Ready A and B switches are hidden by default but remain available for advanced automations.
 
 ---
 
@@ -248,7 +245,7 @@ automation:
         to: "heating"
     action:
       - service: switch.turn_on
-        entity_id: switch.qube1_modbus_demand
+        entity_id: switch.qube_modbus_demand
 
   - alias: "Thermostat demand off"
     trigger:
@@ -258,7 +255,7 @@ automation:
         to: "idle"
     action:
       - service: switch.turn_off
-        entity_id: switch.qube1_modbus_demand
+        entity_id: switch.qube_modbus_demand
 ```
 
 ### 3. Control DHW Setpoint
@@ -268,7 +265,7 @@ Use the native number entity:
 ```yaml
 service: number.set_value
 target:
-  entity_id: number.qube1_setpoint_dhw_setpoint
+  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint
 data:
   value: 52
 ```
@@ -277,34 +274,24 @@ data:
 
 ## Multi-Device Configuration
 
-All entity IDs include a heat pump label prefix (e.g., `qube1`), ensuring consistent naming in both single and multi-device setups.
+All entity IDs include a configurable prefix (default: `qube`), ensuring consistent naming in both single and multi-device setups.
 
-### How Labels Work
-
-The label is extracted from the entry title:
-- `"Qube Heat Pump (qube.local)"` → `qube_local`
-- `"Qube Heat Pump (192.168.1.50)"` → `192_168_1_50`
-- `"Living Room Heat Pump"` → `living_room_heat_pump`
-
-### Customizing Labels
+### Customizing the Entity ID Prefix
 
 To customize the entity prefix for a heat pump:
 
 1. Go to **Settings → Devices & Services → Integrations**
-2. Find your Qube Heat Pump entry
-3. Click the three-dot menu → **Rename**
-4. Change the title (e.g., "Qube Heat Pump (basement)")
-5. Reload the integration
-
-The new label (`basement`) will be used as the entity prefix.
+2. Find your Qube Heat Pump entry and click **Configure**
+3. Change the **Entity ID prefix** (e.g., "basement", "main")
+4. The integration will reload with the new prefix
 
 ### Example Entity IDs
 
-| Heat Pump 1 (qube1) | Heat Pump 2 (basement) |
+| Heat Pump 1 (qube) | Heat Pump 2 (basement) |
 |---------------------|------------------------|
-| `sensor.qube1_temp_outside` | `sensor.basement_temp_outside` |
-| `switch.qube1_modbus_demand` | `switch.basement_modbus_demand` |
-| `sensor.qube1_scop_dag` | `sensor.basement_scop_dag` |
+| `sensor.qube_temp_outside` | `sensor.basement_temp_outside` |
+| `switch.qube_modbus_demand` | `switch.basement_modbus_demand` |
+| `sensor.qube_scop_day` | `sensor.basement_scop_day` |
 
 ---
 
@@ -319,9 +306,9 @@ Track your heat pump's energy efficiency over time:
 type: statistics-graph
 title: Monthly Energy & Performance
 entities:
-  - sensor.electric_consumption_ch_month
-  - sensor.electric_consumption_dhw_month
-  - sensor.thermic_yield_month
+  - sensor.qube_electric_consumption_ch_month
+  - sensor.qube_electric_consumption_dhw_month
+  - sensor.qube_thermic_yield_month
 stat_types:
   - sum
 period:
@@ -343,7 +330,7 @@ automation:
     action:
       - service: select.select_option
         target:
-          entity_id: select.qube1_sgready_mode
+          entity_id: select.qube_sgready_mode
         data:
           option: "Plus"
 
@@ -355,7 +342,7 @@ automation:
     action:
       - service: select.select_option
         target:
-          entity_id: select.qube1_sgready_mode
+          entity_id: select.qube_sgready_mode
         data:
           option: "Off"
 ```
@@ -375,11 +362,11 @@ automation:
           minutes: 5
     condition:
       - condition: numeric_state
-        entity_id: sensor.qube1_temp_dhw
+        entity_id: sensor.qube_temp_dhw
         below: 55
     action:
       - service: switch.turn_on
-        entity_id: switch.qube1_tapw_timeprogram_bms_forced
+        entity_id: switch.qube_tapw_timeprogram_bms_forced
 
   - alias: "PV surplus ended - stop DHW boost"
     trigger:
@@ -390,7 +377,7 @@ automation:
           minutes: 10
     action:
       - service: switch.turn_off
-        entity_id: switch.qube1_tapw_timeprogram_bms_forced
+        entity_id: switch.qube_tapw_timeprogram_bms_forced
 ```
 
 ### Alarm Notifications
@@ -402,7 +389,7 @@ automation:
   - alias: "Heat pump alarm notification"
     trigger:
       - platform: state
-        entity_id: binary_sensor.qube1_glbal
+        entity_id: binary_sensor.qube_glbal
         to: "on"
     action:
       - service: notify.mobile_app
@@ -423,7 +410,7 @@ template:
   - sensor:
       - name: "Heat Pump Efficiency Status"
         state: >
-          {% set scop = states('sensor.qube1_scop_maand') | float(0) %}
+          {% set scop = states('sensor.qube_scop_month') | float(0) %}
           {% if scop >= 4.5 %}
             Excellent
           {% elif scop >= 3.5 %}
@@ -541,7 +528,7 @@ All communication is local:
 **Symptoms**: Some or all entities show unknown/unavailable state
 
 **Solutions**:
-1. Check the `sensor.qube1_metric_errors_read` for read error count
+1. Check the `sensor.qube_metric_errors_read` for read error count
 2. Enable debug logging to see detailed error messages:
    ```yaml
    logger:
@@ -622,7 +609,7 @@ To control the DHW temperature setpoint, use the native number entity:
 ```yaml
 service: number.set_value
 target:
-  entity_id: number.qube1_setpoint_dhw_setpoint
+  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint
 data:
   value: 52
 ```
@@ -630,7 +617,7 @@ data:
 ### Entity ID Naming Convention
 
 All entity IDs follow this pattern:
-- Prefix: Heat pump label (e.g., `qube1`)
+- Prefix: Configurable via Options (default: `qube`)
 - Base: Vendor-defined key from the Modbus register (e.g., `temp_supply`, `bms_summerwinter`)
 
 This aligns entity IDs with the vendor's Modbus documentation for easy cross-referencing.

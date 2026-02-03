@@ -7,17 +7,17 @@ This Home Assistant integration connects to your Qube heat pump via Modbus/TCP a
 
 ## Entity Naming
 
-All entity IDs include a heat pump label prefix (e.g., `qube1`) for clear identification:
+All entity IDs include a configurable prefix (default: `qube`) for clear identification:
 
 ```
-sensor.qube1_temp_supply
-sensor.qube1_temp_return
-sensor.qube1_energy_total_electric
-switch.qube1_bms_summerwinter
-select.qube1_sgready_mode
+sensor.qube_temp_supply
+sensor.qube_temp_return
+sensor.qube_energy_total_electric
+switch.qube_bms_summerwinter
+select.qube_sgready_mode
 ```
 
-The label is derived from the integration entry title and ensures consistent naming across single and multi-device setups.
+The prefix can be customized via the integration's Options (Configure button) to match your device name.
 
 ## Installation
 
@@ -46,12 +46,12 @@ The label is derived from the integration entry title and ensures consistent nam
 
 ### Entities
 
-- **50+ sensors** - Temperatures, power, energy, setpoints, operating hours
-- **37 binary sensors** - Alarms, valve states, digital inputs/outputs
-- **7 switches** - Summer mode, DHW boost, SG Ready, heating curve
-- **2 number entities** - DHW setpoint control
-- **1 select entity** - SG Ready mode selector
-- **1 button** - Integration reload
+- **Sensors** - Temperatures, power, energy, setpoints, operating hours
+- **Binary sensors** - Alarms, valve states, digital inputs/outputs
+- **Switches** - Summer mode, DHW boost, SG Ready, heating curve
+- **Number entities** - DHW setpoint control
+- **Select entity** - SG Ready mode selector
+- **Button** - Integration reload
 
 ### Computed Sensors
 
@@ -59,7 +59,7 @@ Beyond raw Modbus values, the integration provides:
 
 - **Standby power/energy** - Fixed 17W standby consumption tracking
 - **Total energy (incl. standby)** - Combined active + standby consumption
-- **Monthly energy splits** - CH and DHW consumption separated
+- **Monthly/daily energy splits** - CH and DHW consumption separated
 - **SCOP calculations** - Daily and monthly efficiency ratios
 - **Status sensors** - Human-readable heat pump and valve states
 
