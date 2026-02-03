@@ -163,7 +163,10 @@ def _library_to_ha_entity(lib_ent: LibraryEntityDef) -> EntityDef:
     data_type_str = lib_ent.data_type.value if lib_ent.data_type else None
     device_class = _derive_device_class(lib_ent.unit, lib_ent.key)
     state_class = _derive_state_class(lib_ent.unit, device_class, lib_ent.key)
-    precision = _derive_precision(lib_ent.unit, data_type_str, lib_ent.key)
+    # Use library precision if set, otherwise derive from unit/data_type/key
+    precision = getattr(lib_ent, "precision", None) or _derive_precision(
+        lib_ent.unit, data_type_str, lib_ent.key
+    )
 
     return EntityDef(
         platform=platform_map.get(lib_ent.platform, "sensor"),
