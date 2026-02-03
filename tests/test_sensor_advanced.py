@@ -13,9 +13,9 @@ from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from custom_components.qube_heatpump.sensor import (
     SCOP_MAX_EXPECTED,
     TariffEnergyTracker,
-    _append_label,
     _find_binary_by_address,
     _find_status_source,
+    _scope_unique_id,
     _slugify,
     _start_of_day,
     _start_of_month,
@@ -34,11 +34,14 @@ def test_slugify() -> None:
     assert _slugify("CamelCase") == "camelcase"
 
 
-def test_append_label_multi_device() -> None:
-    """Test _append_label with multi_device=True."""
-    assert _append_label("base", "label1", True) == "base_label1"
-    assert _append_label("base", None, True) == "base"
-    assert _append_label("base", "label1", False) == "base"
+def test_scope_unique_id_multi_device() -> None:
+    """Test _scope_unique_id with multi_device=True."""
+    # Multi-device: prefix with host_unit
+    assert _scope_unique_id("base", "192.168.1.1", 1, True) == "192.168.1.1_1_base"
+    # Single device: no prefix
+    assert _scope_unique_id("base", "192.168.1.1", 1, False) == "base"
+    # Multi-device with different unit
+    assert _scope_unique_id("sensor", "10.0.0.5", 2, True) == "10.0.0.5_2_sensor"
 
 
 def test_start_of_month() -> None:

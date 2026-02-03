@@ -115,9 +115,10 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
             self._attr_has_entity_name = False
         else:
             self._attr_has_entity_name = True
+        # Unique ID - scope per device in multi-device setups
         unique_base = "sgready_mode"
         if self._multi_device:
-            unique_base = f"{unique_base}_{self._entry_id}"
+            unique_base = f"{self._hub.host}_{self._hub.unit}_{unique_base}"
         self._attr_unique_id = unique_base
         # Always include label prefix in entity IDs
         self._attr_suggested_object_id = _slugify(f"{self._label}_sgready_mode")

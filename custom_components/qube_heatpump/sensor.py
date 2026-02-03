@@ -222,7 +222,7 @@ async def async_setup_entry(
         apply_label,
         multi_device,
         version,
-        base_unique_id=_energy_unique_id(hub.label, multi_device),
+        base_unique_id=_energy_unique_id(hub.host, hub.unit, multi_device),
         standby_sensor=standby_energy,
     )
 
@@ -233,8 +233,8 @@ async def async_setup_entry(
     tracker = entry.runtime_data.tariff_tracker
     if tracker is None:
         tracker = TariffEnergyTracker(
-            base_key=_energy_unique_id(hub.label, multi_device),
-            binary_key=_binary_unique_id(hub.label, multi_device),
+            base_key=_energy_unique_id(hub.host, hub.unit, multi_device),
+            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
             tariffs=list(TARIFF_OPTIONS),
         )
         entry.runtime_data.tariff_tracker = tracker
@@ -244,8 +244,8 @@ async def async_setup_entry(
     thermic_tracker = entry.runtime_data.thermic_tariff_tracker
     if thermic_tracker is None:
         thermic_tracker = TariffEnergyTracker(
-            base_key=_thermic_energy_unique_id(hub.label, multi_device),
-            binary_key=_binary_unique_id(hub.label, multi_device),
+            base_key=_thermic_energy_unique_id(hub.host, hub.unit, multi_device),
+            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
             tariffs=list(TARIFF_OPTIONS),
         )
         entry.runtime_data.thermic_tariff_tracker = thermic_tracker
@@ -254,8 +254,8 @@ async def async_setup_entry(
     daily_electric_tracker = entry.runtime_data.daily_tariff_tracker
     if daily_electric_tracker is None:
         daily_electric_tracker = TariffEnergyTracker(
-            base_key=_energy_unique_id(hub.label, multi_device),
-            binary_key=_binary_unique_id(hub.label, multi_device),
+            base_key=_energy_unique_id(hub.host, hub.unit, multi_device),
+            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
             tariffs=list(TARIFF_OPTIONS),
             reset_period="day",
         )
@@ -267,8 +267,8 @@ async def async_setup_entry(
     daily_thermic_tracker = entry.runtime_data.daily_thermic_tariff_tracker
     if daily_thermic_tracker is None:
         daily_thermic_tracker = TariffEnergyTracker(
-            base_key=_thermic_energy_unique_id(hub.label, multi_device),
-            binary_key=_binary_unique_id(hub.label, multi_device),
+            base_key=_thermic_energy_unique_id(hub.host, hub.unit, multi_device),
+            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
             tariffs=list(TARIFF_OPTIONS),
             reset_period="day",
         )
@@ -974,17 +974,17 @@ def _find_binary_by_address(hub: QubeHub, address: int) -> EntityDef | None:
     return None
 
 
-def _append_label(base: str, label: str | None, multi_device: bool) -> str:
-    """Append label if needed."""
-    if multi_device and label:
-        return f"{base}_{label}"
+def _scope_unique_id(base: str, host: str, unit: int, multi_device: bool) -> str:
+    """Scope unique_id per device in multi-device setups using host_unit prefix."""
+    if multi_device:
+        return f"{host}_{unit}_{base}"
     return base
 
 
-def _energy_unique_id(label: str | None, multi_device: bool) -> str:
+def _energy_unique_id(host: str, unit: int, multi_device: bool) -> str:
     """Generate energy unique ID."""
     base = "energy_total_electric"
-    return _append_label(base, label, multi_device)
+    return _scope_unique_id(base, host, unit, multi_device)
 
 
 class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
@@ -1009,8 +1009,9 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
         self._version = version
         self._attr_translation_key = "standby_power"
         self._attr_has_entity_name = True
-        unique = _append_label(STANDBY_POWER_UNIQUE_BASE, hub.entry_id, multi_device)
-        self._attr_unique_id = unique
+        self._attr_unique_id = _scope_unique_id(
+            STANDBY_POWER_UNIQUE_BASE, hub.host, hub.unit, multi_device
+        )
         # Always include label prefix in entity IDs
         self._attr_suggested_object_id = f"{self._label}_{STANDBY_POWER_UNIQUE_BASE}"
         self._attr_device_class = SensorDeviceClass.POWER
@@ -1055,8 +1056,9 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._last_update: datetime | None = None
         self._attr_translation_key = "standby_energy"
         self._attr_has_entity_name = True
-        unique = _append_label(STANDBY_ENERGY_UNIQUE_BASE, hub.entry_id, multi_device)
-        self._attr_unique_id = unique
+        self._attr_unique_id = _scope_unique_id(
+            STANDBY_ENERGY_UNIQUE_BASE, hub.host, hub.unit, multi_device
+        )
         # Always include label prefix in entity IDs
         self._attr_suggested_object_id = f"{self._label}_{STANDBY_ENERGY_UNIQUE_BASE}"
         self._attr_device_class = SensorDeviceClass.ENERGY
@@ -1142,8 +1144,9 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self._total_energy: float | None = None
         self._attr_translation_key = "total_energy_incl_standby"
         self._attr_has_entity_name = True
-        unique = _append_label(TOTAL_ENERGY_UNIQUE_BASE, hub.entry_id, multi_device)
-        self._attr_unique_id = unique
+        self._attr_unique_id = _scope_unique_id(
+            TOTAL_ENERGY_UNIQUE_BASE, hub.host, hub.unit, multi_device
+        )
         # Always include label prefix in entity IDs
         self._attr_suggested_object_id = f"{self._label}_{TOTAL_ENERGY_UNIQUE_BASE}"
         self._attr_device_class = SensorDeviceClass.ENERGY
@@ -1269,13 +1272,13 @@ def _start_of_day(dt_value: datetime) -> datetime:
     return dt_value.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-def _thermic_energy_unique_id(label: str | None, multi_device: bool) -> str:
+def _thermic_energy_unique_id(host: str, unit: int, multi_device: bool) -> str:
     base = "energy_total_thermic"
-    return _append_label(base, label, multi_device)
+    return _scope_unique_id(base, host, unit, multi_device)
 
 
-def _binary_unique_id(label: str | None, multi_device: bool) -> str:
-    return _append_label(BINARY_TARIFF_UNIQUE_ID, label, multi_device)
+def _binary_unique_id(host: str, unit: int, multi_device: bool) -> str:
+    return _scope_unique_id(BINARY_TARIFF_UNIQUE_ID, host, unit, multi_device)
 
 
 class TariffEnergyTracker:
@@ -1417,7 +1420,7 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._attr_translation_key = translation_key
         self._attr_has_entity_name = True
         base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
-        self._attr_unique_id = _append_label(base_uid, hub.entry_id, multi_device)
+        self._attr_unique_id = _scope_unique_id(base_uid, hub.host, hub.unit, multi_device)
         suggested_base = object_base or base_uid
         # Always include label prefix in entity IDs
         self._attr_suggested_object_id = f"{self._label}_{suggested_base}"
@@ -1505,7 +1508,7 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         self._version = version
         self._attr_translation_key = translation_key
         self._attr_has_entity_name = True
-        self._attr_unique_id = _append_label(base_unique, hub.entry_id, multi_device)
+        self._attr_unique_id = _scope_unique_id(base_unique, hub.host, hub.unit, multi_device)
         # Always include label prefix in entity IDs
         self._attr_suggested_object_id = f"{self._label}_{object_base}"
         self._attr_device_class = SensorDeviceClass.ENERGY

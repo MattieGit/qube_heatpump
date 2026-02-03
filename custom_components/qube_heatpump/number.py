@@ -107,17 +107,17 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
         else:
             self._attr_name = str(ent.name)
 
-        # Unique ID
+        # Unique ID - scope per device in multi-device setups
         if ent.unique_id:
             base_uid = f"{ent.unique_id}_setpoint"
             self._attr_unique_id = (
-                f"{base_uid}_{hub.entry_id}" if multi_device else base_uid
+                f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
             )
         else:
             suffix = f"{ent.input_type or 'holding'}_{ent.address}".lower()
             base_uid = f"qube_setpoint_{suffix}"
             self._attr_unique_id = (
-                f"{base_uid}_{hub.entry_id}" if multi_device else base_uid
+                f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
             )
 
         # Suggested object ID - always include label prefix
