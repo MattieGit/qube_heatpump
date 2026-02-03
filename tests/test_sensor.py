@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
@@ -296,11 +296,17 @@ async def test_sensor_qube_info_entity(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
+    # Check entity registry for info sensor (more reliable than states)
+    entity_registry = er.async_get(hass)
+    info_entries = [
+        e for e in entity_registry.entities.values() if "info" in e.unique_id
+    ]
+    # Should have info sensor registered
+    assert len(info_entries) > 0, "Info sensor not found in entity registry"
+
+    # Also check state if available
     states = hass.states.async_all()
     info_sensors = [s for s in states if "qube_info" in s.entity_id]
-    # Should have info sensor
-    assert len(info_sensors) > 0
-    # Info sensor should have attributes
     if info_sensors:
         attrs = info_sensors[0].attributes
         assert "version" in attrs or "label" in attrs or "host" in attrs
