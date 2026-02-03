@@ -111,8 +111,8 @@ def _derive_precision(
     unit: str | None, data_type: str | None, key: str | None = None
 ) -> int | None:
     """Derive suggested display precision from unit and data type."""
-    # Special handling for COP sensor
-    if key and key == "cop_calc":
+    # Special handling for COP sensors - reduce precision to minimize updates
+    if key and key in ("cop_calc", "generalmng_cop"):
         return 1
 
     if not unit:
