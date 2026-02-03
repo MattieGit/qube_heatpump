@@ -170,7 +170,7 @@
                 "name": "Minimumtemperatuur tapwater"
             },
             "tapw_timeprogram_dhws_prog": {
-                "name": "Temperatuur tapwater bij actief tijdprogramma"
+                "name": "SWW setpoint (actief programma)"
             },
             "regulation_buffersetp_min": {
                 "name": "Minimum setpoint bufferregeling"

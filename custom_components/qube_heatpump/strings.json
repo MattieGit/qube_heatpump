@@ -174,7 +174,7 @@
         "name": "Minimum temperature DHW"
       },
       "tapw_timeprogram_dhws_prog": {
-        "name": "DHW temperature (active program)"
+        "name": "DHW setpoint (active program)"
       },
       "regulation_buffersetp_min": {
         "name": "Minimum setpoint buffer regulation"
