@@ -333,16 +333,16 @@
         "name": "Flow rate"
       },
       "setpoint_room_heat_day": {
-        "name": "Room setpoint heating (day)"
+        "name": "Room setpoint (no LinQ) heating (day)"
       },
       "setpoint_room_heat_night": {
-        "name": "Room setpoint heating (night)"
+        "name": "Room setpoint (no LinQ) heating (night)"
       },
       "setpoint_room_cool_day": {
-        "name": "Room setpoint cooling (day)"
+        "name": "Room setpoint (no LinQ) cooling (day)"
       },
       "setpoint_room_cool_night": {
-        "name": "Room setpoint cooling (night)"
+        "name": "Room setpoint (no LinQ) cooling (night)"
       },
       "setpoint_dhw": {
         "name": "User-defined DHW setpoint"

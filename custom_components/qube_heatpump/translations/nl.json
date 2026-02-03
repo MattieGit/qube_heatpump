@@ -332,16 +332,16 @@
                 "name": "Debiet"
             },
             "setpoint_room_heat_day": {
-                "name": "Setpoint ruimte CV dag"
+                "name": "Setpoint ruimte (geen LinQ) CV (dag)"
             },
             "setpoint_room_heat_night": {
-                "name": "Setpoint ruimte CV nacht"
+                "name": "Setpoint ruimte (geen LinQ) CV (nacht)"
             },
             "setpoint_room_cool_day": {
-                "name": "Setpoint ruimte Koel dag"
+                "name": "Setpoint ruimte (geen LinQ) Koel (dag)"
             },
             "setpoint_room_cool_night": {
-                "name": "Setpoint ruimte Koel nacht"
+                "name": "Setpoint ruimte (geen LinQ) Koel (nacht)"
             },
             "setpoint_dhw": {
                 "name": "Ingesteld setpoint tapwater"
