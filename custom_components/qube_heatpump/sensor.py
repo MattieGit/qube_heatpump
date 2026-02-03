@@ -649,6 +649,16 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             except (TypeError, ValueError):
                 pass
 
+        # Round numeric values when precision is set to reduce state change frequency
+        # This applies the actual rounding (not just display precision)
+        if self._ent.precision is not None:
+            try:
+                precision = int(self._ent.precision)
+                num_value = float(value)
+                return round(num_value, precision)
+            except (TypeError, ValueError):
+                pass
+
         return value
 
 
