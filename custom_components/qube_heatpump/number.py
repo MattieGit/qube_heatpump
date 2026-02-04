@@ -103,7 +103,7 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
             self._attr_name = str(ent.name)
         # Use vendor_id for stable, predictable entity IDs
         if ent.vendor_id:
-            self._attr_suggested_object_id = ent.vendor_id
+            self.entity_id = f"number.{self._label}_{ent.vendor_id}"
 
         # Unique ID - scope per device in multi-device setups
         if ent.unique_id:

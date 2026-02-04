@@ -34,10 +34,16 @@ In each entity class (`sensor.py`, `binary_sensor.py`, `switch.py`, `select.py`,
 ```python
 # Use vendor_id for stable, predictable entity IDs
 if ent.vendor_id:
-    self._attr_suggested_object_id = ent.vendor_id
+    self.entity_id = f"{platform}.{hub.label}_{ent.vendor_id}"
 ```
 
-For entities without vendor_id (computed sensors, diagnostic sensors), the `translation_key` is used as the `suggested_object_id`.
+For entities without vendor_id (computed sensors, diagnostic sensors), the `translation_key` is used:
+
+```python
+self.entity_id = f"sensor.{self._label}_{translation_key}"
+```
+
+**Important:** Use `self.entity_id` (not `_attr_suggested_object_id`) - Home Assistant extracts the object_id from this before entity registration.
 
 ### Entity Name vs Entity ID
 

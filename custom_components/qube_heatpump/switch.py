@@ -94,7 +94,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
             self._attr_entity_registry_visible_default = False
         # Use vendor_id for stable, predictable entity IDs
         if ent.vendor_id:
-            self._attr_suggested_object_id = ent.vendor_id
+            self.entity_id = f"switch.{hub.label}_{ent.vendor_id}"
         if ent.translation_key:
             self._attr_translation_key = ent.translation_key
         else:

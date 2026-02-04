@@ -71,7 +71,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         label = hub.label or "qube1"
         self._show_label = bool(show_label)
         self._attr_translation_key = "qube_reload"
-        self._attr_suggested_object_id = "reload"
+        self.entity_id = f"button.{label}_reload"
 
         # Stable unique ID - scope per device in multi-device setups
         self._attr_unique_id = (
