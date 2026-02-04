@@ -17,11 +17,10 @@ from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
-    CONF_ENTITY_PREFIX,
     CONF_HOST,
+    CONF_NAME,
     CONF_PORT,
     CONF_UNIT_ID,
-    DEFAULT_ENTITY_PREFIX,
     DEFAULT_PORT,
     DOMAIN,
 )
@@ -108,6 +107,11 @@ class QubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return True
         return False
 
+    def _get_default_name(self) -> str:
+        """Generate default device name based on existing entries."""
+        existing = len(self._async_current_entries())
+        return f"qube {existing + 1}"
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -116,6 +120,7 @@ class QubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             host = user_input[CONF_HOST]
+            name = user_input.get(CONF_NAME, "").strip() or self._get_default_name()
             port = DEFAULT_PORT
 
             # Validate connectivity to the device to provide immediate feedback
@@ -135,14 +140,21 @@ class QubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     await self.async_set_unique_id(f"{DOMAIN}-{host}-{port}")
                     self._abort_if_unique_id_configured()
                     return self.async_create_entry(
-                        title=f"Qube Heat Pump ({host})",
-                        data={CONF_HOST: host, CONF_PORT: port},
+                        title=name,
+                        data={CONF_HOST: host, CONF_PORT: port, CONF_NAME: name},
                     )
 
+        default_name = self._get_default_name()
         if self._async_current_entries():
-            schema = vol.Schema({vol.Required(CONF_HOST): str})
+            schema = vol.Schema({
+                vol.Required(CONF_HOST): str,
+                vol.Optional(CONF_NAME, default=default_name): str,
+            })
         else:
-            schema = vol.Schema({vol.Required(CONF_HOST, default="qube.local"): str})
+            schema = vol.Schema({
+                vol.Required(CONF_HOST, default="qube.local"): str,
+                vol.Optional(CONF_NAME, default=default_name): str,
+            })
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
@@ -173,10 +185,12 @@ class QubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data = self._reconfig_entry.data
         host = data.get(CONF_HOST)
         port = data.get(CONF_PORT, DEFAULT_PORT)
+        name = data.get(CONF_NAME) or self._reconfig_entry.title
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=host): str,
                 vol.Required(CONF_PORT, default=port): int,
+                vol.Required(CONF_NAME, default=name): str,
             }
         )
         return self.async_show_form(step_id="reconfigure_confirm", data_schema=schema)
@@ -190,6 +204,7 @@ class QubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Update entry data
         new_host = user_input[CONF_HOST]
         new_port = user_input[CONF_PORT]
+        new_name = user_input.get(CONF_NAME, "").strip() or self._reconfig_entry.title
         new_unique_id = f"{DOMAIN}-{new_host}-{new_port}"
         for entry in self._async_current_entries():
             if entry.entry_id == self._reconfig_entry.entry_id:
@@ -205,10 +220,11 @@ class QubeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         new = dict(self._reconfig_entry.data)
         new[CONF_HOST] = new_host
         new[CONF_PORT] = new_port
+        new[CONF_NAME] = new_name
         self.hass.config_entries.async_update_entry(
             self._reconfig_entry,
             data=new,
-            title=f"Qube Heat Pump ({new_host})",
+            title=new_name,
             unique_id=new_unique_id,
         )
         # Reload
@@ -230,6 +246,7 @@ class OptionsFlowHandler(OptionsFlow):
         errors: dict[str, str] = {}
         current_host = str(self._entry.data.get(CONF_HOST, "qube.local")).strip()
         current_port = int(self._entry.data.get(CONF_PORT, DEFAULT_PORT))
+        current_name = self._entry.data.get(CONF_NAME) or self._entry.title
         # Capture existing entries to support duplicate IP detection
         entries = [
             e
@@ -240,9 +257,6 @@ class OptionsFlowHandler(OptionsFlow):
         current_unit = int(
             self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
         )
-        current_prefix = str(
-            self._entry.options.get(CONF_ENTITY_PREFIX, DEFAULT_ENTITY_PREFIX)
-        ).strip().lower()
 
         hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         resolved_ip = None
@@ -257,13 +271,7 @@ class OptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             user_input = dict(user_input)
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
-            new_prefix = str(
-                user_input.get(CONF_ENTITY_PREFIX, current_prefix)
-            ).strip().lower()
-            # Sanitize prefix: only alphanumeric and underscores
-            new_prefix = "".join(
-                ch if ch.isalnum() else "_" for ch in new_prefix
-            ).strip("_") or DEFAULT_ENTITY_PREFIX
+            new_name = str(user_input.get(CONF_NAME, current_name)).strip() or current_name
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
@@ -273,7 +281,7 @@ class OptionsFlowHandler(OptionsFlow):
                     errors[CONF_HOST] = "duplicate_ip"
 
             host_changed = new_host != current_host
-            prefix_changed = new_prefix != current_prefix
+            name_changed = new_name != current_name
             if host_changed and CONF_HOST not in errors:
                 try:
                     _, writer = await asyncio.wait_for(
@@ -289,16 +297,17 @@ class OptionsFlowHandler(OptionsFlow):
             if not errors:
                 opts = dict(self._entry.options)
                 opts.pop(CONF_UNIT_ID, None)
-                opts[CONF_ENTITY_PREFIX] = new_prefix
 
                 update_kwargs: dict[str, Any] = {"options": opts}
+                new_data = dict(self._entry.data)
                 if host_changed:
-                    new_data = dict(self._entry.data)
                     new_data[CONF_HOST] = new_host
                     new_data[CONF_PORT] = current_port
-                    update_kwargs["data"] = new_data
-                    update_kwargs["title"] = f"Qube Heat Pump ({new_host})"
                     update_kwargs["unique_id"] = f"{DOMAIN}-{new_host}-{current_port}"
+                if name_changed or host_changed:
+                    new_data[CONF_NAME] = new_name
+                    update_kwargs["title"] = new_name
+                update_kwargs["data"] = new_data
                 self.hass.config_entries.async_update_entry(
                     self._entry, **update_kwargs
                 )
@@ -308,14 +317,14 @@ class OptionsFlowHandler(OptionsFlow):
                     old_device = device_registry.async_get_device(identifiers)
                     if old_device:
                         device_registry.async_remove_device(old_device.id)
-                if host_changed or prefix_changed:
+                if host_changed or name_changed:
                     await self.hass.config_entries.async_reload(self._entry.entry_id)
                 return self.async_create_entry(title="", data=opts)
 
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=current_host): str,
-                vol.Required(CONF_ENTITY_PREFIX, default=current_prefix): str,
+                vol.Required(CONF_NAME, default=current_name): str,
             }
         )
 

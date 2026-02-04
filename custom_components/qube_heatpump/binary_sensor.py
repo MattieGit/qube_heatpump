@@ -13,7 +13,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -96,9 +95,10 @@ async def async_setup_entry(
     data = entry.runtime_data
     hub = data.hub
     coordinator = data.coordinator
-    apply_label = data.apply_label_in_name
     multi_device = data.multi_device
     version = data.version or "unknown"
+    # show_label is no longer used (entity IDs are auto-generated from device name)
+    show_label = False
 
     entities: list[BinarySensorEntity] = []
     alarm_entities: list[EntityDef] = []
@@ -106,7 +106,7 @@ async def async_setup_entry(
         if ent.platform != "binary_sensor":
             continue
         entities.append(
-            QubeBinarySensor(coordinator, hub, apply_label, multi_device, ent, version)
+            QubeBinarySensor(coordinator, hub, show_label, multi_device, ent, version)
         )
         if _is_alarm_entity(ent):
             alarm_entities.append(ent)
@@ -116,7 +116,7 @@ async def async_setup_entry(
             QubeAlarmStatusBinarySensor(
                 coordinator,
                 hub,
-                apply_label,
+                show_label,
                 multi_device,
                 alarm_entities,
                 version,
@@ -186,11 +186,6 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         entity_category = _derive_entity_category(vendor_id)
         if entity_category:
             self._attr_entity_category = entity_category
-        # Always set suggested_object_id with label prefix for consistent entity IDs
-        # Use vendor_id if available, otherwise fall back to unique_id
-        object_base = vendor_id or ent.unique_id
-        if object_base:
-            self._attr_suggested_object_id = _slugify(f"{self._label}_{object_base}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -199,7 +194,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=self._hub.device_name,
             manufacturer="Qube",
-            model="Heatpump",
+            model="Heat Pump",
             sw_version=self._version,
         )
 
@@ -246,8 +241,6 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_has_entity_name = True
         self._attr_icon = "mdi:alarm-light"
         self._keys = [_entity_state_key(ent) for ent in alarm_entities]
-        # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{self._label}_alarm_sensors")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -256,7 +249,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=self._hub.device_name,
             manufacturer="Qube",
-            model="Heatpump",
+            model="Heat Pump",
             sw_version=self._version,
         )
 

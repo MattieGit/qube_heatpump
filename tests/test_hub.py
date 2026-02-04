@@ -35,7 +35,7 @@ async def test_hub_properties(hass: HomeAssistant) -> None:
 
 
 async def test_hub_default_label(hass: HomeAssistant) -> None:
-    """Test hub with default label."""
+    """Test hub label is derived from device_name."""
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
     ) as mock_client_cls:
@@ -44,9 +44,10 @@ async def test_hub_default_label(hass: HomeAssistant) -> None:
         client.port = 502
         client.unit = 1
 
-        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, None)
+        # Label is now derived from device_name by slugifying it
+        hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube 1")
 
-        assert hub.label == "qube1"
+        assert hub.label == "qube_1"
 
 
 async def test_hub_connect_success(hass: HomeAssistant) -> None:

@@ -201,7 +201,6 @@ class QubeHub:
         port: int,
         entry_id: str,
         unit_id: int = 1,
-        label: str | None = None,
         device_name: str | None = None,
     ) -> None:
         """Initialize the hub."""
@@ -210,8 +209,7 @@ class QubeHub:
         self._port = port
         self.entry_id = entry_id
         self._unit = unit_id
-        self._label = label or "qube1"
-        self._device_name = device_name or "Qube Heatpump"
+        self._device_name = device_name or "Qube Heat Pump"
         self._client: QubeClient | None = None
         self.entities: list[EntityDef] = []
         # Error counters
@@ -279,8 +277,12 @@ class QubeHub:
 
     @property
     def label(self) -> str:
-        """Return label for entity ID prefixes."""
-        return self._label
+        """Return label derived from device name (for backwards compatibility)."""
+        # Slugify the device name to create a label
+        import re
+        slug = self._device_name.lower()
+        slug = re.sub(r"[^a-z0-9]+", "_", slug)
+        return slug.strip("_") or "qube"
 
     @property
     def device_name(self) -> str:

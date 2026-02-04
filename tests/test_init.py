@@ -135,12 +135,13 @@ async def test_async_setup_entry_label_from_options(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
 ) -> None:
-    """Test label is taken from entity_prefix option."""
+    """Test label is derived from device name."""
+    from custom_components.qube_heatpump.const import CONF_NAME
+
     entry = MockConfigEntry(
         domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump (my_qube)",
-        options={CONF_ENTITY_PREFIX: "my_qube"},
+        data={CONF_HOST: "1.2.3.4", CONF_NAME: "my qube"},
+        title="my qube",
     )
     entry.add_to_hass(hass)
 
@@ -148,14 +149,15 @@ async def test_async_setup_entry_label_from_options(
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.runtime_data.label == "my_qube"
+    # Label is now accessed via hub.label and is derived from device_name
+    assert entry.runtime_data.hub.label == "my_qube"
 
 
 async def test_async_setup_entry_label_default(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
 ) -> None:
-    """Test label uses default when no option set."""
+    """Test label is auto-generated when no name set."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "1.2.3.4"},
@@ -167,31 +169,9 @@ async def test_async_setup_entry_label_default(
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.runtime_data.label == DEFAULT_ENTITY_PREFIX
-
-
-def test_suggest_object_id_none_base() -> None:
-    """Test _suggest_object_id returns None when base is missing."""
-    from custom_components.qube_heatpump import _suggest_object_id
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    ent = EntityDef(platform="sensor", name="Test", address=100)
-    ent.vendor_id = None
-    ent.unique_id = None
-
-    result = _suggest_object_id(ent, "qube1")
-    assert result is None
-
-
-def test_suggest_object_id_unitstatus() -> None:
-    """Test _suggest_object_id handles unitstatus special case."""
-    from custom_components.qube_heatpump import _suggest_object_id
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    ent = EntityDef(platform="sensor", name="Test", address=100, vendor_id="UnitStatus")
-
-    result = _suggest_object_id(ent, None)
-    assert result == "qube_status_heatpump"
+    # Label is derived from device_name, which is auto-generated if not provided
+    # For a single entry, it will be "qube 1" -> "qube_1"
+    assert entry.runtime_data.hub.label == "qube_1"
 
 
 def test_is_alarm_entity() -> None:
@@ -199,13 +179,13 @@ def test_is_alarm_entity() -> None:
     from custom_components.qube_heatpump import _is_alarm_entity
     from custom_components.qube_heatpump.hub import EntityDef
 
-    # Alarm by name
+    # Alarm by name containing "alarm"
     ent1 = EntityDef(platform="binary_sensor", name="Alarm Test", address=100)
     assert _is_alarm_entity(ent1) is True
 
-    # Alarm by vendor_id starting with "al"
+    # Alarm by vendor_id starting with "al_"
     ent2 = EntityDef(
-        platform="binary_sensor", name="Test", address=101, vendor_id="alrm_test"
+        platform="binary_sensor", name="Test", address=101, vendor_id="al_test"
     )
     assert _is_alarm_entity(ent2) is True
 
@@ -222,13 +202,13 @@ def test_alarm_group_object_id() -> None:
     """Test _alarm_group_object_id generation."""
     from custom_components.qube_heatpump import _alarm_group_object_id
 
-    # Single device
-    result = _alarm_group_object_id(None, False)
-    assert result == "qube_alarm_sensors"
+    # With label
+    result = _alarm_group_object_id("qube1")
+    assert result == "qube_alarms_qube1"
 
-    # Multi-device with label
-    result = _alarm_group_object_id("qube1", True)
-    assert result == "qube_alarm_sensors_qube1"
+    # With label containing spaces (gets slugified)
+    result = _alarm_group_object_id("qube 1")
+    assert result == "qube_alarms_qube_1"
 
 
 def test_derive_label_from_title() -> None:

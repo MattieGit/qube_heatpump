@@ -23,18 +23,16 @@ from homeassistant.loader import async_get_integration, async_get_loaded_integra
 from homeassistant.setup import async_setup_component
 
 from .const import (
-    CONF_ENTITY_PREFIX,
     CONF_HOST,
+    CONF_NAME,
     CONF_PORT,
     CONF_UNIT_ID,
-    DEFAULT_ENTITY_PREFIX,
     DEFAULT_PORT,
     DOMAIN,
     PLATFORMS,
 )
 from .coordinator import QubeCoordinator
-from .helpers import derive_label_from_title, slugify
-from .hub import EntityDef, QubeHub
+from .hub import QubeHub
 
 
 @dataclass
@@ -43,11 +41,10 @@ class QubeData:
 
     hub: QubeHub
     coordinator: QubeCoordinator
-    label: str | None
-    apply_label_in_name: bool
+    device_name: str
     version: str
     multi_device: bool
-    alarm_group_object_id: str
+    alarm_group_object_id: str | None = None
     tariff_tracker: Any | None = None
     thermic_tariff_tracker: Any | None = None
     daily_tariff_tracker: Any | None = None
@@ -62,41 +59,25 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def _suggest_object_id(
-    ent: EntityDef,
-    label: str | None,
-) -> str | None:
-    """Suggest an entity ID slug."""
-    base: str | None = ent.vendor_id or ent.unique_id
-    if not base:
-        return None
-    base = base.lower()
-    if base == "unitstatus":
-        base = "qube_status_heatpump"
-
-    # Always apply label prefix for consistent entity IDs
-    if label and not base.startswith(f"{label}_"):
-        base = f"{label}_{base}"
-    return slugify(base)
-
-
-def _is_alarm_entity(ent: EntityDef) -> bool:
-    """Check if entity is an alarm."""
-    if getattr(ent, "platform", None) != "binary_sensor":
+def _is_alarm_entity(ent: Any) -> bool:
+    """Check if an entity is an alarm entity."""
+    if ent.platform != "binary_sensor":
         return False
-    name = (getattr(ent, "name", "") or "").lower()
-    if "alarm" in name:
-        return True
-    vendor = (getattr(ent, "vendor_id", "") or "").lower()
-    return vendor.startswith("al")
+    vendor_id = (ent.vendor_id or "").lower()
+    name_lower = (ent.name or "").lower()
+    return (
+        "alarm" in vendor_id
+        or vendor_id.startswith("al_")
+        or "alarm" in name_lower
+        or name_lower.startswith("al ")
+    )
 
 
-def _alarm_group_object_id(label: str | None, multi_device: bool) -> str:
-    """Generate the object ID for the alarm group."""
-    base = "qube_alarm_sensors"
-    if multi_device and label:
-        base = f"{base}_{label}"
-    return base
+def _alarm_group_object_id(label: str) -> str:
+    """Generate the alarm group object_id."""
+    # Slugify the label
+    slug = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+    return f"qube_alarms_{slug}" if slug else "qube_alarms"
 
 
 def _resolve_entry(
@@ -213,7 +194,7 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
         await coordinator_target.async_request_refresh()
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:  # noqa: C901
+async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:
     """Set up Qube Heat Pump from a config entry."""
     host = entry.data[CONF_HOST]
     port = entry.data.get(CONF_PORT, DEFAULT_PORT)
@@ -228,20 +209,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     ]
     multi_device = len(existing_entries) >= 1
 
-    # Get entity ID prefix from options (or use default)
-    label = str(options.get(CONF_ENTITY_PREFIX, DEFAULT_ENTITY_PREFIX)).strip().lower()
-    # Sanitize: only alphanumeric and underscores
-    label = "".join(ch if ch.isalnum() else "_" for ch in label).strip("_")
-    if not label:
-        # Fallback: derive from title for backwards compatibility
-        label = derive_label_from_title(entry.title)
+    # Get device name from entry data or fall back to title
+    device_name = entry.data.get(CONF_NAME) or entry.title
 
-    # Rename existing entries from "WP Qube" to "Qube Heat Pump"
-    if entry.title.startswith("WP Qube"):
-        new_title = entry.title.replace("WP Qube", "Qube Heat Pump")
-        hass.config_entries.async_update_entry(entry, title=new_title)
+    # Migration: update old entries without CONF_NAME
+    if CONF_NAME not in entry.data:
+        # Generate a name based on existing entry count
+        device_number = len(existing_entries) + 1
+        device_name = f"qube {device_number}"
+        new_data = dict(entry.data)
+        new_data[CONF_NAME] = device_name
+        hass.config_entries.async_update_entry(entry, data=new_data, title=device_name)
 
-    hub = QubeHub(hass, host, port, entry.entry_id, unit_id, label, entry.title)
+    hub = QubeHub(hass, host, port, entry.entry_id, unit_id, device_name)
 
     # Load fallback translations (manual resolution to avoid device prefix)
     translations_path = Path(__file__).parent / "translations" / "en.json"
@@ -260,64 +240,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # Load entities from the python-qube-heatpump library
     hub.load_library_entities()
 
-    ent_reg = er.async_get(hass)
-
-    for ent in hub.entities:
-        if not ent.unique_id:
-            continue
-        domain = ent.platform
-        slug = _suggest_object_id(ent, label)
-        # Scope unique_id per device in multi-device setups
-        scoped_uid = (
-            f"{hub.host}_{hub.unit}_{ent.unique_id}"
-            if multi_device
-            else ent.unique_id
-        )
-        try:
-            registry_entry = ent_reg.async_get_or_create(
-                domain,
-                DOMAIN,
-                scoped_uid,
-                config_entry=entry,
-                suggested_object_id=slug,
-            )
-        except Exception:  # noqa: BLE001
-            # If entity creation fails, skip it
-            continue
-        if slug:
-            # Update suggested_object_id if it doesn't match (for existing entities)
-            if registry_entry.suggested_object_id != slug:
-                with contextlib.suppress(Exception):
-                    ent_reg.async_update_entity(
-                        registry_entry.entity_id, suggested_object_id=slug
-                    )
-            # Update entity_id if it doesn't match desired format
-            desired_eid = f"{domain}.{slug}"
-            if (
-                registry_entry.entity_id != desired_eid
-                and ent_reg.async_get(desired_eid) is None
-            ):
-                with contextlib.suppress(Exception):
-                    ent_reg.async_update_entity(
-                        registry_entry.entity_id, new_entity_id=desired_eid
-                    )
-
-    # Pre-register button and select entities with correct suggested_object_id
-    extra_entities = [
-        ("button", "qube_reload", f"{label}_reload"),
-        ("select", "sgready_mode", f"{label}_sgready_mode"),
-    ]
-    for domain, base_uid, slug in extra_entities:
-        scoped_uid = (
-            f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
-        )
-        with contextlib.suppress(Exception):
-            reg_entry = ent_reg.async_get_or_create(
-                domain, DOMAIN, scoped_uid, config_entry=entry, suggested_object_id=slug
-            )
-            if reg_entry.suggested_object_id != slug:
-                ent_reg.async_update_entity(reg_entry.entity_id, suggested_object_id=slug)
-
     version = "unknown"
     with contextlib.suppress(Exception):
         integration = async_get_loaded_integration(hass, DOMAIN)
@@ -325,9 +247,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
             integration = await async_get_integration(hass, DOMAIN)
         if integration and getattr(integration, "version", None):
             version = str(integration.version)
-
-    # Apply label prefix to entity IDs when multiple devices are configured
-    apply_label_in_name = multi_device
 
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         """Handle options update."""
@@ -341,16 +260,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
 
     coordinator = QubeCoordinator(hass, hub, entry)
 
-    alarm_group_object_id = _alarm_group_object_id(label, multi_device)
+    # Prepare alarm group object ID for later use
+    label = hub.label
+    alarm_group_id = _alarm_group_object_id(label)
 
     entry.runtime_data = QubeData(
         hub=hub,
         coordinator=coordinator,
-        label=label,
-        apply_label_in_name=apply_label_in_name,
+        device_name=device_name,
         version=version,
         multi_device=multi_device,
-        alarm_group_object_id=alarm_group_object_id,
+        alarm_group_object_id=alarm_group_id,
     )
 
     with contextlib.suppress(Exception):
@@ -391,7 +311,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Alarm group sync
+    # Alarm group sync (label and alarm_group_id already computed above)
     ant_reg = er.async_get(hass)
     entity_ids: list[str] = []
     for ent in hub.entities:
@@ -408,7 +328,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
             await hass.services.async_call(
                 "group",
                 "remove",
-                {"object_id": alarm_group_object_id},
+                {"object_id": alarm_group_id},
                 blocking=True,
             )
     else:
@@ -416,7 +336,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         if multi_device:
             name = f"Qube alarm sensors ({label})"
         service_data = {
-            "object_id": alarm_group_object_id,
+            "object_id": alarm_group_id,
             "name": name,
             "icon": "mdi:alarm-light",
             "entities": sorted(set(entity_ids)),

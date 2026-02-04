@@ -11,7 +11,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -30,7 +29,8 @@ async def async_setup_entry(
     data = entry.runtime_data
     hub = data.hub
     coordinator = data.coordinator
-    apply_label = data.apply_label_in_name
+    # show_label is no longer used (entity IDs are auto-generated from device name)
+    show_label = False
     multi_device = data.multi_device
     version = data.version or "unknown"
 
@@ -41,7 +41,7 @@ async def async_setup_entry(
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             continue
         entities.append(
-            QubeSwitch(coordinator, hub, apply_label, multi_device, ent, version)
+            QubeSwitch(coordinator, hub, show_label, multi_device, ent, version)
         )
 
     async_add_entities(entities)
@@ -117,12 +117,6 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
                 if self._multi_device
                 else base_uid
             )
-        # Always set suggested_object_id with label prefix for consistent entity IDs
-        # Use vendor_id if available, otherwise fall back to unique_id
-        label = self._hub.label or "qube1"
-        object_base = getattr(ent, "vendor_id", None) or ent.unique_id
-        if object_base:
-            self._attr_suggested_object_id = _slugify(f"{label}_{object_base}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -131,7 +125,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=self._hub.device_name,
             manufacturer="Qube",
-            model="Heatpump",
+            model="Heat Pump",
             sw_version=self._version,
         )
 

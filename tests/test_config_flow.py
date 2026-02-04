@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.qube_heatpump.const import CONF_HOST, CONF_PORT, DOMAIN
+from custom_components.qube_heatpump.const import CONF_HOST, CONF_NAME, CONF_PORT, DOMAIN
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -17,9 +17,9 @@ def mock_config_entry() -> MockConfigEntry:
     """Return a mock config entry."""
     return MockConfigEntry(
         domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502},
+        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502, CONF_NAME: "qube 1"},
         unique_id=f"{DOMAIN}-1.2.3.4-502",
-        title="Qube Heat Pump (1.2.3.4)",
+        title="qube 1",
     )
 
 
@@ -38,15 +38,16 @@ async def test_form(hass: HomeAssistant, mock_setup_entry: MagicMock) -> None:
     ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
-            {CONF_HOST: "1.2.3.4"},
+            {CONF_HOST: "1.2.3.4", CONF_NAME: "qube 1"},
         )
         await hass.async_block_till_done()
 
     assert result2["type"] is FlowResultType.CREATE_ENTRY
-    assert result2["title"] == "Qube Heat Pump (1.2.3.4)"
+    assert result2["title"] == "qube 1"
     assert result2["data"] == {
         CONF_HOST: "1.2.3.4",
         CONF_PORT: 502,
+        CONF_NAME: "qube 1",
     }
     assert len(mock_setup_entry.mock_calls) == 1
 

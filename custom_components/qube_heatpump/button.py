@@ -10,7 +10,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -30,7 +29,8 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    apply_label = data.apply_label_in_name
+    # show_label is no longer used (entity IDs are auto-generated from device name)
+    show_label = False
     multi_device = data.multi_device
 
     async_add_entities(
@@ -39,7 +39,7 @@ async def async_setup_entry(
                 coordinator,
                 hub,
                 entry.entry_id,
-                apply_label,
+                show_label,
                 multi_device,
                 version,
             ),
@@ -84,8 +84,6 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
             else "qube_reload"
         )
         self._attr_entity_category = EntityCategory.CONFIG
-        # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{label}_reload")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -94,7 +92,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=self._hub.device_name,
             manufacturer="Qube",
-            model="Heatpump",
+            model="Heat Pump",
             sw_version=self._version,
         )
 

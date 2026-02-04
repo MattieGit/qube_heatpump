@@ -10,7 +10,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -42,7 +41,8 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    show_label = data.apply_label_in_name
+    # show_label is no longer used (entity IDs are auto-generated from device name)
+    show_label = False
     multi_device = data.multi_device
 
     sg_a = _find_switch(hub, "bms_sgready_a")
@@ -120,8 +120,6 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         if self._multi_device:
             unique_base = f"{self._hub.host}_{self._hub.unit}_{unique_base}"
         self._attr_unique_id = unique_base
-        # Always include label prefix in entity IDs
-        self._attr_suggested_object_id = _slugify(f"{self._label}_sgready_mode")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -130,7 +128,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=self._hub.device_name,
             manufacturer="Qube",
-            model="Heatpump",
+            model="Heat Pump",
             sw_version=self._version,
         )
 

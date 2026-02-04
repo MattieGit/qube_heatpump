@@ -13,10 +13,26 @@
         "title": "Qube heat pump",
         "description": "Enter the heat pump IP or host.\nNeed help? See the [documentation]({docs_url}).",
         "data": {
-          "host": "Host/IP"
+          "host": "Host/IP",
+          "name": "Device name"
         },
         "data_description": {
-          "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50)."
+          "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
+          "name": "Name for this heat pump (e.g. 'qube 1'). This determines entity IDs like sensor.qube_1_supply_temp."
+        }
+      },
+      "reconfigure_confirm": {
+        "title": "Reconfigure Qube heat pump",
+        "description": "Update connection settings for your Qube heat pump.",
+        "data": {
+          "host": "Host/IP",
+          "port": "Port",
+          "name": "Device name"
+        },
+        "data_description": {
+          "host": "Enter the IP address or hostname of your Qube heat pump.",
+          "port": "Modbus TCP port (default: 502).",
+          "name": "Name for this heat pump."
         }
       }
     }
@@ -30,14 +46,14 @@
     "step": {
       "init": {
         "title": "Options",
-        "description": "Update the host if the heat pump IP changed.\nNeed help? See the [documentation]({docs_url}).\n\nCurrent IP: {resolved_ip}.",
+        "description": "Update the host or device name.\nNeed help? See the [documentation]({docs_url}).\n\nCurrent IP: {resolved_ip}.",
         "data": {
           "host": "Host/IP",
-          "entity_prefix": "Entity ID prefix"
+          "name": "Device name"
         },
         "data_description": {
           "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
-          "entity_prefix": "Prefix for entity IDs (e.g. 'qube' → sensor.qube_temp_supply). Use the same value as your device name for consistency."
+          "name": "Name for this heat pump. Changing this will update entity IDs."
         }
       }
     }

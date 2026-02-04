@@ -10,7 +10,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -41,7 +40,8 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    apply_label = data.apply_label_in_name
+    # show_label is no longer used (entity IDs are auto-generated from device name)
+    show_label = False
     multi_device = data.multi_device
 
     entities: list[NumberEntity] = []
@@ -61,7 +61,7 @@ async def async_setup_entry(
             QubeSetpointNumber(
                 coordinator,
                 hub,
-                apply_label,
+                show_label,
                 multi_device,
                 version,
                 ent,
@@ -120,14 +120,6 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
                 f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
             )
 
-        # Always set suggested_object_id with label prefix for consistent entity IDs
-        # Use vendor_id if available, otherwise fall back to unique_id
-        object_base = ent.vendor_id or ent.unique_id
-        if object_base:
-            self._attr_suggested_object_id = _slugify(
-                f"{self._label}_{object_base}_setpoint"
-            )
-
         # Number configuration
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
         self._attr_native_min_value = ent.min_value or DEFAULT_MIN_TEMP
@@ -142,7 +134,7 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
             identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
             name=self._hub.device_name,
             manufacturer="Qube",
-            model="Heatpump",
+            model="Heat Pump",
             sw_version=self._version,
         )
 

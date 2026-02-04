@@ -332,26 +332,6 @@ class TestBinarySensorAlarmHelpers:
         assert _entity_state_key(ent) == "binary_sensor_discrete_100"
 
 
-class TestEnsureEntityIdHelper:
-    """Tests for _async_ensure_entity_id helper functions."""
-
-    def test_switch_slugify(self) -> None:
-        """Test switch slugify function."""
-        from custom_components.qube_heatpump.switch import _slugify
-
-        assert _slugify("Hello World") == "hello_world"
-        assert _slugify("test-123") == "test_123"
-        assert _slugify("CamelCase") == "camelcase"
-
-    def test_binary_sensor_slugify(self) -> None:
-        """Test binary_sensor slugify function."""
-        from custom_components.qube_heatpump.binary_sensor import _slugify
-
-        assert _slugify("Hello World") == "hello_world"
-        assert _slugify("test-123") == "test_123"
-        assert _slugify("CamelCase") == "camelcase"
-
-
 class TestSwitchSGReady:
     """Tests for switch SG Ready handling."""
 
@@ -390,53 +370,6 @@ class TestSwitchSGReady:
         # SG Ready switches should be hidden and in config category
         assert switch._attr_entity_registry_visible_default is False
         assert switch._attr_entity_category == EntityCategory.CONFIG
-
-
-async def test_switch_vendor_id_suggested_object_id(
-    hass: HomeAssistant,
-) -> None:
-    """Test switch suggested_object_id from vendor_id."""
-    from custom_components.qube_heatpump.hub import EntityDef
-    from custom_components.qube_heatpump.switch import QubeSwitch
-
-    hub = MagicMock()
-    hub.host = "1.2.3.4"
-    hub.unit = 1
-    hub.label = "qube1"
-    hub.get_friendly_name = MagicMock(return_value=None)
-
-    coordinator = MagicMock()
-    coordinator.data = {}
-
-    ent = EntityDef(
-        platform="switch",
-        name="Test Switch",
-        address=100,
-        vendor_id="my_vendor_switch",
-    )
-    ent.unique_id = "test_unique"
-    ent.translation_key = None
-
-    # Without show_label - entity ID still includes label prefix
-    switch = QubeSwitch(
-        coordinator=coordinator,
-        hub=hub,
-        show_label=False,
-        multi_device=False,
-        ent=ent,
-    )
-    # Entity IDs always include label prefix now
-    assert switch._attr_suggested_object_id == "qube1_my_vendor_switch"
-
-    # With show_label
-    switch2 = QubeSwitch(
-        coordinator=coordinator,
-        hub=hub,
-        show_label=True,
-        multi_device=True,
-        ent=ent,
-    )
-    assert switch2._attr_suggested_object_id == "qube1_my_vendor_switch"
 
 
 async def test_binary_sensor_hidden_vendor_ids(

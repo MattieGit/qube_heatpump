@@ -16,15 +16,17 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-async def test_wp_qube_title_rename(
+async def test_entry_migrated_with_default_name(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
 ) -> None:
-    """Test that entries with WP Qube title are renamed to Qube Heat Pump."""
+    """Test that entries without CONF_NAME get a default name assigned."""
+    from custom_components.qube_heatpump.const import CONF_NAME
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "1.2.3.4"},
-        title="WP Qube (my_label)",
+        title="Old Title",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
     )
     entry.add_to_hass(hass)
@@ -33,7 +35,9 @@ async def test_wp_qube_title_rename(
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.title == "Qube Heat Pump (my_label)"
+    # Migration assigns a default name "qube 1" and updates title
+    assert entry.data.get(CONF_NAME) == "qube 1"
+    assert entry.title == "qube 1"
 
 
 async def test_service_reconfigure_no_entry_id_multiple_entries(
