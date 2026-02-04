@@ -109,12 +109,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         self._entry_id = entry_id
 
         self._attr_translation_key = "sgready_mode"
-        manual_name = hub.get_friendly_name("select", "sgready_mode")
-        if manual_name:
-            self._attr_name = manual_name
-            self._attr_has_entity_name = False
-        else:
-            self._attr_has_entity_name = True
+        self._attr_has_entity_name = True
         # Unique ID - scope per device in multi-device setups
         unique_base = "sgready_mode"
         if self._multi_device:

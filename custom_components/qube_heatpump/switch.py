@@ -92,15 +92,11 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             self._attr_entity_registry_visible_default = False
         if ent.translation_key:
-            manual_name = hub.get_friendly_name("switch", ent.translation_key)
-            if manual_name:
-                self._attr_name = manual_name
-                self._attr_has_entity_name = False
-            else:
-                self._attr_translation_key = ent.translation_key
-                self._attr_has_entity_name = True
+            self._attr_translation_key = ent.translation_key
+            self._attr_has_entity_name = True
         else:
             self._attr_name = str(ent.name)
+            self._attr_has_entity_name = True
         if ent.unique_id:
             # Scope unique_id per device in multi-device setups
             if self._multi_device:
