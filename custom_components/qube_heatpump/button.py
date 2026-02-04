@@ -51,6 +51,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
     """Button to reload the Qube integration."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -70,12 +71,7 @@ class QubeReloadButton(CoordinatorEntity, ButtonEntity):
         label = hub.label or "qube1"
         self._show_label = bool(show_label)
         self._attr_translation_key = "qube_reload"
-        manual_name = hub.get_friendly_name("button", "qube_reload")
-        if manual_name:
-            self._attr_name = manual_name
-            self._attr_has_entity_name = False
-        else:
-            self._attr_has_entity_name = True
+        self._attr_suggested_object_id = "reload"
 
         # Stable unique ID - scope per device in multi-device setups
         self._attr_unique_id = (

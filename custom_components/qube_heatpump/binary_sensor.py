@@ -170,6 +170,9 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
                 else base_uid
             )
         vendor_id = getattr(ent, "vendor_id", None)
+        # Use vendor_id for stable, predictable entity IDs
+        if vendor_id:
+            self._attr_suggested_object_id = vendor_id
         if vendor_id in HIDDEN_VENDOR_IDS:
             self._attr_entity_registry_visible_default = False
             self._attr_entity_registry_enabled_default = False
@@ -233,6 +236,7 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             f"{base_unique}_{self._label}" if self._multi_device else base_unique
         )
         self._attr_translation_key = "alarm_sensors_active"
+        self._attr_suggested_object_id = "alarm_sensors_active"
         self._attr_has_entity_name = True
         self._attr_icon = "mdi:alarm-light"
         self._keys = [_entity_state_key(ent) for ent in alarm_entities]

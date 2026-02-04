@@ -9,7 +9,7 @@ sections:
         image: /local/qube_heatpump_dashboard.png
         elements:
           - type: state-label
-            entity: sensor.qube_heat_pump_status
+            entity: sensor.qube_status_heatpump
             style:
               position: absolute
               transform: translate(0,0)
@@ -278,11 +278,11 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_electric_consumption_standby
+        entity: sensor.qube_standby_energy
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_electric_consumption_total_incl_standby
+        entity: sensor.qube_total_energy_incl_standby
         vertical: false
         features_position: bottom
       - type: tile
@@ -324,17 +324,17 @@ sections:
         entity: sensor.qube_modbus_roomtemp
         name: Room temperature (Linq)
       - type: tile
-        entity: sensor.qube_heat_pump_status
+        entity: sensor.qube_status_heatpump
         name: Heat pump status
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_three_way_valve_status
+        entity: sensor.qube_drieweg_status
         name: 3-way valve status
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_four_way_valve_status
+        entity: sensor.qube_vierweg_status
         name: 4-way valve status
         vertical: false
         features_position: bottom
@@ -385,11 +385,11 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_connect_errors
+        entity: sensor.qube_metric_errors_connect
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_read_errors
+        entity: sensor.qube_metric_errors_read
         vertical: false
         features_position: bottom
   - type: grid
@@ -398,7 +398,7 @@ sections:
         heading: DHW setpoint control
         icon: mdi:water-thermometer
       - type: tile
-        entity: number.qube_dhw_setpoint_manual_override
+        entity: number.qube_tapw_timeprogram_dhwsetp_nolinq
         name: DHW temperature setpoint
         vertical: false
         features:

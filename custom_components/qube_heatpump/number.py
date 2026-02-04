@@ -75,6 +75,7 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
     """Number entity for Qube setpoints."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
     _attr_mode = NumberMode.BOX
 
     def __init__(
@@ -97,15 +98,12 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
 
         # Set name from translation or entity name
         if ent.translation_key:
-            manual_name = hub.get_friendly_name("number", ent.translation_key)
-            if manual_name:
-                self._attr_name = manual_name
-                self._attr_has_entity_name = False
-            else:
-                self._attr_translation_key = ent.translation_key
-                self._attr_has_entity_name = True
+            self._attr_translation_key = ent.translation_key
         else:
             self._attr_name = str(ent.name)
+        # Use vendor_id for stable, predictable entity IDs
+        if ent.vendor_id:
+            self._attr_suggested_object_id = ent.vendor_id
 
         # Unique ID - scope per device in multi-device setups
         if ent.unique_id:

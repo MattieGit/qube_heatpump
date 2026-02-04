@@ -595,6 +595,9 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
                 unique_base = f"{self._host}_{self._unit}_{unique_base}"
             self._attr_unique_id = unique_base
         vendor_id = getattr(ent, "vendor_id", None)
+        # Use vendor_id for stable, predictable entity IDs
+        if vendor_id:
+            self._attr_suggested_object_id = vendor_id
         if vendor_id in HIDDEN_VENDOR_IDS:
             self._attr_entity_registry_visible_default = False
             self._attr_entity_registry_enabled_default = False
@@ -719,6 +722,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         self._total_counts = total_counts or {}
         label = hub.label or "qube1"
         self._attr_translation_key = "info"
+        self._attr_suggested_object_id = "info"
         self._attr_has_entity_name = True
         self._attr_unique_id = (
             f"info_sensor_{hub.entry_id}"
@@ -827,6 +831,7 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         self._show_label = bool(show_label)
         label = hub.label or "qube1"
         self._attr_translation_key = "ip_address"
+        self._attr_suggested_object_id = "ip_address"
         self._attr_has_entity_name = True
         base_uid = "ip_address"
         self._attr_unique_id = (
@@ -881,6 +886,7 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._counts_provider = counts_provider
         label = hub.label or "qube1"
         self._attr_translation_key = f"metric_{kind}"
+        self._attr_suggested_object_id = f"metric_{kind}"
         self._attr_has_entity_name = True
         base_uid = f"metric_{kind}"
         self._attr_unique_id = (
@@ -993,6 +999,7 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
         self._show_label = bool(show_label)
         self._version = version
         self._attr_translation_key = "standby_power"
+        self._attr_suggested_object_id = "standby_power"
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(
             STANDBY_POWER_UNIQUE_BASE, hub.host, hub.unit, multi_device
@@ -1038,6 +1045,7 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._energy_kwh: float = 0.0
         self._last_update: datetime | None = None
         self._attr_translation_key = "standby_energy"
+        self._attr_suggested_object_id = "standby_energy"
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(
             STANDBY_ENERGY_UNIQUE_BASE, hub.host, hub.unit, multi_device
@@ -1124,6 +1132,7 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self._standby_sensor = standby_sensor
         self._total_energy: float | None = None
         self._attr_translation_key = "total_energy_incl_standby"
+        self._attr_suggested_object_id = "total_energy_incl_standby"
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(
             TOTAL_ENERGY_UNIQUE_BASE, hub.host, hub.unit, multi_device
@@ -1192,6 +1201,7 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._label = hub.label or "qube1"
         self._object_base = _slugify(object_base) if object_base else _slugify(kind)
         self._attr_translation_key = translation_key
+        self._attr_suggested_object_id = translation_key
         self._attr_has_entity_name = True
         base_unique = f"qube_{unique_suffix}"
         self._attr_unique_id = (
@@ -1395,6 +1405,7 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         self._attr_translation_key = translation_key
+        self._attr_suggested_object_id = translation_key
         self._attr_has_entity_name = True
         base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
         self._attr_unique_id = _scope_unique_id(base_uid, hub.host, hub.unit, multi_device)
@@ -1481,6 +1492,7 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         self._attr_translation_key = translation_key
+        self._attr_suggested_object_id = translation_key
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(base_unique, hub.host, hub.unit, multi_device)
         self._attr_device_class = SensorDeviceClass.ENERGY
@@ -1546,6 +1558,7 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         self._attr_translation_key = translation_key
+        self._attr_suggested_object_id = translation_key
         self._attr_has_entity_name = True
         self._object_base = object_base
         base_uid = unique_base
