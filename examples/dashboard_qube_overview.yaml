@@ -147,12 +147,16 @@ sections:
         icon: mdi:tune-variant
       - type: tile
         entity: switch.qube_bms_summerwinter
+        name: Activate summer mode (cooling)
       - type: tile
         entity: switch.qube_tapw_timeprogram_bms_forced
+        name: Activate DHW heating
       - type: tile
         entity: switch.qube_antilegionella_frcstart_ant
+        name: Start Anti-legionella
       - type: tile
         entity: switch.qube_en_plantsetp_compens
+        name: Enable heating curve
       - type: tile
         entity: select.qube_sg_ready_mode
         name: SG Ready mode
@@ -162,6 +166,7 @@ sections:
         features_position: bottom
       - type: tile
         entity: switch.qube_modbus_demand
+        name: Activate central heating
   - type: grid
     cards:
       - type: heading
@@ -169,8 +174,10 @@ sections:
         icon: mdi:chart-line-variant
       - type: tile
         entity: binary_sensor.qube_bms_demand
+        name: Heat demand active
       - type: tile
         entity: binary_sensor.qube_surplus_pv
+        name: PV surplus active
   - type: grid
     visibility:
       - condition: state
@@ -187,17 +194,28 @@ sections:
         card:
           type: entities
         entities:
-          - binary_sensor.qube_glbal
-          - binary_sensor.qube_usralrms
-          - binary_sensor.qube_coolingalrms
-          - binary_sensor.qube_heatingalrms
-          - binary_sensor.qube_srsalrm
-          - binary_sensor.qube_alarmmng_al_pwrplus
-          - binary_sensor.qube_alarmmng_al_workinghour
-          - binary_sensor.qube_alrm_flw
-          - binary_sensor.qube_al_maxtime_antileg_active
-          - binary_sensor.qube_al_maxtime_dhw_active
-          - binary_sensor.qube_al_dewpoint_active
+          - entity: binary_sensor.qube_glbal
+            name: "Alarm: Global"
+          - entity: binary_sensor.qube_usralrms
+            name: "Alarm: Collective alarm CV"
+          - entity: binary_sensor.qube_coolingalrms
+            name: "Alarm: Collective alarm cooling"
+          - entity: binary_sensor.qube_heatingalrms
+            name: "Alarm: Collective alarm heating"
+          - entity: binary_sensor.qube_srsalrm
+            name: "Alarm: Collective alarm source"
+          - entity: binary_sensor.qube_alarmmng_al_pwrplus
+            name: "Alarm: Collective alarm compressor"
+          - entity: binary_sensor.qube_alarmmng_al_workinghour
+            name: "Alarm: Working hours"
+          - entity: binary_sensor.qube_alrm_flw
+            name: "Alarm: Flow CV"
+          - entity: binary_sensor.qube_al_maxtime_antileg_active
+            name: "Alarm: Max time anti-legionella exceeded"
+          - entity: binary_sensor.qube_al_maxtime_dhw_active
+            name: "Alarm: Max time DHW exceeded"
+          - entity: binary_sensor.qube_al_dewpoint_active
+            name: "Alarm: Dewpoint activated"
   - type: grid
     visibility:
       - condition: state
@@ -221,16 +239,22 @@ sections:
         icon: mdi:clock-time-four-outline
       - type: tile
         entity: sensor.qube_workinghours_dhw_hrsret
+        name: Working hours DHW
       - type: tile
         entity: sensor.qube_workinghours_heat_hrsret
+        name: Working hours heating
       - type: tile
         entity: sensor.qube_workinghours_cool_hrsret
+        name: Working hours cooling
       - type: tile
         entity: sensor.qube_workinghours_heater1_hrs
+        name: Working hours heater 1
       - type: tile
         entity: sensor.qube_workinghours_heater2_hrs
+        name: Working hours heater 2
       - type: tile
         entity: sensor.qube_workinghours_heater3_hrs
+        name: Working hours heater 3
   - type: grid
     cards:
       - type: heading
@@ -238,30 +262,42 @@ sections:
         icon: mdi:thermometer
       - type: tile
         entity: sensor.qube_modbus_roomtemp
+        name: Room temperature (LinQ)
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_temp_outside
+        name: Outside temperature
       - type: tile
         entity: sensor.qube_temp_dhw
+        name: DHW temperature
       - type: tile
         entity: sensor.qube_temp_supply
+        name: Supply temperature CV
       - type: tile
         entity: sensor.qube_temp_return
+        name: Return temperature CV
       - type: tile
         entity: sensor.qube_temp_source_in
+        name: Source temperature in
       - type: tile
         entity: sensor.qube_temp_source_out
+        name: Source temperature out
       - type: tile
         entity: sensor.qube_thermostat_heatsetp_day
+        name: LinQ setpoint heating (day)
       - type: tile
         entity: sensor.qube_thermostat_heatsetp_night
+        name: LinQ setpoint heating (night)
       - type: tile
         entity: sensor.qube_heatsetp_1
+        name: Heating setpoint
       - type: tile
         entity: sensor.qube_coolsetp_1
+        name: Cooling setpoint
       - type: tile
         entity: sensor.qube_dhw_setp
+        name: DHW calculated setpoint
   - type: grid
     cards:
       - type: heading
@@ -269,28 +305,31 @@ sections:
         icon: mdi:lightning-bolt
       - type: tile
         entity: sensor.qube_power_electric
+        name: Current electric power
       - type: tile
         entity: sensor.qube_energy_total_electric
+        name: Electric consumption total
       - type: tile
         entity: sensor.qube_energy_total_thermic
-      - type: tile
-        entity: sensor.qube_energy_total_electric
-        vertical: false
-        features_position: bottom
+        name: Thermic yield total
       - type: tile
         entity: sensor.qube_standby_energy
+        name: Electric consumption standby
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_total_energy_incl_standby
+        name: Electric consumption total (incl. standby)
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_electric_consumption_ch_day
+        name: Electric consumption CH (day)
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_electric_consumption_dhw_day
+        name: Electric consumption DHW (day)
   - type: grid
     cards:
       - type: heading
@@ -322,7 +361,7 @@ sections:
         name: Thermal power
       - type: tile
         entity: sensor.qube_modbus_roomtemp
-        name: Room temperature (Linq)
+        name: Room temperature (LinQ)
       - type: tile
         entity: sensor.qube_status_heatpump
         name: Heat pump status
@@ -345,32 +384,50 @@ sections:
         icon: mdi:toggle-switch-variant
       - type: tile
         entity: binary_sensor.qube_dout_srcpmp_val
+        name: Source pump power supply
       - type: tile
         entity: binary_sensor.qube_dout_usrpmp_val
+        name: User pump power supply
       - type: tile
         entity: binary_sensor.qube_dout_bufferpmp_val
+        name: Buffer pump output
       - type: tile
-        entity: binary_sensor.qube_dout_fourwayvlv_val
+        entity: sensor.qube_vierweg_status
+        name: 4-way valve status
+        vertical: false
+        features_position: bottom
       - type: tile
-        entity: binary_sensor.qube_dout_threewayvlv_val
+        entity: sensor.qube_drieweg_status
+        name: 3-way valve status
+        vertical: false
+        features_position: bottom
       - type: tile
         entity: binary_sensor.qube_dout_heaterstep1_val
+        name: Heater 1 output
       - type: tile
         entity: binary_sensor.qube_dout_heaterstep2_val
+        name: Heater 2 output
       - type: tile
         entity: binary_sensor.qube_dout_heaterstep3_val
+        name: Heater 3 output
       - type: tile
         entity: binary_sensor.qube_roomprb_en
+        name: Room sensor activated
       - type: tile
         entity: binary_sensor.qube_plantdemand
+        name: Plant sensor demand
       - type: tile
         entity: binary_sensor.qube_req_antileg_1
+        name: Anti-legionella enabled
       - type: tile
         entity: binary_sensor.qube_daynightmode
+        name: Day/night mode status
       - type: tile
         entity: binary_sensor.qube_dewpoint
+        name: Dewpoint activated
       - type: tile
         entity: binary_sensor.qube_srcflw
+        name: Source flow activated
   - type: grid
     cards:
       - type: heading
@@ -378,18 +435,22 @@ sections:
         icon: mdi:information
       - type: tile
         entity: sensor.qube_info
+        name: Info
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_ip_address
+        name: IP address
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_metric_errors_connect
+        name: Connect errors
         vertical: false
         features_position: bottom
       - type: tile
         entity: sensor.qube_metric_errors_read
+        name: Read errors
         vertical: false
         features_position: bottom
   - type: grid
