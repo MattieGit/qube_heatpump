@@ -34,14 +34,12 @@ def test_slugify() -> None:
     assert _slugify("CamelCase") == "camelcase"
 
 
-def test_scope_unique_id_multi_device() -> None:
-    """Test _scope_unique_id with multi_device=True."""
-    # Multi-device: prefix with host_unit
-    assert _scope_unique_id("base", "192.168.1.1", 1, True) == "192.168.1.1_1_base"
-    # Single device: no prefix
-    assert _scope_unique_id("base", "192.168.1.1", 1, False) == "base"
-    # Multi-device with different unit
-    assert _scope_unique_id("sensor", "10.0.0.5", 2, True) == "10.0.0.5_2_sensor"
+def test_scope_unique_id() -> None:
+    """Test _scope_unique_id always scopes with host_unit prefix."""
+    # Always prefixes with host_unit for stability
+    assert _scope_unique_id("base", "192.168.1.1", 1) == "192.168.1.1_1_base"
+    assert _scope_unique_id("sensor", "10.0.0.5", 2) == "10.0.0.5_2_sensor"
+    assert _scope_unique_id("test", "1.2.3.4", 1) == "1.2.3.4_1_test"
 
 
 def test_start_of_month() -> None:
@@ -310,7 +308,8 @@ class TestQubeSensorUniqueIdFallback:
             ent=ent,
         )
 
-        assert sensor._attr_unique_id == "qube_sensor_holding_100"
+        # Always scoped with host_unit prefix for stability
+        assert sensor._attr_unique_id == "1.2.3.4_1_qube_sensor_holding_100"
 
     async def test_sensor_unique_id_fallback_write_type(
         self, hass: HomeAssistant
@@ -347,7 +346,8 @@ class TestQubeSensorUniqueIdFallback:
             ent=ent,
         )
 
-        assert sensor._attr_unique_id == "qube_sensor_holding_200"
+        # Always scoped with host_unit prefix for stability
+        assert sensor._attr_unique_id == "1.2.3.4_1_qube_sensor_holding_200"
 
     async def test_sensor_unique_id_multi_device(self, hass: HomeAssistant) -> None:
         """Test sensor unique_id includes host_unit prefix in multi_device mode."""

@@ -217,7 +217,7 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
     sgready_b.unique_id = "bms_sgready_b"
     sgready_b.vendor_id = "bms_sgready_b"
 
-    # Single device - no prefix
+    # Single device - always has host_unit prefix for stability
     select_single = QubeSGReadyModeSelect(
         coordinator=coordinator,
         hub=hub,
@@ -228,9 +228,9 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
         sgready_b=sgready_b,
         entry_id="test_entry_id",
     )
-    assert select_single._attr_unique_id == "sgready_mode"
+    assert select_single._attr_unique_id == "192.168.1.100_2_sgready_mode"
 
-    # Multi device - host_unit prefix
+    # Multi device - same host_unit prefix
     select_multi = QubeSGReadyModeSelect(
         coordinator=coordinator,
         hub=hub,

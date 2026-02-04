@@ -49,7 +49,8 @@ class TestSwitchUniqueIdFallback:
             ent=ent,
         )
 
-        assert switch._attr_unique_id == "qube_switch_coil_100"
+        # Always scoped with host_unit prefix for stability
+        assert switch._attr_unique_id == "1.2.3.4_1_qube_switch_coil_100"
 
     async def test_switch_unique_id_multi_device(self, hass: HomeAssistant) -> None:
         """Test switch unique_id includes label in multi_device mode."""
@@ -189,7 +190,8 @@ class TestBinarySensorUniqueIdFallback:
             ent=ent,
         )
 
-        assert sensor._attr_unique_id == "qube_binary_discrete_5"
+        # Always scoped with host_unit prefix for stability
+        assert sensor._attr_unique_id == "1.2.3.4_1_qube_binary_discrete_5"
 
     async def test_binary_sensor_unique_id_multi_device(
         self, hass: HomeAssistant

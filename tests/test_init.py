@@ -126,8 +126,10 @@ async def test_async_setup_entry_multi_device(
         assert entry1.state is ConfigEntryState.LOADED
         assert entry2.state is ConfigEntryState.LOADED
 
-        # In multi-device setup, both entries should have multi_device=True
-        assert entry1.runtime_data.multi_device is True
+        # Entry1 was set up when it was the only device, so multi_device=False
+        # Entry2 was set up after entry1 existed, so multi_device=True
+        # This is fine because unique_ids are always scoped regardless of multi_device
+        assert entry1.runtime_data.multi_device is False
         assert entry2.runtime_data.multi_device is True
 
 

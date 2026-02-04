@@ -225,7 +225,7 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
     ent.vendor_id = "setpoint_heat_day"
     ent.min_value = 15.0
 
-    # Single device - no prefix
+    # Single device - always has host_unit prefix for stability
     number_single = QubeSetpointNumber(
         coordinator=coordinator,
         hub=hub,
@@ -234,9 +234,9 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
         version="1.0",
         ent=ent,
     )
-    assert number_single._attr_unique_id == "setpoint_heat_day_setpoint"
+    assert number_single._attr_unique_id == "192.168.1.100_2_setpoint_heat_day_setpoint"
 
-    # Multi device - host_unit prefix
+    # Multi device - same host_unit prefix
     number_multi = QubeSetpointNumber(
         coordinator=coordinator,
         hub=hub,
