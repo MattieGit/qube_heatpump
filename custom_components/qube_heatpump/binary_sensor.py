@@ -151,10 +151,8 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._version = version
         if ent.translation_key:
             self._attr_translation_key = ent.translation_key
-            self._attr_has_entity_name = True
         else:
             self._attr_name = str(ent.name)
-            self._attr_has_entity_name = True
         if ent.unique_id:
             # Scope unique_id per device in multi-device setups
             if self._multi_device:

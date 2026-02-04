@@ -81,6 +81,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
     """Select entity for SG Ready mode."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
     _attr_options = SGREADY_OPTIONS
 
     def __init__(
@@ -109,7 +110,6 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         self._entry_id = entry_id
 
         self._attr_translation_key = "sgready_mode"
-        self._attr_has_entity_name = True
         # Unique ID - scope per device in multi-device setups
         unique_base = "sgready_mode"
         if self._multi_device:
