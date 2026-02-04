@@ -154,7 +154,7 @@ sections:
       - type: tile
         entity: switch.qube_en_plantsetp_compens
       - type: tile
-        entity: select.sg_ready_mode
+        entity: select.qube_sg_ready_mode
         name: SG Ready mode
         vertical: false
         features:
@@ -174,7 +174,7 @@ sections:
   - type: grid
     visibility:
       - condition: state
-        entity: binary_sensor.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors_active
         state: "on"
     cards:
       - type: heading
@@ -201,14 +201,14 @@ sections:
   - type: grid
     visibility:
       - condition: state
-        entity: binary_sensor.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors_active
         state: "off"
     cards:
       - type: heading
         heading: Alarm sensors
         icon: mdi:alarm-light
       - type: tile
-        entity: group.qube_alarm_sensors
+        entity: binary_sensor.qube_alarm_sensors_active
         name: No active alarms
         icon: mdi:alarm-off
         color: green
@@ -278,7 +278,7 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_energy_standby
+        entity: sensor.qube_electric_consumption_standby
         vertical: false
         features_position: bottom
       - type: tile
@@ -377,19 +377,19 @@ sections:
         heading: Diagnostics & status
         icon: mdi:information
       - type: tile
-        entity: sensor.qube_qube_info_2
+        entity: sensor.qube_info
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_qube_ip_address_2
+        entity: sensor.qube_ip_address
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_qube_connect_errors_2
+        entity: sensor.qube_connect_errors
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_qube_read_errors_2
+        entity: sensor.qube_read_errors
         vertical: false
         features_position: bottom
   - type: grid
@@ -398,7 +398,7 @@ sections:
         heading: DHW setpoint control
         icon: mdi:water-thermometer
       - type: tile
-        entity: number.dhw_setpoint_manual_override
+        entity: number.qube_dhw_setpoint_manual_override
         name: DHW temperature setpoint
         vertical: false
         features:
