@@ -550,6 +550,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
     """Qube generic sensor."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
 
     def __init__(
         self,

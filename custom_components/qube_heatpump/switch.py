@@ -69,6 +69,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
     """Qube switch entity."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
 
     def __init__(
         self,

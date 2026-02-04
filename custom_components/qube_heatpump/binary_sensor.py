@@ -130,6 +130,7 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Representation of a Qube binary sensor."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
 
     def __init__(
         self,

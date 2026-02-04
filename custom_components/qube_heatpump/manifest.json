@@ -10,5 +10,5 @@
   "loggers": ["homeassistant.components.qube_heatpump"],
   "quality_scale": "bronze",
   "requirements": ["python-qube-heatpump>=1.4.8"],
-  "version": "2026.1.7"
+  "version": "2026.1.8"
 }
