@@ -223,7 +223,7 @@ async def async_setup_entry(
         show_label,
         multi_device,
         version,
-        base_unique_id=_energy_unique_id(hub.host, hub.unit),
+        data_key=_energy_data_key(),
         standby_sensor=standby_energy,
     )
 
@@ -231,11 +231,16 @@ async def async_setup_entry(
     _add_sensor_entity(standby_energy)
     _add_sensor_entity(total_energy)
 
+    # Use unscoped data keys for coordinator lookups
+    energy_data_key = _energy_data_key()
+    thermic_data_key = _thermic_energy_data_key()
+    binary_data_key = _binary_data_key()
+
     tracker = entry.runtime_data.tariff_tracker
     if tracker is None:
         tracker = TariffEnergyTracker(
-            base_key=_energy_unique_id(hub.host, hub.unit),
-            binary_key=_binary_unique_id(hub.host, hub.unit),
+            base_key=energy_data_key,
+            binary_key=binary_data_key,
             tariffs=list(TARIFF_OPTIONS),
         )
         entry.runtime_data.tariff_tracker = tracker
@@ -245,8 +250,8 @@ async def async_setup_entry(
     thermic_tracker = entry.runtime_data.thermic_tariff_tracker
     if thermic_tracker is None:
         thermic_tracker = TariffEnergyTracker(
-            base_key=_thermic_energy_unique_id(hub.host, hub.unit),
-            binary_key=_binary_unique_id(hub.host, hub.unit),
+            base_key=thermic_data_key,
+            binary_key=binary_data_key,
             tariffs=list(TARIFF_OPTIONS),
         )
         entry.runtime_data.thermic_tariff_tracker = thermic_tracker
@@ -255,8 +260,8 @@ async def async_setup_entry(
     daily_electric_tracker = entry.runtime_data.daily_tariff_tracker
     if daily_electric_tracker is None:
         daily_electric_tracker = TariffEnergyTracker(
-            base_key=_energy_unique_id(hub.host, hub.unit),
-            binary_key=_binary_unique_id(hub.host, hub.unit),
+            base_key=energy_data_key,
+            binary_key=binary_data_key,
             tariffs=list(TARIFF_OPTIONS),
             reset_period="day",
         )
@@ -268,8 +273,8 @@ async def async_setup_entry(
     daily_thermic_tracker = entry.runtime_data.daily_thermic_tariff_tracker
     if daily_thermic_tracker is None:
         daily_thermic_tracker = TariffEnergyTracker(
-            base_key=_thermic_energy_unique_id(hub.host, hub.unit),
-            binary_key=_binary_unique_id(hub.host, hub.unit),
+            base_key=thermic_data_key,
+            binary_key=binary_data_key,
             tariffs=list(TARIFF_OPTIONS),
             reset_period="day",
         )
@@ -959,10 +964,14 @@ def _scope_unique_id(base: str, host: str, unit: int) -> str:
     return f"{host}_{unit}_{base}"
 
 
+def _energy_data_key() -> str:
+    """Return the coordinator data key for energy total (unscoped)."""
+    return "energy_total_electric"
+
+
 def _energy_unique_id(host: str, unit: int) -> str:
-    """Generate energy unique ID."""
-    base = "energy_total_electric"
-    return _scope_unique_id(base, host, unit)
+    """Generate scoped energy unique ID for entity registry."""
+    return _scope_unique_id(_energy_data_key(), host, unit)
 
 
 class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
@@ -1105,7 +1114,7 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         show_label: bool,
         multi_device: bool,
         version: str,
-        base_unique_id: str,
+        data_key: str,
         standby_sensor: QubeStandbyEnergySensor,
     ) -> None:
         """Initialize total energy sensor."""
@@ -1115,12 +1124,13 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = version
-        self._base_unique_id = base_unique_id
+        self._data_key = data_key  # Unscoped key for coordinator data lookup
         self._standby_sensor = standby_sensor
         self._total_energy: float | None = None
         self._attr_translation_key = "total_energy_incl_standby"
         self.entity_id = f"sensor.{self._label}_total_energy_incl_standby"
         self._attr_has_entity_name = True
+        # Scoped unique_id for entity registry
         self._attr_unique_id = _scope_unique_id(
             TOTAL_ENERGY_UNIQUE_BASE, hub.host, hub.unit
         )
@@ -1146,7 +1156,8 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         return None if self._total_energy is None else round(self._total_energy, 3)
 
     def _handle_coordinator_update(self) -> None:
-        base_value = self.coordinator.data.get(self._base_unique_id)
+        # Use unscoped data_key for coordinator lookup
+        base_value = self.coordinator.data.get(self._data_key)
         standby = self._standby_sensor.current_energy()
         try:
             base_float = float(base_value) if base_value is not None else None
@@ -1244,13 +1255,24 @@ def _start_of_day(dt_value: datetime) -> datetime:
     return dt_value.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
+def _thermic_energy_data_key() -> str:
+    """Return the coordinator data key for thermic energy total (unscoped)."""
+    return "energy_total_thermic"
+
+
 def _thermic_energy_unique_id(host: str, unit: int) -> str:
-    base = "energy_total_thermic"
-    return _scope_unique_id(base, host, unit)
+    """Generate scoped thermic energy unique ID for entity registry."""
+    return _scope_unique_id(_thermic_energy_data_key(), host, unit)
+
+
+def _binary_data_key() -> str:
+    """Return the coordinator data key for binary tariff sensor (unscoped)."""
+    return BINARY_TARIFF_UNIQUE_ID
 
 
 def _binary_unique_id(host: str, unit: int) -> str:
-    return _scope_unique_id(BINARY_TARIFF_UNIQUE_ID, host, unit)
+    """Generate scoped binary unique ID for entity registry."""
+    return _scope_unique_id(_binary_data_key(), host, unit)
 
 
 class TariffEnergyTracker:
