@@ -18,7 +18,7 @@ from homeassistant.config_entries import (
     ConfigEntryState,
 )
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import entity_registry as er, issue_registry as ir
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.loader import async_get_integration, async_get_loaded_integration
 from homeassistant.setup import async_setup_component
 
@@ -312,16 +312,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Alarm group sync (label and alarm_group_id already computed above)
-    ant_reg = er.async_get(hass)
+    # Construct entity IDs directly from vendor_id to ensure consistency
+    # (registry lookup can return stale entity IDs after reinstall)
     entity_ids: list[str] = []
     for ent in hub.entities:
         if not _is_alarm_entity(ent):
             continue
-        if not ent.unique_id:
-            continue
-        reg_entity_id = ant_reg.async_get_entity_id(ent.platform, DOMAIN, ent.unique_id)
-        if reg_entity_id:
-            entity_ids.append(reg_entity_id)
+        vendor_id = getattr(ent, "vendor_id", None)
+        if vendor_id:
+            entity_ids.append(f"binary_sensor.{label}_{vendor_id}")
     await async_setup_component(hass, "group", {})
     if not entity_ids:
         with contextlib.suppress(Exception):
