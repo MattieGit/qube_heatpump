@@ -117,10 +117,12 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
                 if self._multi_device
                 else base_uid
             )
-        if getattr(ent, "vendor_id", None):
-            # Always include label prefix in entity IDs
-            label = self._hub.label or "qube1"
-            self._attr_suggested_object_id = _slugify(f"{label}_{ent.vendor_id}")
+        # Always set suggested_object_id with label prefix for consistent entity IDs
+        # Use vendor_id if available, otherwise fall back to unique_id
+        label = self._hub.label or "qube1"
+        object_base = getattr(ent, "vendor_id", None) or ent.unique_id
+        if object_base:
+            self._attr_suggested_object_id = _slugify(f"{label}_{object_base}")
 
     @property
     def device_info(self) -> DeviceInfo:

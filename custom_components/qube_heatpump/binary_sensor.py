@@ -186,9 +186,11 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         entity_category = _derive_entity_category(vendor_id)
         if entity_category:
             self._attr_entity_category = entity_category
-        if vendor_id:
-            # Always include label prefix in entity IDs
-            self._attr_suggested_object_id = _slugify(f"{self._label}_{vendor_id}")
+        # Always set suggested_object_id with label prefix for consistent entity IDs
+        # Use vendor_id if available, otherwise fall back to unique_id
+        object_base = vendor_id or ent.unique_id
+        if object_base:
+            self._attr_suggested_object_id = _slugify(f"{self._label}_{object_base}")
 
     @property
     def device_info(self) -> DeviceInfo:

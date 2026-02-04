@@ -608,11 +608,13 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         # Disable real-time COP sensors by default (SCOP averages are more useful)
         if ent.translation_key in COP_THROTTLE_KEYS or ent.unique_id in COP_THROTTLE_KEYS:
             self._attr_entity_registry_enabled_default = False
-        if vendor_id:
-            vendor_slug = VENDOR_SLUG_OVERRIDES.get(vendor_id, vendor_id)
-            # Always include label prefix in entity IDs
-            desired = f"{self._label}_{vendor_slug}"
-            self._attr_suggested_object_id = _slugify(desired)
+        # Always set suggested_object_id with label prefix for consistent entity IDs
+        # Use vendor_id if available, otherwise fall back to unique_id
+        object_base = vendor_id or ent.unique_id
+        if object_base:
+            if vendor_id:
+                object_base = VENDOR_SLUG_OVERRIDES.get(vendor_id, vendor_id)
+            self._attr_suggested_object_id = _slugify(f"{self._label}_{object_base}")
         self._attr_device_class = cast("SensorDeviceClass | None", ent.device_class)
         self._attr_native_unit_of_measurement = ent.unit_of_measurement
         if ent.state_class:

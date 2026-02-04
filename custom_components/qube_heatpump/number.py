@@ -120,11 +120,12 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
                 f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
             )
 
-        # Suggested object ID - always include label prefix
-        vendor_id = ent.vendor_id
-        if vendor_id:
+        # Always set suggested_object_id with label prefix for consistent entity IDs
+        # Use vendor_id if available, otherwise fall back to unique_id
+        object_base = ent.vendor_id or ent.unique_id
+        if object_base:
             self._attr_suggested_object_id = _slugify(
-                f"{self._label}_{vendor_id}_setpoint"
+                f"{self._label}_{object_base}_setpoint"
             )
 
         # Number configuration
