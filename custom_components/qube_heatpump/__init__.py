@@ -276,13 +276,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     with contextlib.suppress(Exception):
         ir.async_delete_issue(hass, DOMAIN, "registry_migration_suggested")
 
-    for other in existing_entries:
-        if (
-            other.state is ConfigEntryState.LOADED
-            and hasattr(other, "runtime_data")
-            and not other.runtime_data.multi_device
-        ):
-            hass.async_create_task(hass.config_entries.async_reload(other.entry_id))
+    # Note: We no longer reload existing entries when adding new ones.
+    # Unique IDs are always scoped with host_unit prefix, so they remain
+    # stable regardless of how many devices are configured.
 
     if not hass.services.has_service(DOMAIN, "reconfigure"):
 

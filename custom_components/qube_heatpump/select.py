@@ -111,11 +111,8 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
 
         self._attr_translation_key = "sgready_mode"
         self.entity_id = f"select.{self._label}_sg_ready_mode"
-        # Unique ID - scope per device in multi-device setups
-        unique_base = "sgready_mode"
-        if self._multi_device:
-            unique_base = f"{self._hub.host}_{self._hub.unit}_{unique_base}"
-        self._attr_unique_id = unique_base
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_sgready_mode"
 
     @property
     def device_info(self) -> DeviceInfo:

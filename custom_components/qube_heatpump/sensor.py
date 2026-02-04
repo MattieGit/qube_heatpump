@@ -223,7 +223,7 @@ async def async_setup_entry(
         show_label,
         multi_device,
         version,
-        base_unique_id=_energy_unique_id(hub.host, hub.unit, multi_device),
+        base_unique_id=_energy_unique_id(hub.host, hub.unit),
         standby_sensor=standby_energy,
     )
 
@@ -234,8 +234,8 @@ async def async_setup_entry(
     tracker = entry.runtime_data.tariff_tracker
     if tracker is None:
         tracker = TariffEnergyTracker(
-            base_key=_energy_unique_id(hub.host, hub.unit, multi_device),
-            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
+            base_key=_energy_unique_id(hub.host, hub.unit),
+            binary_key=_binary_unique_id(hub.host, hub.unit),
             tariffs=list(TARIFF_OPTIONS),
         )
         entry.runtime_data.tariff_tracker = tracker
@@ -245,8 +245,8 @@ async def async_setup_entry(
     thermic_tracker = entry.runtime_data.thermic_tariff_tracker
     if thermic_tracker is None:
         thermic_tracker = TariffEnergyTracker(
-            base_key=_thermic_energy_unique_id(hub.host, hub.unit, multi_device),
-            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
+            base_key=_thermic_energy_unique_id(hub.host, hub.unit),
+            binary_key=_binary_unique_id(hub.host, hub.unit),
             tariffs=list(TARIFF_OPTIONS),
         )
         entry.runtime_data.thermic_tariff_tracker = thermic_tracker
@@ -255,8 +255,8 @@ async def async_setup_entry(
     daily_electric_tracker = entry.runtime_data.daily_tariff_tracker
     if daily_electric_tracker is None:
         daily_electric_tracker = TariffEnergyTracker(
-            base_key=_energy_unique_id(hub.host, hub.unit, multi_device),
-            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
+            base_key=_energy_unique_id(hub.host, hub.unit),
+            binary_key=_binary_unique_id(hub.host, hub.unit),
             tariffs=list(TARIFF_OPTIONS),
             reset_period="day",
         )
@@ -268,8 +268,8 @@ async def async_setup_entry(
     daily_thermic_tracker = entry.runtime_data.daily_thermic_tariff_tracker
     if daily_thermic_tracker is None:
         daily_thermic_tracker = TariffEnergyTracker(
-            base_key=_thermic_energy_unique_id(hub.host, hub.unit, multi_device),
-            binary_key=_binary_unique_id(hub.host, hub.unit, multi_device),
+            base_key=_thermic_energy_unique_id(hub.host, hub.unit),
+            binary_key=_binary_unique_id(hub.host, hub.unit),
             tariffs=list(TARIFF_OPTIONS),
             reset_period="day",
         )
@@ -576,12 +576,10 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             self._attr_translation_key = ent.translation_key
         else:
             self._attr_name = str(ent.name)
+        # Always scope unique_id per device (host_unit prefix) to ensure stability
+        # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
-            # Scope unique_id per device in multi-device setups
-            if self._multi_device:
-                self._attr_unique_id = f"{self._host}_{self._unit}_{ent.unique_id}"
-            else:
-                self._attr_unique_id = ent.unique_id
+            self._attr_unique_id = f"{self._host}_{self._unit}_{ent.unique_id}"
         else:
             suffix_parts = []
             if ent.input_type:
@@ -591,9 +589,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             suffix_parts.append(str(ent.address))
             suffix = "_".join(str(part) for part in suffix_parts if part)
             unique_base = f"qube_{ent.platform}_{suffix}".lower()
-            if self._multi_device:
-                unique_base = f"{self._host}_{self._unit}_{unique_base}"
-            self._attr_unique_id = unique_base
+            self._attr_unique_id = f"{self._host}_{self._unit}_{unique_base}"
         vendor_id = getattr(ent, "vendor_id", None)
         # Use vendor_id for stable, predictable entity IDs
         if vendor_id:
@@ -724,11 +720,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = "info"
         self.entity_id = f"sensor.{label}_info"
         self._attr_has_entity_name = True
-        self._attr_unique_id = (
-            f"info_sensor_{hub.entry_id}"
-            if self._multi_device
-            else "info_sensor"
-        )
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{hub.host}_{hub.unit}_info_sensor"
         self._state = "ok"
 
     def set_counts(self, counts: dict[str, int]) -> None:
@@ -833,10 +826,8 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = "ip_address"
         self.entity_id = f"sensor.{label}_ip_address"
         self._attr_has_entity_name = True
-        base_uid = "ip_address"
-        self._attr_unique_id = (
-            f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
-        )
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{hub.host}_{hub.unit}_ip_address"
         if hasattr(SensorDeviceClass, "IP"):
             self._attr_device_class = SensorDeviceClass.IP
         else:
@@ -888,10 +879,8 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = f"metric_{kind}"
         self.entity_id = f"sensor.{label}_metric_{kind}"
         self._attr_has_entity_name = True
-        base_uid = f"metric_{kind}"
-        self._attr_unique_id = (
-            f"{base_uid}_{hub.entry_id}" if self._multi_device else base_uid
-        )
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{hub.host}_{hub.unit}_metric_{kind}"
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -965,17 +954,15 @@ def _find_binary_by_address(hub: QubeHub, address: int) -> EntityDef | None:
     return None
 
 
-def _scope_unique_id(base: str, host: str, unit: int, multi_device: bool) -> str:
-    """Scope unique_id per device in multi-device setups using host_unit prefix."""
-    if multi_device:
-        return f"{host}_{unit}_{base}"
-    return base
+def _scope_unique_id(base: str, host: str, unit: int) -> str:
+    """Scope unique_id per device using host_unit prefix for stability."""
+    return f"{host}_{unit}_{base}"
 
 
-def _energy_unique_id(host: str, unit: int, multi_device: bool) -> str:
+def _energy_unique_id(host: str, unit: int) -> str:
     """Generate energy unique ID."""
     base = "energy_total_electric"
-    return _scope_unique_id(base, host, unit, multi_device)
+    return _scope_unique_id(base, host, unit)
 
 
 class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
@@ -1002,7 +989,7 @@ class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
         self.entity_id = f"sensor.{self._label}_standby_power"
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(
-            STANDBY_POWER_UNIQUE_BASE, hub.host, hub.unit, multi_device
+            STANDBY_POWER_UNIQUE_BASE, hub.host, hub.unit
         )
         self._attr_device_class = SensorDeviceClass.POWER
         with contextlib.suppress(ValueError, TypeError):
@@ -1048,7 +1035,7 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self.entity_id = f"sensor.{self._label}_standby_energy"
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(
-            STANDBY_ENERGY_UNIQUE_BASE, hub.host, hub.unit, multi_device
+            STANDBY_ENERGY_UNIQUE_BASE, hub.host, hub.unit
         )
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
@@ -1135,7 +1122,7 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         self.entity_id = f"sensor.{self._label}_total_energy_incl_standby"
         self._attr_has_entity_name = True
         self._attr_unique_id = _scope_unique_id(
-            TOTAL_ENERGY_UNIQUE_BASE, hub.host, hub.unit, multi_device
+            TOTAL_ENERGY_UNIQUE_BASE, hub.host, hub.unit
         )
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
@@ -1203,10 +1190,8 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_has_entity_name = True
-        base_unique = f"qube_{unique_suffix}"
-        self._attr_unique_id = (
-            f"{base_unique}_{self._hub.entry_id}" if self._multi_device else base_unique
-        )
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_qube_{unique_suffix}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1259,13 +1244,13 @@ def _start_of_day(dt_value: datetime) -> datetime:
     return dt_value.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-def _thermic_energy_unique_id(host: str, unit: int, multi_device: bool) -> str:
+def _thermic_energy_unique_id(host: str, unit: int) -> str:
     base = "energy_total_thermic"
-    return _scope_unique_id(base, host, unit, multi_device)
+    return _scope_unique_id(base, host, unit)
 
 
-def _binary_unique_id(host: str, unit: int, multi_device: bool) -> str:
-    return _scope_unique_id(BINARY_TARIFF_UNIQUE_ID, host, unit, multi_device)
+def _binary_unique_id(host: str, unit: int) -> str:
+    return _scope_unique_id(BINARY_TARIFF_UNIQUE_ID, host, unit)
 
 
 class TariffEnergyTracker:
@@ -1408,7 +1393,7 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_has_entity_name = True
         base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
-        self._attr_unique_id = _scope_unique_id(base_uid, hub.host, hub.unit, multi_device)
+        self._attr_unique_id = _scope_unique_id(base_uid, hub.host, hub.unit)
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1494,7 +1479,7 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_has_entity_name = True
-        self._attr_unique_id = _scope_unique_id(base_unique, hub.host, hub.unit, multi_device)
+        self._attr_unique_id = _scope_unique_id(base_unique, hub.host, hub.unit)
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1561,10 +1546,8 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_has_entity_name = True
         self._object_base = object_base
-        base_uid = unique_base
-        if multi_device:
-            base_uid = f"{base_uid}_{self._hub.entry_id}"
-        self._attr_unique_id = base_uid
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{unique_base}"
         self._attr_suggested_display_precision = 1
         self._attr_native_unit_of_measurement = "CoP"
         with contextlib.suppress(Exception):

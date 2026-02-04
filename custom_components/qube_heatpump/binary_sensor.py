@@ -153,22 +153,14 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             self._attr_translation_key = ent.translation_key
         else:
             self._attr_name = str(ent.name)
+        # Always scope unique_id per device (host_unit prefix) to ensure stability
+        # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
-            # Scope unique_id per device in multi-device setups
-            if self._multi_device:
-                self._attr_unique_id = (
-                    f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
-                )
-            else:
-                self._attr_unique_id = ent.unique_id
+            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
         else:
             suffix = f"{ent.input_type or 'input'}_{ent.address}".lower()
             base_uid = f"qube_binary_{suffix}"
-            self._attr_unique_id = (
-                f"{self._hub.host}_{self._hub.unit}_{base_uid}"
-                if self._multi_device
-                else base_uid
-            )
+            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{base_uid}"
         vendor_id = getattr(ent, "vendor_id", None)
         # Use vendor_id for stable, predictable entity IDs
         if vendor_id:
@@ -231,10 +223,8 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._multi_device = bool(multi_device)
         self._version = version
         self._tied_entities = list(alarm_entities)
-        base_unique = "alarm_sensors_state"
-        self._attr_unique_id = (
-            f"{base_unique}_{self._label}" if self._multi_device else base_unique
-        )
+        # Always scope unique_id per device for stability
+        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_alarm_sensors_state"
         self._attr_translation_key = "alarm_sensors_active"
         self.entity_id = f"binary_sensor.{self._label}_alarm_sensors_active"
         self._attr_has_entity_name = True

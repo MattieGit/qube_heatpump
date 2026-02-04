@@ -105,18 +105,15 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
         if ent.vendor_id:
             self.entity_id = f"number.{self._label}_{ent.vendor_id}"
 
-        # Unique ID - scope per device in multi-device setups
+        # Always scope unique_id per device (host_unit prefix) to ensure stability
+        # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
             base_uid = f"{ent.unique_id}_setpoint"
-            self._attr_unique_id = (
-                f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
-            )
+            self._attr_unique_id = f"{hub.host}_{hub.unit}_{base_uid}"
         else:
             suffix = f"{ent.input_type or 'holding'}_{ent.address}".lower()
             base_uid = f"qube_setpoint_{suffix}"
-            self._attr_unique_id = (
-                f"{hub.host}_{hub.unit}_{base_uid}" if multi_device else base_uid
-            )
+            self._attr_unique_id = f"{hub.host}_{hub.unit}_{base_uid}"
 
         # Number configuration
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS

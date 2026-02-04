@@ -46,12 +46,17 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
-    # Cleanup deprecated SG Ready entities
+    # Cleanup deprecated SG Ready entities (check both old and new unique_id formats)
     registry = er.async_get(hass)
     to_remove_base = ["bms_sgready_a", "bms_sgready_b"]
     for base in to_remove_base:
-        uid = f"{base}_{entry.entry_id}" if multi_device else base
-        entity_id = registry.async_get_entity_id("switch", DOMAIN, uid)
+        # Check for old format (non-scoped)
+        entity_id = registry.async_get_entity_id("switch", DOMAIN, base)
+        if entity_id:
+            registry.async_remove(entity_id)
+        # Check for new format (scoped with host_unit)
+        scoped_uid = f"{hub.host}_{hub.unit}_{base}"
+        entity_id = registry.async_get_entity_id("switch", DOMAIN, scoped_uid)
         if entity_id:
             registry.async_remove(entity_id)
 
@@ -99,22 +104,14 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
             self._attr_translation_key = ent.translation_key
         else:
             self._attr_name = str(ent.name)
+        # Always scope unique_id per device (host_unit prefix) to ensure stability
+        # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
-            # Scope unique_id per device in multi-device setups
-            if self._multi_device:
-                self._attr_unique_id = (
-                    f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
-                )
-            else:
-                self._attr_unique_id = ent.unique_id
+            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
         else:
             suffix = f"{ent.write_type or 'coil'}_{ent.address}".lower()
             base_uid = f"qube_switch_{suffix}"
-            self._attr_unique_id = (
-                f"{self._hub.host}_{self._hub.unit}_{base_uid}"
-                if self._multi_device
-                else base_uid
-            )
+            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{base_uid}"
 
     @property
     def device_info(self) -> DeviceInfo:
