@@ -150,6 +150,19 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 results[key] = None
                 continue
 
+            # Round before monotonic clamping so the cache stores values at
+            # the same precision Home Assistant will see.  This prevents
+            # float32 jitter from producing a rounded decrease after an HA
+            # restart (when the in-memory cache is empty).
+            if (
+                isinstance(value, (int, float))
+                and ent.precision is not None
+            ):
+                try:
+                    value = round(float(value), int(ent.precision))
+                except (TypeError, ValueError):
+                    pass
+
             if (
                 ent.state_class == "total_increasing"
                 and isinstance(value, (int, float))
