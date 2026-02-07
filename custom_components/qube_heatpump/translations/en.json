@@ -626,6 +626,12 @@
     "number": {
       "tapw_timeprogram_dhwsetp_nolinq": {
         "name": "DHW setpoint (manual override)"
+      },
+      "usr_pid_heatsetp": {
+        "name": "Heat setpoint (no curve)"
+      },
+      "usr_pid_coolsetp": {
+        "name": "Cooling setpoint (no curve)"
       }
     }
   },

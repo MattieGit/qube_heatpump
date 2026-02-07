@@ -499,6 +499,12 @@
         "number": {
             "tapw_timeprogram_dhwsetp_nolinq": {
                 "name": "SWW instelpunt (handmatig)"
+            },
+            "usr_pid_heatsetp": {
+                "name": "Verwarming instelpunt (zonder stooklijn)"
+            },
+            "usr_pid_coolsetp": {
+                "name": "Koeling instelpunt (zonder stooklijn)"
             }
         }
     },
