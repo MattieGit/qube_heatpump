@@ -23,6 +23,7 @@ from homeassistant.loader import async_get_integration, async_get_loaded_integra
 from homeassistant.setup import async_setup_component
 
 from .const import (
+    CONF_DHW_SCHEDULE_ENABLED,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
@@ -32,6 +33,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import QubeCoordinator
+from .dhw_scheduler import async_setup_dhw_schedule
 from .hub import QubeHub
 
 
@@ -49,6 +51,8 @@ class QubeData:
     thermic_tariff_tracker: Any | None = None
     daily_tariff_tracker: Any | None = None
     daily_thermic_tariff_tracker: Any | None = None
+    dhw_cancel_callbacks: list[Any] | None = None
+    thermostat_sensor_timed_out: bool = False
 
 
 type QubeConfigEntry = ConfigEntry[QubeData]
@@ -184,7 +188,7 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
             data_type,
         )
     except ConnectionError as err:
-        _LOGGER.error("Write_register: %s", err)
+        _LOGGER.exception("Write_register failed")
         raise HomeAssistantError(str(err)) from err
     except Exception:
         _LOGGER.exception("Write_register: failed to write address %s", data["address"])
@@ -307,6 +311,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Set up DHW schedule if enabled
+    if entry.options.get(CONF_DHW_SCHEDULE_ENABLED):
+        dhw_callbacks = await async_setup_dhw_schedule(hass, entry, hub, coordinator)
+        entry.runtime_data.dhw_cancel_callbacks = dhw_callbacks
+
     # Alarm group sync (label and alarm_group_id already computed above)
     # Construct entity IDs directly from vendor_id to ensure consistency
     # (registry lookup can return stale entity IDs after reinstall)
@@ -346,6 +355,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
 async def async_unload_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+    # Cancel DHW schedule callbacks
+    with contextlib.suppress(AttributeError):
+        if callbacks := entry.runtime_data.dhw_cancel_callbacks:
+            for cancel in callbacks:
+                cancel()
 
     # Use contextlib.suppress to safely handle cleanup even if setup failed
     with contextlib.suppress(AttributeError):

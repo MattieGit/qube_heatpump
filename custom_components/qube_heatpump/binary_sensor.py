@@ -12,7 +12,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import CONF_THERMOSTAT_ENABLED, DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -121,6 +121,12 @@ async def async_setup_entry(
                 alarm_entities,
                 version,
             )
+        )
+
+    # Add thermostat sensor timeout binary sensor if thermostat is enabled
+    if entry.options.get(CONF_THERMOSTAT_ENABLED):
+        entities.append(
+            QubeThermostatTimeoutSensor(coordinator, hub, entry, version)
         )
 
     async_add_entities(entities)
@@ -270,3 +276,46 @@ def _entity_state_key(ent: EntityDef) -> str:
         return ent.unique_id
     suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
     return f"binary_sensor_{suffix}"
+
+
+class QubeThermostatTimeoutSensor(CoordinatorEntity, BinarySensorEntity):
+    """Binary sensor indicating the thermostat temperature sensor has timed out."""
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: Any,
+        hub: QubeHub,
+        entry: QubeConfigEntry,
+        version: str = "unknown",
+    ) -> None:
+        """Initialize the timeout sensor."""
+        super().__init__(coordinator)
+        self._hub = hub
+        self._entry = entry
+        self._version = version
+        self._attr_translation_key = "thermostat_sensor_timeout"
+        self._attr_unique_id = (
+            f"{hub.host}_{hub.unit}_thermostat_sensor_timeout"
+        )
+        self.entity_id = f"binary_sensor.{hub.label}_thermostat_sensor_timeout"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device information."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
+            name=self._hub.device_name,
+            manufacturer="Qube",
+            model="Heat Pump",
+            sw_version=self._version,
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if sensor has timed out."""
+        return bool(self._entry.runtime_data.thermostat_sensor_timed_out)

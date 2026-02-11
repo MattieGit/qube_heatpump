@@ -49,11 +49,39 @@
         "description": "Update the host or device name.\nNeed help? See the [documentation]({docs_url}).\n\nCurrent IP: {resolved_ip}.",
         "data": {
           "host": "Host/IP",
-          "name": "Device name"
+          "name": "Device name",
+          "thermostat_enabled": "Enable virtual thermostat",
+          "dhw_schedule_enabled": "Enable DHW schedule"
         },
         "data_description": {
           "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
-          "name": "Name for this heat pump. Changing this will update entity IDs."
+          "name": "Name for this heat pump. Changing this will update entity IDs.",
+          "thermostat_enabled": "Use an external temperature sensor to control heating/cooling demand.",
+          "dhw_schedule_enabled": "Schedule daily DHW (hot water) heating at a fixed time."
+        }
+      },
+      "thermostat": {
+        "title": "Virtual thermostat",
+        "description": "Select the temperature sensor to use for the virtual thermostat.\n\n**Important:** The LinQ thermostat must be disabled on the heat pump for this to work correctly.",
+        "data": {
+          "thermostat_sensor": "Temperature sensor"
+        },
+        "data_description": {
+          "thermostat_sensor": "Select a temperature sensor entity (e.g. from a room sensor)."
+        }
+      },
+      "dhw_schedule": {
+        "title": "DHW schedule",
+        "description": "Configure daily DHW (hot water) heating schedule.",
+        "data": {
+          "dhw_setpoint": "DHW setpoint",
+          "dhw_start_time": "Start time",
+          "dhw_end_time": "End time"
+        },
+        "data_description": {
+          "dhw_setpoint": "Target temperature for DHW heating (40-65°C).",
+          "dhw_start_time": "Time to start DHW heating each day.",
+          "dhw_end_time": "Time to stop DHW heating each day."
         }
       }
     }
@@ -588,6 +616,14 @@
       },
       "alarm_sensors_active": {
         "name": "Alarm sensors active"
+      },
+      "thermostat_sensor_timeout": {
+        "name": "Thermostat sensor timeout"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "name": "Thermostat"
       }
     },
     "switch": {

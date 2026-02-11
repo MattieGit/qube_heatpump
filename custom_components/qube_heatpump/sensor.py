@@ -676,6 +676,9 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             now = dt_util.utcnow()
             try:
                 current_value = float(value)
+            except (TypeError, ValueError):
+                pass
+            else:
                 # Check if we should throttle this update
                 if (
                     self._throttle_last_value is not None
@@ -693,8 +696,6 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
                 self._throttle_last_value = current_value
                 self._throttle_last_update = now
                 return current_value
-            except (TypeError, ValueError):
-                pass
 
         return value
 

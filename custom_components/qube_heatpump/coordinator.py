@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from datetime import timedelta
 import logging
 import math
@@ -158,10 +159,8 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 isinstance(value, (int, float))
                 and ent.precision is not None
             ):
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     value = round(float(value), int(ent.precision))
-                except (TypeError, ValueError):
-                    pass
 
             if (
                 ent.state_class == "total_increasing"

@@ -33,11 +33,39 @@
                 "description": "Werk de host bij als het IP-adres van de warmtepomp is gewijzigd.\nHulp nodig? Bekijk de [documentatie]({docs_url}).\n\nHuidig IP: {resolved_ip}.",
                 "data": {
                     "host": "Host/IP",
-                    "entity_prefix": "Entiteit ID prefix"
+                    "name": "Apparaatnaam",
+                    "thermostat_enabled": "Virtuele thermostaat inschakelen",
+                    "dhw_schedule_enabled": "SWW schema inschakelen"
                 },
                 "data_description": {
                     "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
-                    "entity_prefix": "Prefix voor entiteit ID's (bijv. 'qube' → sensor.qube_temp_supply). Gebruik dezelfde waarde als je apparaatnaam voor consistentie."
+                    "name": "Naam voor deze warmtepomp. Wijzigen zal entiteit ID's bijwerken.",
+                    "thermostat_enabled": "Gebruik een externe temperatuursensor om warmte/koelvraag te regelen.",
+                    "dhw_schedule_enabled": "Plan dagelijks SWW (warm water) verwarmen op een vast tijdstip."
+                }
+            },
+            "thermostat": {
+                "title": "Virtuele thermostaat",
+                "description": "Selecteer de temperatuursensor voor de virtuele thermostaat.\n\n**Belangrijk:** De LinQ thermostaat moet uitgeschakeld zijn op de warmtepomp.",
+                "data": {
+                    "thermostat_sensor": "Temperatuursensor"
+                },
+                "data_description": {
+                    "thermostat_sensor": "Selecteer een temperatuursensor entiteit (bijv. van een kamersensor)."
+                }
+            },
+            "dhw_schedule": {
+                "title": "SWW schema",
+                "description": "Configureer het dagelijkse SWW (warm water) verwarmingsschema.",
+                "data": {
+                    "dhw_setpoint": "SWW instelpunt",
+                    "dhw_start_time": "Starttijd",
+                    "dhw_end_time": "Eindtijd"
+                },
+                "data_description": {
+                    "dhw_setpoint": "Doeltemperatuur voor SWW verwarming (40-65°C).",
+                    "dhw_start_time": "Tijdstip om SWW verwarming te starten elke dag.",
+                    "dhw_end_time": "Tijdstip om SWW verwarming te stoppen elke dag."
                 }
             }
         }
@@ -351,6 +379,9 @@
             "alarm_sensors_active": {
                 "name": "Alarm sensoren actief"
             },
+            "thermostat_sensor_timeout": {
+                "name": "Thermostaat sensor timeout"
+            },
             "dout_srcpmp_val": {
                 "name": "Voeding Bron pomp"
             },
@@ -461,6 +492,11 @@
             },
             "surplus_pv": {
                 "name": "Surplus PV actief"
+            }
+        },
+        "climate": {
+            "thermostat": {
+                "name": "Thermostaat"
             }
         },
         "switch": {

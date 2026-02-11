@@ -198,6 +198,11 @@
       "tapw_timeprogram_dhwsetp_nolinq": {
         "default": "mdi:water-thermometer"
       }
+    },
+    "climate": {
+      "thermostat": {
+        "default": "mdi:thermostat"
+      }
     }
   },
   "services": {

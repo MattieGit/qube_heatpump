@@ -15,12 +15,29 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.selector import (
+    EntitySelector,
+    EntitySelectorConfig,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    TimeSelector,
+)
 
 from .const import (
+    CONF_DHW_END_TIME,
+    CONF_DHW_SCHEDULE_ENABLED,
+    CONF_DHW_SETPOINT,
+    CONF_DHW_START_TIME,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
+    CONF_THERMOSTAT_ENABLED,
+    CONF_THERMOSTAT_SENSOR,
     CONF_UNIT_ID,
+    DEFAULT_DHW_END_TIME,
+    DEFAULT_DHW_SETPOINT,
+    DEFAULT_DHW_START_TIME,
     DEFAULT_PORT,
     DOMAIN,
 )
@@ -238,16 +255,16 @@ class OptionsFlowHandler(OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self._entry = config_entry
+        self._user_input: dict[str, Any] = {}
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options."""
+        """Manage the options — step 1: host, name, feature toggles."""
         errors: dict[str, str] = {}
         current_host = str(self._entry.data.get(CONF_HOST, "qube.local")).strip()
         current_port = int(self._entry.data.get(CONF_PORT, DEFAULT_PORT))
         current_name = self._entry.data.get(CONF_NAME) or self._entry.title
-        # Capture existing entries to support duplicate IP detection
         entries = [
             e
             for e in self.hass.config_entries.async_entries(DOMAIN)
@@ -268,6 +285,9 @@ class OptionsFlowHandler(OptionsFlow):
         if not resolved_ip:
             resolved_ip = await _async_resolve_host(current_host)
 
+        current_thermostat = bool(self._entry.options.get(CONF_THERMOSTAT_ENABLED, False))
+        current_dhw = bool(self._entry.options.get(CONF_DHW_SCHEDULE_ENABLED, False))
+
         if user_input is not None:
             user_input = dict(user_input)
             new_host = str(user_input.get(CONF_HOST, current_host)).strip()
@@ -281,7 +301,6 @@ class OptionsFlowHandler(OptionsFlow):
                     errors[CONF_HOST] = "duplicate_ip"
 
             host_changed = new_host != current_host
-            name_changed = new_name != current_name
             if host_changed and CONF_HOST not in errors:
                 try:
                     _, writer = await asyncio.wait_for(
@@ -295,36 +314,36 @@ class OptionsFlowHandler(OptionsFlow):
                     errors[CONF_HOST] = "cannot_connect"
 
             if not errors:
-                opts = dict(self._entry.options)
-                opts.pop(CONF_UNIT_ID, None)
-
-                update_kwargs: dict[str, Any] = {"options": opts}
-                new_data = dict(self._entry.data)
-                if host_changed:
-                    new_data[CONF_HOST] = new_host
-                    new_data[CONF_PORT] = current_port
-                    update_kwargs["unique_id"] = f"{DOMAIN}-{new_host}-{current_port}"
-                if name_changed or host_changed:
-                    new_data[CONF_NAME] = new_name
-                    update_kwargs["title"] = new_name
-                update_kwargs["data"] = new_data
-                self.hass.config_entries.async_update_entry(
-                    self._entry, **update_kwargs
-                )
-                if host_changed:
-                    device_registry = dr.async_get(self.hass)
-                    identifiers = {(DOMAIN, f"{current_host}:{current_unit}")}
-                    old_device = device_registry.async_get_device(identifiers)
-                    if old_device:
-                        device_registry.async_remove_device(old_device.id)
-                if host_changed or name_changed:
-                    await self.hass.config_entries.async_reload(self._entry.entry_id)
-                return self.async_create_entry(title="", data=opts)
+                self._user_input = {
+                    CONF_HOST: new_host,
+                    CONF_NAME: new_name,
+                    CONF_THERMOSTAT_ENABLED: bool(
+                        user_input.get(CONF_THERMOSTAT_ENABLED, False)
+                    ),
+                    CONF_DHW_SCHEDULE_ENABLED: bool(
+                        user_input.get(CONF_DHW_SCHEDULE_ENABLED, False)
+                    ),
+                    "_host_changed": host_changed,
+                    "_name_changed": new_name != current_name,
+                    "_current_host": current_host,
+                    "_current_unit": current_unit,
+                }
+                if self._user_input[CONF_THERMOSTAT_ENABLED]:
+                    return await self.async_step_thermostat()
+                if self._user_input[CONF_DHW_SCHEDULE_ENABLED]:
+                    return await self.async_step_dhw_schedule()
+                return await self._save_options()
 
         schema = vol.Schema(
             {
                 vol.Required(CONF_HOST, default=current_host): str,
                 vol.Required(CONF_NAME, default=current_name): str,
+                vol.Optional(
+                    CONF_THERMOSTAT_ENABLED, default=current_thermostat
+                ): bool,
+                vol.Optional(
+                    CONF_DHW_SCHEDULE_ENABLED, default=current_dhw
+                ): bool,
             }
         )
 
@@ -337,3 +356,133 @@ class OptionsFlowHandler(OptionsFlow):
                 "docs_url": "https://github.com/MattieGit/qube_heatpump/tree/main/wiki",
             },
         )
+
+    async def async_step_thermostat(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Step 2: configure thermostat sensor."""
+        if user_input is not None:
+            self._user_input[CONF_THERMOSTAT_SENSOR] = user_input.get(
+                CONF_THERMOSTAT_SENSOR, ""
+            )
+            if self._user_input.get(CONF_DHW_SCHEDULE_ENABLED):
+                return await self.async_step_dhw_schedule()
+            return await self._save_options()
+
+        current_sensor = self._entry.options.get(CONF_THERMOSTAT_SENSOR, "")
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_THERMOSTAT_SENSOR, default=current_sensor
+                ): EntitySelector(
+                    EntitySelectorConfig(
+                        domain="sensor",
+                        device_class="temperature",
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(step_id="thermostat", data_schema=schema)
+
+    async def async_step_dhw_schedule(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Step 3: configure DHW schedule."""
+        if user_input is not None:
+            self._user_input[CONF_DHW_SETPOINT] = user_input.get(
+                CONF_DHW_SETPOINT, DEFAULT_DHW_SETPOINT
+            )
+            self._user_input[CONF_DHW_START_TIME] = user_input.get(
+                CONF_DHW_START_TIME, DEFAULT_DHW_START_TIME
+            )
+            self._user_input[CONF_DHW_END_TIME] = user_input.get(
+                CONF_DHW_END_TIME, DEFAULT_DHW_END_TIME
+            )
+            return await self._save_options()
+
+        current_setpoint = self._entry.options.get(
+            CONF_DHW_SETPOINT, DEFAULT_DHW_SETPOINT
+        )
+        current_start = self._entry.options.get(
+            CONF_DHW_START_TIME, DEFAULT_DHW_START_TIME
+        )
+        current_end = self._entry.options.get(
+            CONF_DHW_END_TIME, DEFAULT_DHW_END_TIME
+        )
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_DHW_SETPOINT, default=current_setpoint
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=40, max=65, step=0.5, mode=NumberSelectorMode.BOX
+                    )
+                ),
+                vol.Required(
+                    CONF_DHW_START_TIME, default=current_start
+                ): TimeSelector(),
+                vol.Required(
+                    CONF_DHW_END_TIME, default=current_end
+                ): TimeSelector(),
+            }
+        )
+
+        return self.async_show_form(step_id="dhw_schedule", data_schema=schema)
+
+    async def _save_options(self) -> ConfigFlowResult:
+        """Save accumulated options and handle host/name changes."""
+        host_changed = self._user_input.pop("_host_changed", False)
+        name_changed = self._user_input.pop("_name_changed", False)
+        current_host = self._user_input.pop("_current_host", "")
+        current_unit = self._user_input.pop("_current_unit", 1)
+        current_port = int(self._entry.data.get(CONF_PORT, DEFAULT_PORT))
+
+        new_host = self._user_input.pop(CONF_HOST, current_host)
+        new_name = self._user_input.pop(CONF_NAME, self._entry.title)
+
+        # Build options dict with feature settings
+        opts = dict(self._entry.options)
+        opts.pop(CONF_UNIT_ID, None)
+        for key in (
+            CONF_THERMOSTAT_ENABLED,
+            CONF_THERMOSTAT_SENSOR,
+            CONF_DHW_SCHEDULE_ENABLED,
+            CONF_DHW_SETPOINT,
+            CONF_DHW_START_TIME,
+            CONF_DHW_END_TIME,
+        ):
+            if key in self._user_input:
+                opts[key] = self._user_input[key]
+            elif (
+                not self._user_input.get(CONF_THERMOSTAT_ENABLED)
+                and key in (CONF_THERMOSTAT_SENSOR,)
+            ) or (
+                not self._user_input.get(CONF_DHW_SCHEDULE_ENABLED)
+                and key in (CONF_DHW_SETPOINT, CONF_DHW_START_TIME, CONF_DHW_END_TIME)
+            ):
+                opts.pop(key, None)
+
+        update_kwargs: dict[str, Any] = {"options": opts}
+        new_data = dict(self._entry.data)
+        if host_changed:
+            new_data[CONF_HOST] = new_host
+            new_data[CONF_PORT] = current_port
+            update_kwargs["unique_id"] = f"{DOMAIN}-{new_host}-{current_port}"
+        if name_changed or host_changed:
+            new_data[CONF_NAME] = new_name
+            update_kwargs["title"] = new_name
+        update_kwargs["data"] = new_data
+        self.hass.config_entries.async_update_entry(self._entry, **update_kwargs)
+
+        if host_changed:
+            device_registry = dr.async_get(self.hass)
+            identifiers = {(DOMAIN, f"{current_host}:{current_unit}")}
+            old_device = device_registry.async_get_device(identifiers)
+            if old_device:
+                device_registry.async_remove_device(old_device.id)
+        if host_changed or name_changed:
+            await self.hass.config_entries.async_reload(self._entry.entry_id)
+        return self.async_create_entry(title="", data=opts)
