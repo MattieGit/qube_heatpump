@@ -224,7 +224,7 @@
         "name": "Minimum setpoint buffer regulation"
       },
       "usr_pid_heatsetp": {
-        "name": "Heat setpoint (no curve)"
+        "name": "Heating setpoint (no curve)"
       },
       "usr_pid_coolsetp": {
         "name": "Cooling setpoint (no curve)"
@@ -664,7 +664,7 @@
         "name": "DHW setpoint (manual override)"
       },
       "usr_pid_heatsetp": {
-        "name": "Heat setpoint (no curve)"
+        "name": "Heating setpoint (no curve)"
       },
       "usr_pid_coolsetp": {
         "name": "Cooling setpoint (no curve)"
