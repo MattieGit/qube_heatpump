@@ -15,14 +15,14 @@
           "heating_dhw": "mdi:water-boiler"
         }
       },
-      "drieweg_status": {
+      "threeway_valve_status": {
         "default": "mdi:valve",
         "state": {
           "dhw": "mdi:water-boiler",
           "ch": "mdi:radiator"
         }
       },
-      "vierweg_status": {
+      "fourway_valve_status": {
         "default": "mdi:valve",
         "state": {
           "heating": "mdi:fire",

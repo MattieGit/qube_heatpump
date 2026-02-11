@@ -59,14 +59,14 @@
                     "unknown": "Onbekend"
                 }
             },
-            "drieweg_status": {
+            "threeway_valve_status": {
                 "name": "Driewegklep status",
                 "state": {
                     "dhw": "Tapwater",
                     "ch": "CV"
                 }
             },
-            "vierweg_status": {
+            "fourway_valve_status": {
                 "name": "Vierwegklep status",
                 "state": {
                     "heating": "Verwarmen",

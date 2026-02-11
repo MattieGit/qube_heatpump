@@ -57,7 +57,7 @@
         "name": "Cooling active output"
       },
       "dout_threewayvlv_val": {
-        "name": "Three-way valve output (CV/DHW)"
+        "name": "Three-way valve output (CH/DHW)"
       },
       "dout_bufferpmp_val": {
         "name": "Buffer pump output"
@@ -84,13 +84,13 @@
         "name": "Alarm: Dewpoint activated"
       },
       "al_underfloorsafety_active": {
-        "name": "Alarm: Supply too hot (CV)"
+        "name": "Alarm: Supply too hot (CH)"
       },
       "alrm_flw": {
-        "name": "Alarm: Flow CV"
+        "name": "Alarm: Flow CH"
       },
       "usralrms": {
-        "name": "Alarm: Collective alarm CV"
+        "name": "Alarm: Collective alarm CH"
       },
       "coolingalrms": {
         "name": "Alarm: Collective alarm cooling"
@@ -192,7 +192,7 @@
         "name": "DHW setpoint (manual)"
       },
       "aout_usrpmp_val": {
-        "name": "User (CV) pump control %"
+        "name": "User (CH) pump control %"
       },
       "aout_srcpmp_val": {
         "name": "Source pump control %"
@@ -210,10 +210,10 @@
         "name": "Measured flow"
       },
       "supplytemp": {
-        "name": "Supply temperature CV"
+        "name": "Supply temperature CH"
       },
       "rettemp": {
-        "name": "Return temperature CV"
+        "name": "Return temperature CH"
       },
       "srcintemp": {
         "name": "Source temperature from roof"
@@ -288,10 +288,10 @@
         "name": "Linq room temperature"
       },
       "temp_supply": {
-        "name": "Supply temperature CV"
+        "name": "Supply temperature CH"
       },
       "temp_return": {
-        "name": "Return temperature CV"
+        "name": "Return temperature CH"
       },
       "temp_source_in": {
         "name": "Source temperature from roof"
@@ -362,14 +362,14 @@
           "unknown": "Unknown"
         }
       },
-      "drieweg_status": {
+      "threeway_valve_status": {
         "name": "Three-way valve status",
         "state": {
           "dhw": "DHW",
           "ch": "CH"
         }
       },
-      "vierweg_status": {
+      "fourway_valve_status": {
         "name": "Four-way valve status",
         "state": {
           "heating": "Heating",
@@ -472,7 +472,7 @@
         "name": "Cooling active output"
       },
       "dout_threewayvlv_val": {
-        "name": "Three-way valve output (CV/DHW)"
+        "name": "Three-way valve output (CH/DHW)"
       },
       "dout_bufferpmp_val": {
         "name": "Buffer pump output"
@@ -499,13 +499,13 @@
         "name": "Alarm: Dewpoint activated"
       },
       "al_underfloorsafety_active": {
-        "name": "Alarm: Supply too hot (CV)"
+        "name": "Alarm: Supply too hot (CH)"
       },
       "alrm_flw": {
-        "name": "Alarm: Flow CV"
+        "name": "Alarm: Flow CH"
       },
       "usralrms": {
-        "name": "Alarm: Collective alarm CV"
+        "name": "Alarm: Collective alarm CH"
       },
       "coolingalrms": {
         "name": "Alarm: Collective alarm cooling"

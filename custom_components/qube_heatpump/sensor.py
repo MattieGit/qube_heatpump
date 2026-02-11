@@ -178,7 +178,7 @@ async def async_setup_entry(
             QubeComputedSensor(
                 coordinator,
                 hub,
-                translation_key="drieweg_status",
+                translation_key="threeway_valve_status",
                 unique_suffix="driewegklep_dhw_cv",
                 kind="drieweg",
                 source=drie_src,
@@ -198,7 +198,7 @@ async def async_setup_entry(
             QubeComputedSensor(
                 coordinator,
                 hub,
-                translation_key="vierweg_status",
+                translation_key="fourway_valve_status",
                 unique_suffix="vierwegklep_verwarmen_koelen",
                 kind="vierweg",
                 source=vier_src,
