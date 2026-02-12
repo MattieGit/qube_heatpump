@@ -308,6 +308,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
             schema=WRITE_REGISTER_SCHEMA,
         )
 
+    # Restore the monotonic cache from disk so that float32 jitter
+    # after restart doesn't produce false decreases in total_increasing sensors.
+    await coordinator.async_load_monotonic_cache()
+
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

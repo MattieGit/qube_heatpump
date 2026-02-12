@@ -475,3 +475,119 @@ def test_rounding_before_monotonic_clamp() -> None:
     assert result5 == 17006.37, (
         f"Should be clamped to 17006.37, got {result5}"
     )
+
+
+async def test_monotonic_cache_persisted_to_disk(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test that the monotonic cache is saved to disk and restored on restart.
+
+    Reproduces GitHub issue #27: after HA restart the monotonic cache is
+    empty, so float32 jitter (e.g. 7353.69 → 7353.68) passes through
+    unclamped, causing HA to flag "state is not strictly increasing".
+    """
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    # Verify the coordinator has a Store
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+    assert coordinator._store is not None
+
+    # The monotonic cache should have been populated during first refresh
+    monotonic_cache = coordinator._monotonic_cache
+
+    # Find a total_increasing entity key in the cache
+    total_keys = [k for k in monotonic_cache if monotonic_cache[k] is not None]
+    assert len(total_keys) > 0, "Expected at least one total_increasing value in cache"
+
+    # Force a save by calling async_save directly (instead of waiting for delay)
+    await coordinator._store.async_save(dict(monotonic_cache))
+
+    # Verify the stored data can be loaded back
+    stored = await coordinator._store.async_load()
+    assert stored is not None
+    assert isinstance(stored, dict)
+    assert len(stored) > 0
+
+    # Verify the stored values match the current cache
+    for key in total_keys:
+        assert key in stored
+        assert stored[key] == monotonic_cache[key]
+
+
+async def test_monotonic_cache_load_seeds_empty_cache(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test async_load_monotonic_cache seeds empty cache from stored data."""
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+
+    # Write fake data to the store (simulating a previous session)
+    fake_cache = {"energy_total_thermic": 7353.69, "workinghours_comp": 12345.0}
+    await coordinator._store.async_save(fake_cache)
+
+    # Clear the in-memory cache to simulate restart
+    coordinator._monotonic_cache.clear()
+
+    # Load should restore the cached values
+    await coordinator.async_load_monotonic_cache()
+
+    assert coordinator._monotonic_cache["energy_total_thermic"] == 7353.69
+    assert coordinator._monotonic_cache["workinghours_comp"] == 12345.0
+
+
+async def test_monotonic_cache_load_skips_populated_cache(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Test async_load_monotonic_cache does nothing if cache already has data."""
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+
+    # Store different data on disk
+    await coordinator._store.async_save({"energy_total_thermic": 9999.0})
+
+    # The in-memory cache should already have values from the first refresh
+    original_values = dict(coordinator._monotonic_cache)
+
+    # Load should skip since cache is already populated
+    await coordinator.async_load_monotonic_cache()
+
+    # Values should be unchanged (not overwritten by the 9999.0 on disk)
+    assert coordinator._monotonic_cache == original_values

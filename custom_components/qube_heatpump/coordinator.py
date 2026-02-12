@@ -15,12 +15,17 @@ if TYPE_CHECKING:
     from .hub import EntityDef, QubeHub
 
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 # Number of consecutive failures before creating a repair issue
 CONSECUTIVE_FAILURES_THRESHOLD = 5
+STORAGE_VERSION = 1
+STORAGE_KEY_PREFIX = f"{DOMAIN}_monotonic"
+# Minimum seconds between persisting the monotonic cache to disk
+SAVE_INTERVAL_SECONDS = 300
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +58,13 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.entry = entry
         self._consecutive_failures = 0
         self._issue_created = False
+        self._monotonic_cache: dict[str, Any] = {}
+        self._store: Store[dict[str, float]] = Store(
+            hass,
+            STORAGE_VERSION,
+            f"{STORAGE_KEY_PREFIX}_{entry.entry_id}",
+        )
+        self._save_scheduled = False
         super().__init__(
             hass,
             _LOGGER,
@@ -87,6 +99,41 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             self._issue_created = False
 
+    async def async_load_monotonic_cache(self) -> None:
+        """Load the monotonic cache from persistent storage.
+
+        On HA restart the in-memory monotonic cache is empty.  The first
+        register reading may round to a value slightly below the last
+        recorded state (float32 precision jitter), which HA then flags as
+        "state is not strictly increasing".  By restoring the cache from
+        disk we ensure the first reading is properly clamped.
+        """
+        if self._monotonic_cache:
+            return  # Already populated, nothing to do
+
+        stored = await self._store.async_load()
+        if not stored or not isinstance(stored, dict):
+            return
+
+        self._monotonic_cache.update(stored)
+        _LOGGER.info(
+            "Restored monotonic cache with %d values from disk", len(stored)
+        )
+
+    def _schedule_save(self) -> None:
+        """Schedule a delayed save of the monotonic cache to disk."""
+        if self._save_scheduled:
+            return
+
+        cache_ref = self._monotonic_cache
+
+        def _get_data() -> dict[str, float]:
+            self._save_scheduled = False
+            return dict(cache_ref)
+
+        self._save_scheduled = True
+        self._store.async_delay_save(_get_data, SAVE_INTERVAL_SECONDS)
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the hub."""
         try:
@@ -106,18 +153,7 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._delete_connection_issue()
 
         results: dict[str, Any] = {}
-
-        # Access persistent storage for monotonic counters
-        # We store it in hass.data[DOMAIN][entry_id] in __init__, but better to keep it here?
-        # Actually __init__ setup creates the dict.
-        # Let's rely on self.entry.entry_id
-        domain_data = self.hass.data.get(DOMAIN, {})
-        entry_store = domain_data.get(self.entry.entry_id)
-        if not entry_store:
-            # Should not happen if initialized correctly, but safety fallback
-            entry_store = domain_data.setdefault(self.entry.entry_id, {})
-
-        monotonic_cache: dict[str, Any] = entry_store.setdefault("monotonic_totals", {})
+        monotonic_cache = self._monotonic_cache
         warn_count = 0
         warn_cap = 5
 
@@ -181,6 +217,9 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     monotonic_cache[key] = value
 
             results[key] = value
+
+        if monotonic_cache:
+            self._schedule_save()
 
         if warn_count > warn_cap:
             _LOGGER.debug("Additional read failures suppressed in this cycle")
