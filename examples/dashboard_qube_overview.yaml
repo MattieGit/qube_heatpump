@@ -368,12 +368,12 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_drieweg_status
+        entity: sensor.qube_threeway_valve_status
         name: 3-way valve status
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_vierweg_status
+        entity: sensor.qube_fourway_valve_status
         name: 4-way valve status
         vertical: false
         features_position: bottom
@@ -392,12 +392,12 @@ sections:
         entity: binary_sensor.qube_dout_bufferpmp_val
         name: Buffer pump output
       - type: tile
-        entity: sensor.qube_vierweg_status
+        entity: sensor.qube_fourway_valve_status
         name: 4-way valve status
         vertical: false
         features_position: bottom
       - type: tile
-        entity: sensor.qube_drieweg_status
+        entity: sensor.qube_threeway_valve_status
         name: 3-way valve status
         vertical: false
         features_position: bottom

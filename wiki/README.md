@@ -201,8 +201,8 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 | Entity | Values |
 |--------|--------|
 | `sensor.qube_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, unknown |
-| `sensor.qube_drieweg_status` | dhw, ch |
-| `sensor.qube_vierweg_status` | heating, cooling |
+| `sensor.qube_threeway_valve_status` | dhw, ch |
+| `sensor.qube_fourway_valve_status` | heating, cooling |
 
 ---
 
