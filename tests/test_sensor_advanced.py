@@ -788,7 +788,7 @@ class TestQubeComputedSensorStatusMappings:
             16: "heating",
             17: "start_fail",
             22: "heating_dhw",
-            99: "unknown",  # Unknown code
+            99: None,  # Unknown code returns None
         }
 
         for code, expected in mappings.items():
