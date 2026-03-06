@@ -1238,7 +1238,7 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
                     17: "start_fail",
                     22: "heating_dhw",
                 }
-                return mapping.get(code, "unknown")
+                return mapping.get(code)
             if self._kind == "drieweg":
                 # DHW (True) vs CH (False)
                 return "dhw" if bool(val) else "ch"

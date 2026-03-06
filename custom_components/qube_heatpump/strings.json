@@ -235,7 +235,7 @@
         "name": "Compressor demand %"
       },
       "flow": {
-        "name": "Measured flow"
+        "name": "Measured PVT flow"
       },
       "supplytemp": {
         "name": "Supply temperature CH"
@@ -358,7 +358,7 @@
         "name": "Thermic yield total"
       },
       "flow_rate": {
-        "name": "Flow rate"
+        "name": "Measured PVT flow"
       },
       "setpoint_room_heat_day": {
         "name": "Room setpoint (no LinQ) heating (day)"
@@ -381,13 +381,12 @@
           "standby": "Standby",
           "alarm": "Alarm",
           "keyboard_off": "Keyboard off",
-          "compressor_startup": "Compressor start up",
+          "compressor_startup": "Compressor startup",
           "compressor_shutdown": "Compressor shutdown",
           "cooling": "Cooling",
           "heating": "Heating",
           "start_fail": "Start fail",
-          "heating_dhw": "Heating DHW",
-          "unknown": "Unknown"
+          "heating_dhw": "Heating DHW"
         }
       },
       "threeway_valve_status": {

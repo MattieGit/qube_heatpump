@@ -11,7 +11,7 @@ CONF_UNIT_ID = "unit_id"
 CONF_NAME = "name"
 CONF_ENTITY_PREFIX = "entity_prefix"  # Deprecated, kept for migration
 DEFAULT_PORT = 502
-DEFAULT_SCAN_INTERVAL = 10
+DEFAULT_SCAN_INTERVAL = 15
 DEFAULT_ENTITY_PREFIX = "qube"
 
 # Virtual thermostat
