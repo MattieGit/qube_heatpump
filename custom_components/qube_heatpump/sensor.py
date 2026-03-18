@@ -721,6 +721,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = str(version) if version else "unknown"
+        self._integration_version: str | None = None
         self._total_counts = total_counts or {}
         label = hub.label or "qube1"
         self._attr_translation_key = "info"
@@ -775,7 +776,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
                 else sum(1 for e in hub.entities if e.platform == "switch")
             )
         return {
-            "version": self._version,
+            "firmware_version": self._version,
+            "integration_version": self._integration_version or "unknown",
             "label": hub.label,
             "host": hub.host,
             "ip_address": hub.resolved_ip,
@@ -794,7 +796,7 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
             await self._async_refresh_integration_version()
 
     async def _async_refresh_integration_version(self) -> None:
-        """Refresh version info."""
+        """Refresh integration version info."""
         integ = None
         with contextlib.suppress(Exception):
             integ = async_get_loaded_integration(self.hass, DOMAIN)
@@ -803,8 +805,8 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
                 integ = await async_get_integration(self.hass, DOMAIN)
         if integ and getattr(integ, "version", None):
             new_version = str(integ.version)
-            if new_version and new_version != self._version:
-                self._version = new_version
+            if new_version and new_version != self._integration_version:
+                self._integration_version = new_version
                 self.async_write_ha_state()
 
 

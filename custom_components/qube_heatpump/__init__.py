@@ -19,7 +19,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.loader import async_get_integration, async_get_loaded_integration
 from homeassistant.setup import async_setup_component
 
 from .const import (
@@ -244,13 +243,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # Load entities from the python-qube-heatpump library
     hub.load_library_entities()
 
-    version = "unknown"
-    with contextlib.suppress(Exception):
-        integration = async_get_loaded_integration(hass, DOMAIN)
-        if not integration:
-            integration = await async_get_integration(hass, DOMAIN)
-        if integration and getattr(integration, "version", None):
-            version = str(integration.version)
+    # Get firmware version from the device (library v1.6.0+)
+    version: str | None = None
+    try:
+        await hub.async_connect()
+        version = await hub.async_get_software_version()
+    except Exception:  # noqa: BLE001
+        _LOGGER.debug("Could not read firmware version during setup")
+    if not version:
+        version = "unknown"
 
     async def _options_updated(hass: HomeAssistant, updated_entry: ConfigEntry) -> None:
         """Handle options update."""

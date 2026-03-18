@@ -366,6 +366,12 @@ class QubeHub:
         """Increment read error count."""
         self._err_read += 1
 
+    async def async_get_software_version(self) -> str | None:
+        """Get the firmware software version from the device."""
+        if self._client is None:
+            return None
+        return await self._client.async_get_software_version()
+
     async def async_get_all_entities(self) -> dict[str, Any]:
         """Get all entity values from the library client."""
         if self._client is None:

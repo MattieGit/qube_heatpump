@@ -69,7 +69,6 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass,
             _LOGGER,
             name="qube_heatpump_coordinator",
-            update_method=self._async_update_data,
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
             config_entry=entry,
         )
