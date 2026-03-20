@@ -216,14 +216,14 @@ async def test_coordinator_handles_no_data(
         assert entry.state is ConfigEntryState.LOADED
 
 
-def test_is_working_hours_entity_bedrijfsuren() -> None:
-    """Test _is_working_hours_entity detects bedrijfsuren entities."""
-    from custom_components.qube_heatpump.coordinator import _is_working_hours_entity
+def test_needs_monotonic_clamping_bedrijfsuren() -> None:
+    """Test _needs_monotonic_clamping detects bedrijfsuren entities."""
+    from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
     from custom_components.qube_heatpump.hub import EntityDef
 
     # Test bedrijfsuren name
     ent = EntityDef(platform="sensor", name="Bedrijfsuren compressor", address=100)
-    assert _is_working_hours_entity(ent) is True
+    assert _needs_monotonic_clamping(ent) is True
 
     # Test workinghours vendor_id
     ent2 = EntityDef(
@@ -232,21 +232,30 @@ def test_is_working_hours_entity_bedrijfsuren() -> None:
         address=101,
         vendor_id="workinghours_comp",
     )
-    assert _is_working_hours_entity(ent2) is True
+    assert _needs_monotonic_clamping(ent2) is True
 
-    # Test non-working hours entity
-    ent3 = EntityDef(platform="sensor", name="Temperature", address=102)
-    assert _is_working_hours_entity(ent3) is False
+    # Test total_increasing state_class
+    ent3 = EntityDef(
+        platform="sensor",
+        name="Energy",
+        address=102,
+        state_class="total_increasing",
+    )
+    assert _needs_monotonic_clamping(ent3) is True
+
+    # Test non-clamped entity
+    ent4 = EntityDef(platform="sensor", name="Temperature", address=103)
+    assert _needs_monotonic_clamping(ent4) is False
 
 
-def test_is_working_hours_entity_edge_cases() -> None:
-    """Test _is_working_hours_entity handles edge cases."""
-    from custom_components.qube_heatpump.coordinator import _is_working_hours_entity
+def test_needs_monotonic_clamping_edge_cases() -> None:
+    """Test _needs_monotonic_clamping handles edge cases."""
+    from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
     from custom_components.qube_heatpump.hub import EntityDef
 
     # Test None name and vendor_id
     ent = EntityDef(platform="sensor", name=None, address=100, vendor_id=None)
-    assert _is_working_hours_entity(ent) is False
+    assert _needs_monotonic_clamping(ent) is False
 
 
 def test_entity_key_generation() -> None:
@@ -505,8 +514,9 @@ async def test_monotonic_cache_persisted_to_disk(
     coordinator: QubeCoordinator = entry.runtime_data.coordinator
     assert coordinator._store is not None
 
-    # The monotonic cache should have been populated during first refresh
-    monotonic_cache = coordinator._monotonic_cache
+    # The monotonic cache in the client should have been populated during first refresh
+    client = entry.runtime_data.hub.client
+    monotonic_cache = client.monotonic_cache
 
     # Find a total_increasing entity key in the cache
     total_keys = [k for k in monotonic_cache if monotonic_cache[k] is not None]
@@ -547,18 +557,20 @@ async def test_monotonic_cache_load_seeds_empty_cache(
 
     coordinator: QubeCoordinator = entry.runtime_data.coordinator
 
+    client = entry.runtime_data.hub.client
+
     # Write fake data to the store (simulating a previous session)
     fake_cache = {"energy_total_thermic": 7353.69, "workinghours_comp": 12345.0}
     await coordinator._store.async_save(fake_cache)
 
     # Clear the in-memory cache to simulate restart
-    coordinator._monotonic_cache.clear()
+    client.monotonic_cache = {}
 
-    # Load should restore the cached values
+    # Load should restore the cached values into the client
     await coordinator.async_load_monotonic_cache()
 
-    assert coordinator._monotonic_cache["energy_total_thermic"] == 7353.69
-    assert coordinator._monotonic_cache["workinghours_comp"] == 12345.0
+    assert client.monotonic_cache["energy_total_thermic"] == 7353.69
+    assert client.monotonic_cache["workinghours_comp"] == 12345.0
 
 
 async def test_monotonic_cache_load_skips_populated_cache(
@@ -580,14 +592,16 @@ async def test_monotonic_cache_load_skips_populated_cache(
 
     coordinator: QubeCoordinator = entry.runtime_data.coordinator
 
+    client = entry.runtime_data.hub.client
+
     # Store different data on disk
     await coordinator._store.async_save({"energy_total_thermic": 9999.0})
 
-    # The in-memory cache should already have values from the first refresh
-    original_values = dict(coordinator._monotonic_cache)
+    # The client's cache should already have values from the first refresh
+    original_values = dict(client.monotonic_cache)
 
     # Load should skip since cache is already populated
     await coordinator.async_load_monotonic_cache()
 
     # Values should be unchanged (not overwritten by the 9999.0 on disk)
-    assert coordinator._monotonic_cache == original_values
+    assert client.monotonic_cache == original_values

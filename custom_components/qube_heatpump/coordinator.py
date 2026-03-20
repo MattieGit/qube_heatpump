@@ -30,8 +30,11 @@ SAVE_INTERVAL_SECONDS = 300
 _LOGGER = logging.getLogger(__name__)
 
 
-def _is_working_hours_entity(ent: EntityDef) -> bool:
-    """Detect working hours counters that should never decrease."""
+def _needs_monotonic_clamping(ent: EntityDef) -> bool:
+    """Check if an entity needs monotonic clamping."""
+    if ent.state_class == "total_increasing":
+        return True
+    # Working hours counters should never decrease
     try:
         name = str(ent.name or "").strip().lower()
         vendor = str(ent.vendor_id or "").strip().lower()
@@ -58,7 +61,6 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.entry = entry
         self._consecutive_failures = 0
         self._issue_created = False
-        self._monotonic_cache: dict[str, Any] = {}
         self._store: Store[dict[str, float]] = Store(
             hass,
             STORAGE_VERSION,
@@ -99,7 +101,7 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._issue_created = False
 
     async def async_load_monotonic_cache(self) -> None:
-        """Load the monotonic cache from persistent storage.
+        """Load the monotonic cache from persistent storage into the library client.
 
         On HA restart the in-memory monotonic cache is empty.  The first
         register reading may round to a value slightly below the last
@@ -107,14 +109,16 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         "state is not strictly increasing".  By restoring the cache from
         disk we ensure the first reading is properly clamped.
         """
-        if self._monotonic_cache:
-            return  # Already populated, nothing to do
+        client = self.hub.client
+        if client is not None and client.monotonic_cache:
+            return  # Already populated
 
         stored = await self._store.async_load()
         if not stored or not isinstance(stored, dict):
             return
 
-        self._monotonic_cache.update(stored)
+        if client is not None:
+            client.monotonic_cache = stored
         _LOGGER.info(
             "Restored monotonic cache with %d values from disk", len(stored)
         )
@@ -124,11 +128,13 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._save_scheduled:
             return
 
-        cache_ref = self._monotonic_cache
+        client = self.hub.client
 
         def _get_data() -> dict[str, float]:
             self._save_scheduled = False
-            return dict(cache_ref)
+            if client is not None:
+                return dict(client.monotonic_cache)
+            return {}
 
         self._save_scheduled = True
         self._store.async_delay_save(_get_data, SAVE_INTERVAL_SECONDS)
@@ -151,8 +157,8 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._consecutive_failures = 0
         self._delete_connection_issue()
 
+        client = self.hub.client
         results: dict[str, Any] = {}
-        monotonic_cache = self._monotonic_cache
         warn_count = 0
         warn_cap = 5
 
@@ -190,34 +196,21 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # the same precision Home Assistant will see.  This prevents
             # float32 jitter from producing a rounded decrease after an HA
             # restart (when the in-memory cache is empty).
-            if (
-                isinstance(value, (int, float))
-                and ent.precision is not None
-            ):
+            if isinstance(value, (int, float)) and ent.precision is not None:
                 with contextlib.suppress(TypeError, ValueError):
                     value = round(float(value), int(ent.precision))
 
+            # Delegate monotonic clamping to the library client
             if (
-                ent.state_class == "total_increasing"
+                _needs_monotonic_clamping(ent)
                 and isinstance(value, (int, float))
-            ) or (_is_working_hours_entity(ent) and isinstance(value, (int, float))):
-                last_value = monotonic_cache.get(key)
-                if isinstance(last_value, (int, float)) and value < (last_value - 1e-6):
-                    # Monotonicity violation (heat pump glitch) -> keep old value
-                    _LOGGER.debug(
-                        "Monotonic clamp: %s reported %s but previous was %s; keeping %s",
-                        key,
-                        value,
-                        last_value,
-                        last_value,
-                    )
-                    value = last_value
-                else:
-                    monotonic_cache[key] = value
+                and client is not None
+            ):
+                value = client.clamp_monotonic(key, value)
 
             results[key] = value
 
-        if monotonic_cache:
+        if client is not None and client.monotonic_cache:
             self._schedule_save()
 
         if warn_count > warn_cap:

@@ -53,6 +53,26 @@ def mock_qube_client() -> Generator[MagicMock]:
         client.read_switch = AsyncMock(return_value=False)
         client.write_switch = AsyncMock(return_value=True)
         client.write_setpoint = AsyncMock(return_value=True)
+        # Monotonic clamping - use a real dict-backed implementation
+        _mock_cache: dict[str, float] = {}
+        type(client).monotonic_cache = property(
+            lambda self: _mock_cache,
+            lambda self, val: (_mock_cache.clear(), _mock_cache.update(val)),
+        )
+
+        def _mock_clamp(key, value):
+            if value is None:
+                return value
+            import math
+            if not math.isfinite(value):
+                return value
+            prev = _mock_cache.get(key)
+            if prev is not None and value < prev:
+                return prev
+            _mock_cache[key] = value
+            return value
+
+        client.clamp_monotonic = _mock_clamp
         # Mock the underlying pymodbus client for fallback reads
         client._client = MagicMock()
         client._client.read_holding_registers = AsyncMock(

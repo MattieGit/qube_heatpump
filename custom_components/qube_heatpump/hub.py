@@ -353,6 +353,11 @@ class QubeHub:
             self._client.unit = self._unit
 
     @property
+    def client(self) -> QubeClient | None:
+        """Return the underlying QubeClient instance."""
+        return self._client
+
+    @property
     def err_connect(self) -> int:
         """Return connect error count."""
         return self._err_connect
