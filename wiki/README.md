@@ -86,6 +86,7 @@ To force an immediate data refresh:
 | Limitation | Description | Notes |
 |------------|-------------|-------|
 | **Energy counter glitches** | Heat pump occasionally reports invalid energy values | Handled by monotonic clamping (see below) |
+| **Electric power at idle** | Modbus register reports ~55W when pumps are in pre/post-run, while true standby is ~17W | The Qube does not measure standby consumption; 0W is reported when all pumps are off |
 | **Entity ID changes** | Changing the entity prefix changes entity IDs | Update automations/dashboards after change |
 | **10-second resolution** | Data is polled every 10 seconds | Sub-second changes may be missed |
 
@@ -219,11 +220,35 @@ The heat pump supports SG Ready signals for smart grid integration. The `select.
 
 The underlying SG Ready A and B switches are hidden by default but remain available for advanced automations.
 
+### Important: LinQ Dependency
+
+SG Ready **Plus** and **Max** modes have limited effect without a LinQ thermostat:
+
+- **Room setpoint +1°C**: Only applies when a LinQ thermostat is connected. Without LinQ, the room setpoint increase has no effect.
+- **DHW day mode**: Sets DHW to day setpoint (e.g. 52°C). If your DHW temperature is already above 47°C, the Qube will not start DHW heating.
+
+If you use SG Ready for dynamic tariff optimization (e.g. Tibber) **without LinQ**, the Plus mode may not cause the Qube to start. Consider using `switch.qube_modbus_demand` or `switch.qube_tapw_timeprogram_bms_forced` directly for more explicit control.
+
 ---
 
 ## Virtual Thermostat Control
 
 To control the Qube from Home Assistant instead of the built-in Linq thermostat:
+
+### Understanding Heat Demand Entities
+
+The integration exposes two demand-related entities that serve different purposes:
+
+| Entity | Type | Purpose |
+|--------|------|---------|
+| `switch.qube_modbus_demand` | Switch (writable) | Trigger heat demand via Modbus. **Only works when LinQ room control is disabled** on the Qube controller. |
+| `binary_sensor.qube_bms_demand` | Binary sensor (read-only) | Shows whether heat demand is active via the BMS/LinQ input. Only reflects LinQ-initiated demand, not hardware contact demand. |
+
+**Key points from HR Energy support:**
+- `bms_demand` is for LinQ systems — it requires "warmtevraag via LinQ" to be enabled
+- `modbus_demand` was created specifically for Home Assistant users — it only works when LinQ demand is **disabled**
+- Hardware contact demand (hard wired thermostat) works in **parallel** with software demand — if either is active, the Qube heats
+- If you have a buffer tank: even with an active demand signal, the Qube won't start if the plant temperature is already above the setpoint
 
 ### 1. Disable Linq Thermostat Options
 
@@ -547,6 +572,15 @@ All communication is local:
 1. Check debug logs for "Monotonic clamp" messages
 2. If values are genuinely wrong, use Home Assistant's statistics adjustment tool
 
+#### Duplicate Entities After Upgrade
+
+**Symptoms**: After upgrading from an older HACS version (pre-2026.1.5), you see duplicate entities or entities with incorrect names.
+
+**Solutions**:
+1. Try the **Recreate entities** function: click the three-dot menu on the integration → Recreate entities
+2. If that doesn't resolve it: remove the integration completely and re-add it
+3. Note: SCOP and utility meter sensors will start from 0 after a fresh install, as they need to accumulate data first
+
 #### Automations Not Triggering
 
 **Symptoms**: Automations based on heat pump entities don't trigger
@@ -602,9 +636,11 @@ logger:
 
 ## Notes
 
-### DHW Setpoint Control
+### DHW (Hot Water) Control
 
-To control the DHW temperature setpoint, use the native number entity:
+#### Setting the DHW Temperature
+
+Use the native number entity to set the DHW setpoint:
 
 ```yaml
 service: number.set_value
@@ -613,6 +649,14 @@ target:
 data:
   value: 52
 ```
+
+#### Activating DHW Heating Manually
+
+To manually start DHW heating via `switch.qube_tapw_timeprogram_bms_forced`:
+
+1. **Set the DHW setpoint first** using `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` — the Qube uses this setpoint, **not** the LinQ thermostat setpoint
+2. The Qube will only start DHW heating when the current DHW temperature is below the setpoint minus 5°C hysteresis (e.g., below 47°C for a 52°C setpoint)
+3. Once started, DHW heating continues until the setpoint is reached and cannot be stopped mid-cycle
 
 ### Entity ID Naming Convention
 
