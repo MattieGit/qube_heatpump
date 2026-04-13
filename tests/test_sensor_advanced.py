@@ -788,7 +788,7 @@ class TestQubeComputedSensorStatusMappings:
             16: "heating",
             17: "start_fail",
             22: "heating_dhw",
-            99: None,  # Unknown code returns None
+            99: "unknown",  # Unknown codes resolve to StatusCode.UNKNOWN
         }
 
         for code, expected in mappings.items():
@@ -808,6 +808,61 @@ class TestQubeComputedSensorStatusMappings:
             )
 
             assert sensor.native_value == expected, f"Code {code} should be {expected}"
+
+    async def test_computed_sensor_status_anti_legionella(
+        self, hass: HomeAssistant
+    ) -> None:
+        """req_antileg_1 overrides the status code, except when ALARM."""
+        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.sensor import (
+            QubeComputedSensor,
+            _entity_key,
+        )
+
+        hub = MagicMock()
+        hub.host = "1.2.3.4"
+        hub.unit = 1
+        hub.label = "qube1"
+        hub.entry_id = "test_entry"
+
+        source = EntityDef(
+            platform="sensor",
+            name="Status",
+            address=100,
+            unique_id="test_status",
+        )
+
+        cases = [
+            # (status_code, antileg_active, expected)
+            (16, True, "anti_legionella"),  # heating overridden
+            (22, True, "anti_legionella"),  # heating_dhw overridden
+            (1, True, "anti_legionella"),  # standby overridden
+            (2, True, "alarm"),  # ALARM never masked
+            (16, False, "heating"),  # antileg off, normal status
+        ]
+
+        for code, antileg, expected in cases:
+            coordinator = MagicMock()
+            coordinator.data = {
+                _entity_key(source): code,
+                "req_antileg_1": antileg,
+            }
+
+            sensor = QubeComputedSensor(
+                coordinator=coordinator,
+                hub=hub,
+                translation_key="status_heatpump",
+                unique_suffix="status_full",
+                kind="status",
+                source=source,
+                show_label=False,
+                multi_device=False,
+                version="1.0",
+            )
+
+            assert sensor.native_value == expected, (
+                f"code={code} antileg={antileg} -> expected {expected}"
+            )
 
     async def test_computed_sensor_drieweg(self, hass: HomeAssistant) -> None:
         """Test computed sensor drieweg (3-way valve) mapping."""
