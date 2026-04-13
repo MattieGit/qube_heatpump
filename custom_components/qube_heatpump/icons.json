@@ -12,7 +12,8 @@
           "cooling": "mdi:snowflake",
           "heating": "mdi:fire",
           "start_fail": "mdi:alert",
-          "heating_dhw": "mdi:water-boiler"
+          "heating_dhw": "mdi:water-boiler",
+          "anti_legionella": "mdi:bacteria"
         }
       },
       "threeway_valve_status": {

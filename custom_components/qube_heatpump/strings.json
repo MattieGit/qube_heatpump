@@ -386,7 +386,9 @@
           "cooling": "Cooling",
           "heating": "Heating",
           "start_fail": "Start fail",
-          "heating_dhw": "Heating DHW"
+          "heating_dhw": "Heating DHW",
+          "anti_legionella": "Anti-legionella",
+          "unknown": "Unknown"
         }
       },
       "threeway_valve_status": {

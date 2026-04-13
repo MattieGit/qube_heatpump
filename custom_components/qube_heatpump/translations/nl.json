@@ -84,6 +84,7 @@
                     "heating": "Verwarmen",
                     "start_fail": "Start mislukt",
                     "heating_dhw": "Verwarmen SWW",
+                    "anti_legionella": "Antilegionella",
                     "unknown": "Onbekend"
                 }
             },

@@ -17,6 +17,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_integration, async_get_loaded_integration
 from homeassistant.util import dt as dt_util
+from python_qube_heatpump import resolve_status
 
 from .const import DOMAIN, TARIFF_OPTIONS
 from .helpers import slugify as _slugify
@@ -1228,19 +1229,8 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         with contextlib.suppress(Exception):
             if self._kind == "status":
                 code = int(val)
-                if code in (1, 14, 18):
-                    return "standby"
-                mapping = {
-                    2: "alarm",
-                    6: "keyboard_off",
-                    8: "compressor_startup",
-                    9: "compressor_shutdown",
-                    15: "cooling",
-                    16: "heating",
-                    17: "start_fail",
-                    22: "heating_dhw",
-                }
-                return mapping.get(code)
+                antileg = self.coordinator.data.get("req_antileg_1")
+                return resolve_status(code, antileg).value
             if self._kind == "drieweg":
                 # DHW (True) vs CH (False)
                 return "dhw" if bool(val) else "ch"
