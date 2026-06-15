@@ -101,15 +101,6 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = []
 
-    def _computed_object_base(name: str, use_prefix: bool) -> str:
-        """Return the computed sensor object_id base."""
-        slug = _slugify(name)
-        if use_prefix:
-            return slug
-        if slug.startswith("qube_"):
-            return slug[len("qube_") :]
-        return slug
-
     def _add_sensor_entity(
         entity: SensorEntity, include_in_sensor_total: bool = True
     ) -> None:
@@ -154,7 +145,7 @@ async def async_setup_entry(
             )
         )
 
-    # 1) Qube status full
+    # 1) Heat pump status (computed from status code)
     status_src = _find_status_source(hub)
     if status_src is not None:
         _add_sensor_entity(
@@ -168,11 +159,10 @@ async def async_setup_entry(
                 show_label=show_label,
                 multi_device=multi_device,
                 version=version,
-                object_base=_computed_object_base("Status warmtepomp", show_label),
             )
         )
 
-    # 2) Qube Driewegklep (binary sensor 4)
+    # 2) Three-way valve status (binary sensor 4)
     drie_src = _find_binary_by_address(hub, 4)
     if drie_src is not None:
         _add_sensor_entity(
@@ -186,13 +176,10 @@ async def async_setup_entry(
                 show_label=show_label,
                 multi_device=multi_device,
                 version=version,
-                object_base=_computed_object_base(
-                    "Qube Driewegklep SSW/CV status", show_label
-                ),
             )
         )
 
-    # 3) Qube Vierwegklep (binary sensor 2)
+    # 3) Four-way valve status (binary sensor 2)
     vier_src = _find_binary_by_address(hub, 2)
     if vier_src is not None:
         _add_sensor_entity(
@@ -206,9 +193,6 @@ async def async_setup_entry(
                 show_label=show_label,
                 multi_device=multi_device,
                 version=version,
-                object_base=_computed_object_base(
-                    "Qube Vierwegklep verwarmen/koelen status", show_label
-                ),
             )
         )
 
