@@ -15,6 +15,8 @@ from custom_components.qube_heatpump.const import (
 )
 from homeassistant.config_entries import ConfigEntryState
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -84,6 +86,7 @@ async def test_async_setup_entry_multi_device(
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)

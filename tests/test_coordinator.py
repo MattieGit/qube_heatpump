@@ -15,6 +15,8 @@ from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
 
@@ -62,6 +64,7 @@ async def test_coordinator_reconnects_when_disconnected(
         client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -113,6 +116,7 @@ async def test_coordinator_handles_fetch_error(
         client.close = AsyncMock(return_value=None)
         # First call succeeds for setup
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -173,6 +177,7 @@ async def test_coordinator_handles_no_data(
         client.close = AsyncMock(return_value=None)
         # First call succeeds for setup
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -293,6 +298,7 @@ async def test_coordinator_non_finite_value(
         client.close = AsyncMock(return_value=None)
         # First call returns valid data for setup
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -352,6 +358,7 @@ async def test_coordinator_monotonicity_violation(
         client.close = AsyncMock(return_value=None)
         # First call returns high value
         client.read_entity = AsyncMock(return_value=1000.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=1000.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -605,3 +612,35 @@ async def test_monotonic_cache_load_skips_populated_cache(
 
     # Values should be unchanged (not overwritten by the 9999.0 on disk)
     assert client.monotonic_cache == original_values
+
+
+async def test_coordinator_uses_batched_bulk_read(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """The coordinator fetches all values in one bulk call, not per entity."""
+    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+
+    bulk_values: dict = dict.fromkeys(SENSORS, 45.0)
+    bulk_values |= dict.fromkeys(BINARY_SENSORS, False)
+    bulk_values |= dict.fromkeys(SWITCHES, False)
+    mock_qube_client.get_all_entities = AsyncMock(return_value=bulk_values)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert mock_qube_client.get_all_entities.call_count >= 1
+    # No per-entity reads during the poll cycle
+    assert mock_qube_client.read_entity.call_count == 0
+
+    # Values from the bulk dict must land on entities
+    state = hass.states.get("sensor.qube_1_temp_supply")
+    assert state is not None
+    assert state.state == "45.0"

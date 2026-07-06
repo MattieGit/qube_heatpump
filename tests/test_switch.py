@@ -9,6 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -123,6 +125,7 @@ async def test_switch_is_on_property(
         client.close = AsyncMock(return_value=None)
         # Return True for switches to test is_on
         client.read_entity = AsyncMock(return_value=True)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=True)

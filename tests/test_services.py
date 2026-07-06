@@ -11,6 +11,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.exceptions import HomeAssistantError
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -70,6 +72,7 @@ async def test_write_register_service_with_writable_entity(
         client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -123,6 +126,7 @@ async def test_write_register_service_no_matching_entity(
         client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -247,6 +251,7 @@ async def test_write_register_with_label(
         client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -299,6 +304,7 @@ async def test_write_register_switch_entity(
         client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=False)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)

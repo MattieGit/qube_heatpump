@@ -15,6 +15,8 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
 
@@ -132,6 +134,7 @@ async def test_sensor_coordinator_refresh_updates_values(
         client.close = AsyncMock(return_value=None)
         # Initial value
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -189,6 +192,7 @@ async def test_sensor_handles_none_data(hass: HomeAssistant) -> None:
         client.close = AsyncMock(return_value=None)
         # Return None for some reads
         client.read_entity = AsyncMock(return_value=None)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=None)
         client.read_binary_sensor = AsyncMock(return_value=None)
         client.read_switch = AsyncMock(return_value=None)

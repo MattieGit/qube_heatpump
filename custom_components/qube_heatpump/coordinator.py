@@ -162,21 +162,18 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         warn_count = 0
         warn_cap = 5
 
+        # Fetch all values in a handful of batched block reads instead of
+        # one Modbus transaction per entity (library >=1.12.0).
+        try:
+            bulk = await self.hub.async_get_all_entities()
+        except Exception as exc:
+            self.hub.inc_read_error()
+            raise UpdateFailed(
+                f"Reading from {self.hub.host} failed: {exc}"
+            ) from exc
+
         for ent in self.hub.entities:
-            try:
-                value = await self.hub.async_read_value(ent)
-            except Exception as exc:  # pylint: disable=broad-except  # noqa: BLE001
-                self.hub.inc_read_error()
-                if warn_count < warn_cap:
-                    _LOGGER.warning(
-                        "Read failed (%s %s@%s): %s",
-                        ent.platform,
-                        ent.input_type or ent.write_type,
-                        ent.address,
-                        exc,
-                    )
-                    warn_count += 1
-                continue
+            value = bulk.get(ent.vendor_id) if ent.vendor_id else None
 
             key = _entity_key(ent)
             if isinstance(value, (int, float)) and not math.isfinite(float(value)):

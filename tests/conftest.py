@@ -15,6 +15,30 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.qube_heatpump.const import CONF_HOST, CONF_PORT, DOMAIN
 
 
+def add_bulk_read(client: MagicMock) -> None:
+    """Make get_all_entities delegate to the per-entity read_entity mock.
+
+    The coordinator fetches all values through one bulk call; tests
+    control values by configuring client.read_entity, so the bulk call
+    resolves each library entity through that mock.
+    """
+
+    async def _bulk() -> dict:
+        from python_qube_heatpump.entities import (
+            BINARY_SENSORS,
+            SENSORS,
+            SWITCHES,
+        )
+
+        return {
+            key: await client.read_entity(ent)
+            for key, ent in {**SENSORS, **BINARY_SENSORS, **SWITCHES}.items()
+        }
+
+    client.get_all_entities = AsyncMock(side_effect=_bulk)
+    client.async_get_software_version = AsyncMock(return_value="4.10")
+
+
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations for all tests."""
@@ -53,6 +77,7 @@ def mock_qube_client() -> Generator[MagicMock]:
         client.read_switch = AsyncMock(return_value=False)
         client.write_switch = AsyncMock(return_value=True)
         client.write_setpoint = AsyncMock(return_value=True)
+        add_bulk_read(client)
         # Monotonic clamping - use a real dict-backed implementation
         _mock_cache: dict[str, float] = {}
         type(client).monotonic_cache = property(

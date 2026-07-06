@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from custom_components.qube_heatpump.hub import QubeHub
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -158,6 +160,7 @@ async def test_hub_read_value(hass: HomeAssistant) -> None:
         client.is_connected = False
         client.connect = AsyncMock(return_value=True)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
 
         hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube1")
         hub.load_library_entities()

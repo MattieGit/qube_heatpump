@@ -9,6 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -88,6 +90,7 @@ async def test_number_native_value(
         client.close = AsyncMock(return_value=None)
         # Return temperature values
         client.read_entity = AsyncMock(return_value=21.5)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=21.5)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -140,6 +143,7 @@ async def test_number_native_value_none(
         client.close = AsyncMock(return_value=None)
         # Return None for values
         client.read_entity = AsyncMock(return_value=None)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=None)
         client.read_binary_sensor = AsyncMock(return_value=None)
         client.read_switch = AsyncMock(return_value=None)

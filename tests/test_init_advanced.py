@@ -12,6 +12,8 @@ from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import HomeAssistantError
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -55,6 +57,7 @@ async def test_service_reconfigure_no_entry_id_multiple_entries(
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -196,6 +199,7 @@ async def test_write_register_no_runtime_data(
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -262,6 +266,7 @@ async def test_write_register_no_hub(
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -325,6 +330,7 @@ async def test_write_register_write_fails(
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
@@ -455,6 +461,7 @@ async def test_entity_creation_failure_skipped(
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         client.read_entity = AsyncMock(return_value=45.0)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)

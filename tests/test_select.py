@@ -14,6 +14,8 @@ from custom_components.qube_heatpump.select import (
     SGREADY_OPTIONS,
 )
 
+from tests.conftest import add_bulk_read
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -126,6 +128,7 @@ async def test_select_current_option(
             return 45.0
 
         client.read_entity = AsyncMock(side_effect=read_entity_side_effect)
+        add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=45.0)
         client.read_binary_sensor = AsyncMock(return_value=False)
         client.read_switch = AsyncMock(return_value=False)
