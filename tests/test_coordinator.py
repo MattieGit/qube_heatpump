@@ -677,6 +677,108 @@ def test_tariff_energy_tracker_dedup_with_real_token() -> None:
     assert tracker._totals["CH"] == 5.0
 
 
+async def test_tariff_sensor_dedup_end_to_end_via_real_coordinator(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """End-to-end: real coordinator -> sensor callback -> tracker dedup.
+
+    Exercises the actual production wiring instead of a hand-built token:
+    the real `sensor.qube_1_electric_consumption_ch_month` entity created by
+    the real integration setup (already added to hass via async_add_entities,
+    so async_write_ha_state works normally), backed by the real
+    QubeCoordinator whose `last_update_success_time` was populated by HA's
+    TimestampDataUpdateCoordinator internals - not set manually here. Calling
+    the entity's actual `_handle_coordinator_update` does the real
+    `getattr(self.coordinator, "last_update_success_time", None)` call.
+
+    Simulates two notifications for the same completed refresh (identical
+    token) where the underlying data has ticked up in between - the
+    dedup guard must apply the delta only once. Before the coordinator.py
+    fix (plain DataUpdateCoordinator, token always None) this test fails
+    because the guard's `token is not None` condition never engages and the
+    delta is applied on every call.
+    """
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
+    from custom_components.qube_heatpump.sensor import QubeTariffEnergySensor
+    from homeassistant.helpers import entity_platform
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+
+    # Mirror sensor.py's own tolerant access (getattr with a None default)
+    # rather than a plain attribute read, so this test reproduces the actual
+    # doubled-delta symptom on the old base class instead of merely tripping
+    # over an AttributeError before reaching the dedup logic.
+    def _token() -> object:
+        return getattr(coordinator, "last_update_success_time", None)
+
+    # Real refresh already happened during setup, so this is whatever token
+    # production wiring actually produces - not fabricated by the test.
+    real_token = _token()
+
+    # Find the real, already-added QubeTariffEnergySensor entity (CH monthly
+    # electric consumption) via the real entity platform - not a throwaway
+    # instance, so async_write_ha_state works without extra scaffolding.
+    entity: QubeTariffEnergySensor | None = None
+    for platform in entity_platform.async_get_platforms(hass, DOMAIN):
+        if platform.domain != "sensor":
+            continue
+        for candidate in platform.entities.values():
+            if getattr(candidate, "_attr_translation_key", None) == (
+                "electric_consumption_ch_month"
+            ):
+                entity = candidate
+                break
+    assert entity is not None, "electric_consumption_ch_month sensor not found"
+    assert isinstance(entity, QubeTariffEnergySensor)
+
+    tracker = entity._tracker
+    base_key = tracker.base_key
+    baseline = coordinator.data.get(base_key)
+    assert isinstance(baseline, (int, float)), (
+        f"Expected a numeric baseline for {base_key}, got {baseline!r}"
+    )
+    totals_before = dict(tracker._totals)
+
+    # No real refresh has happened since setup (no listener has yet called
+    # _handle_coordinator_update), so the dedup guard hasn't engaged at all.
+    assert tracker._last_token is None
+
+    # First notification for this refresh: base total ticks up +5, applies
+    # the delta exactly once.
+    coordinator.data[base_key] = baseline + 5.0
+    entity._handle_coordinator_update()
+    assert _token() == real_token, (
+        "No new refresh should have happened between the two notifications"
+    )
+    assert tracker._totals["CH"] == totals_before["CH"] + 5.0
+
+    # Underlying data ticks up again, but this is a duplicate notification
+    # for the SAME completed refresh (same token) - must not double count.
+    # On the buggy base class real_token is always None, so the guard's
+    # `token is not None` condition never engages and this delta gets
+    # applied a second time (totals would read +10 instead of +5).
+    coordinator.data[base_key] = baseline + 10.0
+    entity._handle_coordinator_update()
+    assert tracker._totals["CH"] == totals_before["CH"] + 5.0, (
+        "Delta must not be applied twice for the same real coordinator token"
+    )
+
+    # Confirms the fix's wiring specifically: production code must be able
+    # to obtain a genuinely non-None token from the real coordinator.
+    assert real_token is not None
+
+
 async def test_coordinator_uses_batched_bulk_read(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
