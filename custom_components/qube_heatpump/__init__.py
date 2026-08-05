@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass
-import json
 import logging
-from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
@@ -225,18 +223,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         hass.config_entries.async_update_entry(entry, data=new_data, title=device_name)
 
     hub = QubeHub(hass, host, port, entry.entry_id, unit_id, device_name)
-
-    # Load fallback translations (manual resolution to avoid device prefix)
-    translations_path = Path(__file__).parent / "translations" / "en.json"
-    if translations_path.exists():
-
-        def _load_translations() -> dict[str, Any]:
-            with translations_path.open("r", encoding="utf-8") as f:
-                return cast("dict[str, Any]", json.load(f))
-
-        with contextlib.suppress(OSError, ValueError):
-            translations = await hass.async_add_executor_job(_load_translations)
-            hub.set_translations(translations)
 
     await hub.async_resolve_ip()
 

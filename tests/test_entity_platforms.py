@@ -26,7 +26,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -61,7 +60,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -96,7 +94,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -130,7 +127,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -167,7 +163,6 @@ class TestBinarySensorUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -204,7 +199,6 @@ class TestBinarySensorUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -241,7 +235,6 @@ class TestBinarySensorUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -347,7 +340,6 @@ class TestSwitchSGReady:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -385,7 +377,6 @@ async def test_binary_sensor_hidden_vendor_ids(
     hub.host = "1.2.3.4"
     hub.unit = 1
     hub.label = "qube1"
-    hub.get_friendly_name = MagicMock(return_value=None)
 
     coordinator = MagicMock()
     coordinator.data = {}

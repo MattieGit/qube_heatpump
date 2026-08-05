@@ -199,7 +199,6 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
     hub.unit = 2
     hub.label = "qube1"
     hub.device_name = "Qube Heat Pump"
-    hub.get_friendly_name = MagicMock(return_value=None)
 
     coordinator = MagicMock()
     coordinator.data = {}

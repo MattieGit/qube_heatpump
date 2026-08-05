@@ -25,11 +25,6 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in str(text)).strip("_").lower()
-
-
 @dataclass
 class EntityDef:
     """Definition of a Qube entity for Home Assistant.
@@ -51,7 +46,6 @@ class EntityDef:
     unique_id: str | None = None
     offset: float | None = None
     scale: float | None = None
-    min_value: float | None = None
     translation_key: str | None = None
     writable: bool = False
     # Reference to the library's entity definition
@@ -216,7 +210,6 @@ class QubeHub:
         self._err_connect: int = 0
         self._err_read: int = 0
         self._resolved_ip: str | None = None
-        self._translations: dict[str, Any] = {}
 
     def load_library_entities(self) -> None:
         """Load all entity definitions from the library."""
@@ -241,24 +234,6 @@ class QubeHub:
             len(SENSORS),
             len(SWITCHES),
         )
-
-    def set_translations(self, translations: dict[str, Any]) -> None:
-        """Set translations for friendly name resolution."""
-        self._translations = translations
-
-    def get_friendly_name(self, platform: str, key: str | None) -> str | None:
-        """Get friendly name from translations."""
-        if not key or not self._translations:
-            return None
-        with contextlib.suppress(Exception):
-            val = (
-                self._translations.get("entity", {})
-                .get(platform, {})
-                .get(key, {})
-                .get("name")
-            )
-            return val if isinstance(val, str) else None
-        return None
 
     @property
     def host(self) -> str:
@@ -346,12 +321,6 @@ class QubeHub:
                 await self._client.close()
             self._client = None
 
-    def set_unit_id(self, unit_id: int) -> None:
-        """Set unit ID."""
-        self._unit = int(unit_id)
-        if self._client is not None:
-            self._client.unit = self._unit
-
     @property
     def client(self) -> QubeClient | None:
         """Return the underlying QubeClient instance."""
@@ -383,26 +352,6 @@ class QubeHub:
             raise ConnectionError("Client not connected")
 
         return await self._client.get_all_entities()
-
-    async def async_read_value(self, ent: EntityDef) -> Any:
-        """Read a single entity value via the library client."""
-        if self._client is None:
-            raise ConnectionError("Client not connected")
-
-        # Use library entity if available
-        if ent._library_entity is not None:
-            return await self._client.read_entity(ent._library_entity)
-
-        # Fallback: Use key-based reads
-        if ent.unique_id:
-            if ent.platform == "binary_sensor":
-                return await self._client.read_binary_sensor(ent.unique_id)
-            if ent.platform == "switch":
-                return await self._client.read_switch(ent.unique_id)
-            if ent.platform == "sensor":
-                return await self._client.read_sensor(ent.unique_id)
-
-        return None
 
     async def async_write_switch(self, ent: EntityDef, on: bool) -> None:
         """Write a switch state via the library client."""

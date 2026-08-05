@@ -16,7 +16,6 @@ from custom_components.qube_heatpump.sensor import (
     _find_binary_by_address,
     _find_status_source,
     _scope_unique_id,
-    _slugify,
     _start_of_day,
     _start_of_month,
 )
@@ -24,14 +23,6 @@ from homeassistant.util import dt as dt_util
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
-
-
-def test_slugify() -> None:
-    """Test _slugify function."""
-    assert _slugify("Hello World") == "hello_world"
-    assert _slugify("test-123") == "test_123"
-    assert _slugify("___test___") == "test"
-    assert _slugify("CamelCase") == "camelcase"
 
 
 def test_scope_unique_id() -> None:
@@ -54,22 +45,6 @@ def test_start_of_day() -> None:
     dt = datetime(2025, 1, 15, 14, 30, 45, 123456)
     result = _start_of_day(dt)
     assert result == datetime(2025, 1, 15, 0, 0, 0, 0)
-
-
-def test_find_status_source_with_matching_entity() -> None:
-    """Test _find_status_source finds status entity."""
-    from custom_components.qube_heatpump.hub import EntityDef
-
-    hub = MagicMock()
-    ent1 = EntityDef(
-        platform="sensor",
-        name="Status",
-        address=100,
-        unique_id="wp_qube_warmtepomp_unit_status",
-    )
-    hub.entities = [ent1]
-    result = _find_status_source(hub)
-    assert result == ent1
 
 
 def test_find_status_source_fallback_enum() -> None:
@@ -427,96 +402,6 @@ class TestQubeInfoSensorCountsFallback:
         assert attrs["count_switches"] == 1
 
 
-class TestQubeMetricSensorCountProviders:
-    """Tests for QubeMetricSensor count provider logic."""
-
-    async def test_metric_sensor_count_sensors(self, hass: HomeAssistant) -> None:
-        """Test metric sensor returns sensor count from provider."""
-        from custom_components.qube_heatpump.sensor import QubeMetricSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-        hub.entities = []
-
-        coordinator = MagicMock()
-
-        def counts_provider():
-            return {"sensor": 10, "binary_sensor": 5, "switch": 3}
-
-        sensor = QubeMetricSensor(
-            coordinator=coordinator,
-            hub=hub,
-            show_label=False,
-            multi_device=False,
-            version="1.0",
-            kind="count_sensors",
-            counts_provider=counts_provider,
-        )
-
-        assert sensor.native_value == 10
-
-    async def test_metric_sensor_count_binary_sensors(
-        self, hass: HomeAssistant
-    ) -> None:
-        """Test metric sensor returns binary_sensor count from provider."""
-        from custom_components.qube_heatpump.sensor import QubeMetricSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-        hub.entities = []
-
-        coordinator = MagicMock()
-
-        def counts_provider():
-            return {"sensor": 10, "binary_sensor": 5, "switch": 3}
-
-        sensor = QubeMetricSensor(
-            coordinator=coordinator,
-            hub=hub,
-            show_label=False,
-            multi_device=False,
-            version="1.0",
-            kind="count_binary_sensors",
-            counts_provider=counts_provider,
-        )
-
-        assert sensor.native_value == 5
-
-    async def test_metric_sensor_count_switches(self, hass: HomeAssistant) -> None:
-        """Test metric sensor returns switch count from provider."""
-        from custom_components.qube_heatpump.sensor import QubeMetricSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-        hub.entities = []
-
-        coordinator = MagicMock()
-
-        def counts_provider():
-            return {"sensor": 10, "binary_sensor": 5, "switch": 3}
-
-        sensor = QubeMetricSensor(
-            coordinator=coordinator,
-            hub=hub,
-            show_label=False,
-            multi_device=False,
-            version="1.0",
-            kind="count_switches",
-            counts_provider=counts_provider,
-        )
-
-        assert sensor.native_value == 3
-
-
 class TestQubeSCOPSensorEdgeCases:
     """Tests for QubeSCOPSensor edge cases."""
 
@@ -549,7 +434,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            object_base="scop_maand",
             show_label=False,
             multi_device=False,
             version="1.0",
@@ -587,7 +471,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            object_base="scop_maand",
             show_label=False,
             multi_device=False,
             version="1.0",
@@ -625,7 +508,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            object_base="scop_maand",
             show_label=False,
             multi_device=False,
             version="1.0",
@@ -664,7 +546,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            object_base="scop_maand",
             show_label=False,
             multi_device=False,
             version="1.0",
@@ -706,7 +587,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="CH",  # Single tariff
             translation_key="scop_ch_month",
             unique_base="qube_scop_ch_monthly",
-            object_base="scop_ch_month",
             show_label=False,
             multi_device=False,
             version="1.0",

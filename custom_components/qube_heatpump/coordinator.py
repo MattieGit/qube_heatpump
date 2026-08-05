@@ -36,12 +36,9 @@ def _needs_monotonic_clamping(ent: EntityDef) -> bool:
         return True
     # Working hours counters should never decrease
     try:
-        name = str(ent.name or "").strip().lower()
         vendor = str(ent.vendor_id or "").strip().lower()
     except (TypeError, ValueError, AttributeError):
         return False
-    if name.startswith("bedrijfsuren"):
-        return True
     return bool(vendor.startswith("workinghours"))
 
 

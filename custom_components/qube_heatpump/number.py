@@ -117,7 +117,7 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
 
         # Number configuration
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-        self._attr_native_min_value = ent.min_value or DEFAULT_MIN_TEMP
+        self._attr_native_min_value = DEFAULT_MIN_TEMP
         self._attr_native_max_value = DEFAULT_MAX_TEMP
         self._attr_native_step = DEFAULT_STEP
         self._attr_entity_category = EntityCategory.CONFIG

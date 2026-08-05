@@ -221,14 +221,10 @@ async def test_coordinator_handles_no_data(
         assert entry.state is ConfigEntryState.LOADED
 
 
-def test_needs_monotonic_clamping_bedrijfsuren() -> None:
-    """Test _needs_monotonic_clamping detects bedrijfsuren entities."""
+def test_needs_monotonic_clamping_workinghours() -> None:
+    """Test _needs_monotonic_clamping detects workinghours entities."""
     from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
     from custom_components.qube_heatpump.hub import EntityDef
-
-    # Test bedrijfsuren name
-    ent = EntityDef(platform="sensor", name="Bedrijfsuren compressor", address=100)
-    assert _needs_monotonic_clamping(ent) is True
 
     # Test workinghours vendor_id
     ent2 = EntityDef(

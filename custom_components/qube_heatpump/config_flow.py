@@ -275,15 +275,7 @@ class OptionsFlowHandler(OptionsFlow):
             self._entry.options.get(CONF_UNIT_ID, self._entry.data.get(CONF_UNIT_ID, 1))
         )
 
-        hub_entry = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-        resolved_ip = None
-        hub = hub_entry.get("hub")
-        if hub is not None:
-            resolved_ip = getattr(hub, "resolved_ip", None) or getattr(
-                hub, "host", None
-            )
-        if not resolved_ip:
-            resolved_ip = await _async_resolve_host(current_host)
+        resolved_ip = await _async_resolve_host(current_host)
 
         current_thermostat = bool(self._entry.options.get(CONF_THERMOSTAT_ENABLED, False))
         current_dhw = bool(self._entry.options.get(CONF_DHW_SCHEDULE_ENABLED, False))

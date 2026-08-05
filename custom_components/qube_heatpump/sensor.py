@@ -20,10 +20,8 @@ from homeassistant.util import dt as dt_util
 from python_qube_heatpump import resolve_status
 
 from .const import DOMAIN, TARIFF_OPTIONS
-from .helpers import slugify as _slugify
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from datetime import datetime
 
     from homeassistant.core import HomeAssistant
@@ -34,10 +32,6 @@ if TYPE_CHECKING:
     from .hub import EntityDef, QubeHub
 
 _LOGGER = logging.getLogger(__name__)
-
-VENDOR_SLUG_OVERRIDES = {
-    "unitstatus": "status_heatpump",
-}
 
 HIDDEN_VENDOR_IDS = {
     "unitstatus",
@@ -108,9 +102,6 @@ async def async_setup_entry(
             extra_counts["sensor"] += 1
         entities.append(entity)
 
-    # Use a container for counts to pass to sensors
-    counts_holder: dict[str, dict[str, int] | None] = {"value": None}
-
     # Surface the resolved host IP as its own diagnostic sensor
     _add_sensor_entity(
         QubeIPAddressSensor(coordinator, hub, show_label, multi_device, version)
@@ -126,7 +117,6 @@ async def async_setup_entry(
                 multi_device,
                 version,
                 kind=kind,
-                counts_provider=None,
             ),
             include_in_sensor_total=True,
         )
@@ -278,7 +268,6 @@ async def async_setup_entry(
             show_label=show_label,
             multi_device=multi_device,
             version=version,
-            object_base="energy_tariff_ch",
         )
     )
     _add_sensor_entity(
@@ -291,7 +280,6 @@ async def async_setup_entry(
             show_label=show_label,
             multi_device=multi_device,
             version=version,
-            object_base="energy_tariff_dhw",
         )
     )
     _add_sensor_entity(
@@ -304,7 +292,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TOTAL_MONTHLY_UNIQUE_BASE,
-            object_base="thermische_opbrengst_maand",
         )
     )
     _add_sensor_entity(
@@ -318,7 +305,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
-            object_base="thermic_yield_ch_month",
         )
     )
     _add_sensor_entity(
@@ -332,7 +318,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
-            object_base="thermic_yield_dhw_month",
         )
     )
 
@@ -347,7 +332,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique="qube_electric_energy_daily",
-            object_base="electric_consumption_day",
         )
     )
     _add_sensor_entity(
@@ -361,7 +345,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique="qube_energy_tariff_daily",
-            object_base="electric_consumption_ch_day",
         )
     )
     _add_sensor_entity(
@@ -375,7 +358,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique="qube_energy_tariff_daily",
-            object_base="electric_consumption_dhw_day",
         )
     )
 
@@ -390,7 +372,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique="qube_thermic_energy_daily",
-            object_base="thermic_yield_day",
         )
     )
     _add_sensor_entity(
@@ -404,7 +385,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique="qube_thermic_tariff_daily",
-            object_base="thermic_yield_ch_day",
         )
     )
     _add_sensor_entity(
@@ -418,7 +398,6 @@ async def async_setup_entry(
             multi_device=multi_device,
             version=version,
             base_unique="qube_thermic_tariff_daily",
-            object_base="thermic_yield_dhw_day",
         )
     )
 
@@ -431,7 +410,6 @@ async def async_setup_entry(
             scope="total",
             translation_key="scop_month",
             unique_base=SCOP_TOTAL_UNIQUE_BASE,
-            object_base="scop_maand",
             show_label=show_label,
             multi_device=multi_device,
             version=version,
@@ -446,7 +424,6 @@ async def async_setup_entry(
             scope="CH",
             translation_key="scop_ch_month",
             unique_base=SCOP_CH_UNIQUE_BASE,
-            object_base="scop_ch_month",
             show_label=show_label,
             multi_device=multi_device,
             version=version,
@@ -461,7 +438,6 @@ async def async_setup_entry(
             scope="DHW",
             translation_key="scop_dhw_month",
             unique_base=SCOP_DHW_UNIQUE_BASE,
-            object_base="scop_dhw_month",
             show_label=show_label,
             multi_device=multi_device,
             version=version,
@@ -477,7 +453,6 @@ async def async_setup_entry(
             scope="total",
             translation_key="scop_day",
             unique_base=SCOP_TOTAL_DAILY_UNIQUE_BASE,
-            object_base="scop_dag",
             show_label=show_label,
             multi_device=multi_device,
             version=version,
@@ -492,7 +467,6 @@ async def async_setup_entry(
             scope="CH",
             translation_key="scop_ch_day",
             unique_base=SCOP_CH_DAILY_UNIQUE_BASE,
-            object_base="scop_ch_day",
             show_label=show_label,
             multi_device=multi_device,
             version=version,
@@ -507,7 +481,6 @@ async def async_setup_entry(
             scope="DHW",
             translation_key="scop_dhw_day",
             unique_base=SCOP_DHW_DAILY_UNIQUE_BASE,
-            object_base="scop_dhw_day",
             show_label=show_label,
             multi_device=multi_device,
             version=version,
@@ -531,7 +504,6 @@ async def async_setup_entry(
     }
 
     info_sensor.set_counts(final_counts)
-    counts_holder["value"] = final_counts
 
     async_add_entities(entities)
 
@@ -858,7 +830,6 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         multi_device: bool,
         version: str,
         kind: str,
-        counts_provider: Callable[[], dict[str, int] | None] | None = None,
     ) -> None:
         """Initialize metric sensor."""
         super().__init__(coordinator)
@@ -867,7 +838,6 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._version = version
-        self._counts_provider = counts_provider
         label = hub.label or "qube1"
         self._attr_translation_key = f"metric_{kind}"
         self.entity_id = f"sensor.{label}_metric_{kind}"
@@ -896,21 +866,6 @@ class QubeMetricSensor(CoordinatorEntity, SensorEntity):
             return getattr(hub, "err_connect", None)
         if self._kind == "errors_read":
             return getattr(hub, "err_read", None)
-        if self._kind == "count_sensors":
-            counts = self._counts_provider() if self._counts_provider else None
-            if counts:
-                return counts.get("sensor", 0)
-            return sum(1 for e in hub.entities if e.platform == "sensor")
-        if self._kind == "count_binary_sensors":
-            counts = self._counts_provider() if self._counts_provider else None
-            if counts:
-                return counts.get("binary_sensor", 0)
-            return sum(1 for e in hub.entities if e.platform == "binary_sensor")
-        if self._kind == "count_switches":
-            counts = self._counts_provider() if self._counts_provider else None
-            if counts:
-                return counts.get("switch", 0)
-            return sum(1 for e in hub.entities if e.platform == "switch")
         return None
 
 
@@ -924,11 +879,6 @@ def _entity_key(ent: EntityDef) -> str:
 
 def _find_status_source(hub: QubeHub) -> EntityDef | None:
     """Find status source entity."""
-    for ent in hub.entities:
-        if ent.platform == "sensor" and (
-            ent.unique_id == "wp_qube_warmtepomp_unit_status"
-        ):
-            return ent
     cand: EntityDef | None = None
     for ent in hub.entities:
         if ent.platform != "sensor":
@@ -955,11 +905,6 @@ def _scope_unique_id(base: str, host: str, unit: int) -> str:
 def _energy_data_key() -> str:
     """Return the coordinator data key for energy total (unscoped)."""
     return "energy_total_electric"
-
-
-def _energy_unique_id(host: str, unit: int) -> str:
-    """Generate scoped energy unique ID for entity registry."""
-    return _scope_unique_id(_energy_data_key(), host, unit)
 
 
 class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
@@ -1174,7 +1119,6 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         show_label: bool,
         multi_device: bool,
         version: str,
-        object_base: str | None = None,
     ) -> None:
         """Initialize computed sensor."""
         super().__init__(coordinator)
@@ -1185,7 +1129,6 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         self._multi_device = bool(multi_device)
         self._show_label = bool(show_label)
         self._label = hub.label or "qube1"
-        self._object_base = _slugify(object_base) if object_base else _slugify(kind)
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_has_entity_name = True
@@ -1237,19 +1180,9 @@ def _thermic_energy_data_key() -> str:
     return "energy_total_thermic"
 
 
-def _thermic_energy_unique_id(host: str, unit: int) -> str:
-    """Generate scoped thermic energy unique ID for entity registry."""
-    return _scope_unique_id(_thermic_energy_data_key(), host, unit)
-
-
 def _binary_data_key() -> str:
     """Return the coordinator data key for binary tariff sensor (unscoped)."""
     return BINARY_TARIFF_UNIQUE_ID
-
-
-def _binary_unique_id(host: str, unit: int) -> str:
-    """Generate scoped binary unique ID for entity registry."""
-    return _scope_unique_id(_binary_data_key(), host, unit)
 
 
 class TariffEnergyTracker:
@@ -1377,7 +1310,6 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         multi_device: bool,
         version: str,
         base_unique: str | None = None,
-        object_base: str | None = None,
     ) -> None:
         """Initialize tariff sensor."""
         super().__init__(coordinator)
@@ -1465,7 +1397,6 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         multi_device: bool,
         version: str,
         base_unique: str,
-        object_base: str,
     ) -> None:
         """Initialize total sensor."""
         super().__init__(coordinator)
@@ -1526,7 +1457,6 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         scope: str,
         translation_key: str,
         unique_base: str,
-        object_base: str,
         show_label: bool,
         multi_device: bool,
         version: str,
@@ -1544,7 +1474,6 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_has_entity_name = True
-        self._object_base = object_base
         # Always scope unique_id per device for stability
         self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{unique_base}"
         self._attr_suggested_display_precision = 1
