@@ -73,6 +73,31 @@ async def test_services_survive_last_entry_unload(
         )
 
 
+async def test_write_register_service_unresolvable_entry_id(
+    hass: HomeAssistant,
+) -> None:
+    """write_register raises HomeAssistantError when entry_id resolves to nothing.
+
+    Exercised at the service-call level (via hass.services.async_call),
+    not by calling _resolve_entry directly, to prove the target-is-None
+    guard clause actually raises instead of silently logging and
+    returning. No config entry is set up at all here: services are
+    registered by async_setup alone.
+    """
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+
+    with pytest.raises(
+        HomeAssistantError, match="unable to resolve integration entry"
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": 173, "value": 42.0, "entry_id": "bogus_entry_id"},
+            blocking=True,
+        )
+
+
 async def test_write_register_service_registered(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
