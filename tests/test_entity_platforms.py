@@ -43,8 +43,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -77,8 +75,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=True,
-            multi_device=True,
             ent=ent,
         )
 
@@ -110,8 +106,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -143,8 +137,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -180,8 +172,6 @@ class TestBinarySensorUniqueIdFallback:
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -216,8 +206,6 @@ class TestBinarySensorUniqueIdFallback:
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=True,
-            multi_device=True,
             ent=ent,
         )
 
@@ -251,8 +239,6 @@ class TestBinarySensorUniqueIdFallback:
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -356,8 +342,6 @@ class TestSwitchSGReady:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -394,8 +378,6 @@ async def test_binary_sensor_hidden_vendor_ids(
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 

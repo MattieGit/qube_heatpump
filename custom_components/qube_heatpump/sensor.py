@@ -6,6 +6,8 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
+from python_qube_heatpump import resolve_status
+
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
@@ -13,13 +15,11 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_integration, async_get_loaded_integration
 from homeassistant.util import dt as dt_util
-from python_qube_heatpump import resolve_status
 
 from .const import DOMAIN, TARIFF_OPTIONS
+from .entity import QubeEntity
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -81,9 +81,6 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    multi_device = data.multi_device
-    # show_label is no longer used (entity IDs are auto-generated from device name)
-    show_label = False
 
     base_counts = {
         "sensor": sum(1 for e in hub.entities if e.platform == "sensor"),
@@ -103,9 +100,7 @@ async def async_setup_entry(
         entities.append(entity)
 
     # Surface the resolved host IP as its own diagnostic sensor
-    _add_sensor_entity(
-        QubeIPAddressSensor(coordinator, hub, show_label, multi_device, version)
-    )
+    _add_sensor_entity(QubeIPAddressSensor(coordinator, hub, version))
 
     # Diagnostic metrics (error counters only)
     for kind in ("errors_connect", "errors_read"):
@@ -113,8 +108,6 @@ async def async_setup_entry(
             QubeMetricSensor(
                 coordinator,
                 hub,
-                show_label,
-                multi_device,
                 version,
                 kind=kind,
             ),
@@ -128,8 +121,6 @@ async def async_setup_entry(
             QubeSensor(
                 coordinator,
                 hub,
-                show_label,
-                multi_device,
                 version,
                 ent,
             )
@@ -146,8 +137,6 @@ async def async_setup_entry(
                 unique_suffix="status_full",
                 kind="status",
                 source=status_src,
-                show_label=show_label,
-                multi_device=multi_device,
                 version=version,
             )
         )
@@ -163,8 +152,6 @@ async def async_setup_entry(
                 unique_suffix="driewegklep_dhw_cv",
                 kind="drieweg",
                 source=drie_src,
-                show_label=show_label,
-                multi_device=multi_device,
                 version=version,
             )
         )
@@ -180,23 +167,15 @@ async def async_setup_entry(
                 unique_suffix="vierwegklep_verwarmen_koelen",
                 kind="vierweg",
                 source=vier_src,
-                show_label=show_label,
-                multi_device=multi_device,
                 version=version,
             )
         )
 
-    standby_power = QubeStandbyPowerSensor(
-        coordinator, hub, show_label, multi_device, version
-    )
-    standby_energy = QubeStandbyEnergySensor(
-        coordinator, hub, show_label, multi_device, version
-    )
+    standby_power = QubeStandbyPowerSensor(coordinator, hub, version)
+    standby_energy = QubeStandbyEnergySensor(coordinator, hub, version)
     total_energy = QubeTotalEnergyIncludingStandbySensor(
         coordinator,
         hub,
-        show_label,
-        multi_device,
         version,
         data_key=_energy_data_key(),
         standby_sensor=standby_energy,
@@ -265,8 +244,6 @@ async def async_setup_entry(
             tracker,
             tariff="CH",
             translation_key="electric_consumption_ch_month",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -277,8 +254,6 @@ async def async_setup_entry(
             tracker,
             tariff="DHW",
             translation_key="electric_consumption_dhw_month",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -288,8 +263,6 @@ async def async_setup_entry(
             hub,
             thermic_tracker,
             translation_key="thermic_yield_month",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TOTAL_MONTHLY_UNIQUE_BASE,
         )
@@ -301,8 +274,6 @@ async def async_setup_entry(
             thermic_tracker,
             tariff="CH",
             translation_key="thermic_yield_ch_month",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
         )
@@ -314,8 +285,6 @@ async def async_setup_entry(
             thermic_tracker,
             tariff="DHW",
             translation_key="thermic_yield_dhw_month",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique=THERMIC_TARIFF_SENSOR_BASE,
         )
@@ -328,8 +297,6 @@ async def async_setup_entry(
             hub,
             daily_electric_tracker,
             translation_key="electric_consumption_day",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique="qube_electric_energy_daily",
         )
@@ -341,8 +308,6 @@ async def async_setup_entry(
             daily_electric_tracker,
             tariff="CH",
             translation_key="electric_consumption_ch_day",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique="qube_energy_tariff_daily",
         )
@@ -354,8 +319,6 @@ async def async_setup_entry(
             daily_electric_tracker,
             tariff="DHW",
             translation_key="electric_consumption_dhw_day",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique="qube_energy_tariff_daily",
         )
@@ -368,8 +331,6 @@ async def async_setup_entry(
             hub,
             daily_thermic_tracker,
             translation_key="thermic_yield_day",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique="qube_thermic_energy_daily",
         )
@@ -381,8 +342,6 @@ async def async_setup_entry(
             daily_thermic_tracker,
             tariff="CH",
             translation_key="thermic_yield_ch_day",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique="qube_thermic_tariff_daily",
         )
@@ -394,8 +353,6 @@ async def async_setup_entry(
             daily_thermic_tracker,
             tariff="DHW",
             translation_key="thermic_yield_dhw_day",
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
             base_unique="qube_thermic_tariff_daily",
         )
@@ -410,8 +367,6 @@ async def async_setup_entry(
             scope="total",
             translation_key="scop_month",
             unique_base=SCOP_TOTAL_UNIQUE_BASE,
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -424,8 +379,6 @@ async def async_setup_entry(
             scope="CH",
             translation_key="scop_ch_month",
             unique_base=SCOP_CH_UNIQUE_BASE,
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -438,8 +391,6 @@ async def async_setup_entry(
             scope="DHW",
             translation_key="scop_dhw_month",
             unique_base=SCOP_DHW_UNIQUE_BASE,
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -453,8 +404,6 @@ async def async_setup_entry(
             scope="total",
             translation_key="scop_day",
             unique_base=SCOP_TOTAL_DAILY_UNIQUE_BASE,
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -467,8 +416,6 @@ async def async_setup_entry(
             scope="CH",
             translation_key="scop_ch_day",
             unique_base=SCOP_CH_DAILY_UNIQUE_BASE,
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -481,8 +428,6 @@ async def async_setup_entry(
             scope="DHW",
             translation_key="scop_dhw_day",
             unique_base=SCOP_DHW_DAILY_UNIQUE_BASE,
-            show_label=show_label,
-            multi_device=multi_device,
             version=version,
         )
     )
@@ -490,8 +435,6 @@ async def async_setup_entry(
     info_sensor = QubeInfoSensor(
         coordinator,
         hub,
-        show_label,
-        multi_device,
         version,
         total_counts=None,
     )
@@ -508,32 +451,19 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class QubeSensor(CoordinatorEntity, SensorEntity):
+class QubeSensor(QubeEntity, SensorEntity):
     """Qube generic sensor."""
-
-    _attr_should_poll = False
-    _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         ent: EntityDef,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, hub, version)
         self._ent = ent
-        self._hub = hub
-        self._host = hub.host
-        self._unit = hub.unit
-        self._label = hub.label
-        self._device_name = hub.device_name
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
         if ent.translation_key:
             self._attr_translation_key = ent.translation_key
         else:
@@ -541,7 +471,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         # Always scope unique_id per device (host_unit prefix) to ensure stability
         # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
-            self._attr_unique_id = f"{self._host}_{self._unit}_{ent.unique_id}"
+            self._attr_unique_id = self._scoped_uid(ent.unique_id)
         else:
             suffix_parts = []
             if ent.input_type:
@@ -551,7 +481,7 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
             suffix_parts.append(str(ent.address))
             suffix = "_".join(str(part) for part in suffix_parts if part)
             unique_base = f"qube_{ent.platform}_{suffix}".lower()
-            self._attr_unique_id = f"{self._host}_{self._unit}_{unique_base}"
+            self._attr_unique_id = self._scoped_uid(unique_base)
         vendor_id = getattr(ent, "vendor_id", None)
         # Use vendor_id for stable, predictable entity IDs
         if vendor_id:
@@ -577,17 +507,6 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         # Throttling for COP sensors to reduce update frequency
         self._throttle_last_value: float | None = None
         self._throttle_last_update: datetime | None = None
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._host}:{self._unit}")},
-            name=self._device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> StateType:
@@ -657,51 +576,31 @@ class QubeSensor(CoordinatorEntity, SensorEntity):
         return value
 
 
-class QubeInfoSensor(CoordinatorEntity, SensorEntity):
+class QubeInfoSensor(QubeEntity, SensorEntity):
     """Diagnostic info sensor."""
 
-    _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         total_counts: dict[str, int] | None = None,
     ) -> None:
         """Initialize info sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        self._version = str(version) if version else "unknown"
+        super().__init__(coordinator, hub, version)
         self._integration_version: str | None = None
         self._total_counts = total_counts or {}
-        label = hub.label or "qube1"
         self._attr_translation_key = "info"
-        self.entity_id = f"sensor.{label}_info"
-        self._attr_has_entity_name = True
+        self.entity_id = f"sensor.{self._label}_info"
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{hub.host}_{hub.unit}_info_sensor"
+        self._attr_unique_id = self._scoped_uid("info_sensor")
         self._state = "ok"
 
     def set_counts(self, counts: dict[str, int]) -> None:
         """Update total entity counts."""
         self._total_counts = counts
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> str:
@@ -767,32 +666,23 @@ class QubeInfoSensor(CoordinatorEntity, SensorEntity):
                 self.async_write_ha_state()
 
 
-class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
+class QubeIPAddressSensor(QubeEntity, SensorEntity):
     """IP Address Sensor."""
 
-    _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
     ) -> None:
         """Initialize IP sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._version = str(version) if version else "unknown"
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        label = hub.label or "qube1"
+        super().__init__(coordinator, hub, version)
         self._attr_translation_key = "ip_address"
-        self.entity_id = f"sensor.{label}_ip_address"
-        self._attr_has_entity_name = True
+        self.entity_id = f"sensor.{self._label}_ip_address"
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{hub.host}_{hub.unit}_ip_address"
+        self._attr_unique_id = self._scoped_uid("ip_address")
         if hasattr(SensorDeviceClass, "IP"):
             self._attr_device_class = SensorDeviceClass.IP
         else:
@@ -800,63 +690,32 @@ class QubeIPAddressSensor(CoordinatorEntity, SensorEntity):
         self._attr_icon = "mdi:ip"
 
     @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
-
-    @property
     def native_value(self) -> str | None:
         """Return IP address."""
         return self._hub.resolved_ip or self._hub.host
 
 
-class QubeMetricSensor(CoordinatorEntity, SensorEntity):
+class QubeMetricSensor(QubeEntity, SensorEntity):
     """Metric sensor."""
 
-    _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         kind: str,
     ) -> None:
         """Initialize metric sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._kind = kind
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        self._version = version
-        label = hub.label or "qube1"
         self._attr_translation_key = f"metric_{kind}"
-        self.entity_id = f"sensor.{label}_metric_{kind}"
-        self._attr_has_entity_name = True
+        self.entity_id = f"sensor.{self._label}_metric_{kind}"
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{hub.host}_{hub.unit}_metric_{kind}"
+        self._attr_unique_id = self._scoped_uid(f"metric_{kind}")
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.MEASUREMENT
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> int | None:
@@ -907,78 +766,43 @@ def _energy_data_key() -> str:
     return "energy_total_electric"
 
 
-class QubeStandbyPowerSensor(CoordinatorEntity, SensorEntity):
+class QubeStandbyPowerSensor(QubeEntity, SensorEntity):
     """Standby power sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
     ) -> None:
         """Initialize standby power sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._label = hub.label or "qube1"
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        self._version = version
+        super().__init__(coordinator, hub, version)
         self._attr_translation_key = "standby_power"
         self.entity_id = f"sensor.{self._label}_standby_power"
-        self._attr_has_entity_name = True
-        self._attr_unique_id = _scope_unique_id(
-            STANDBY_POWER_UNIQUE_BASE, hub.host, hub.unit
-        )
+        self._attr_unique_id = self._scoped_uid(STANDBY_POWER_UNIQUE_BASE)
         self._attr_device_class = SensorDeviceClass.POWER
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = "W"
         self._attr_native_value = STANDBY_POWER_WATTS
 
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
-
-class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
+class QubeStandbyEnergySensor(QubeEntity, RestoreSensor):
     """Standby energy sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
     ) -> None:
         """Initialize standby energy sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._label = hub.label or "qube1"
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        self._version = version
+        super().__init__(coordinator, hub, version)
         self._energy_kwh: float = 0.0
         self._last_update: datetime | None = None
         self._attr_translation_key = "standby_energy"
         self.entity_id = f"sensor.{self._label}_standby_energy"
-        self._attr_has_entity_name = True
-        self._attr_unique_id = _scope_unique_id(
-            STANDBY_ENERGY_UNIQUE_BASE, hub.host, hub.unit
-        )
+        self._attr_unique_id = self._scoped_uid(STANDBY_ENERGY_UNIQUE_BASE)
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -996,17 +820,6 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             self._last_update = last_state.last_changed
         if self._last_update is None:
             self._last_update = dt_util.utcnow()
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> float:
@@ -1035,53 +848,30 @@ class QubeStandbyEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         return self._energy_kwh
 
 
-class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
+class QubeTotalEnergyIncludingStandbySensor(QubeEntity, SensorEntity):
     """Total energy sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         data_key: str,
         standby_sensor: QubeStandbyEnergySensor,
     ) -> None:
         """Initialize total energy sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._label = hub.label or "qube1"
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        self._version = version
+        super().__init__(coordinator, hub, version)
         self._data_key = data_key  # Unscoped key for coordinator data lookup
         self._standby_sensor = standby_sensor
         self._total_energy: float | None = None
         self._attr_translation_key = "total_energy_incl_standby"
         self.entity_id = f"sensor.{self._label}_total_energy_incl_standby"
-        self._attr_has_entity_name = True
         # Scoped unique_id for entity registry
-        self._attr_unique_id = _scope_unique_id(
-            TOTAL_ENERGY_UNIQUE_BASE, hub.host, hub.unit
-        )
+        self._attr_unique_id = self._scoped_uid(TOTAL_ENERGY_UNIQUE_BASE)
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "kWh"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> float | None:
@@ -1103,10 +893,8 @@ class QubeTotalEnergyIncludingStandbySensor(CoordinatorEntity, SensorEntity):
         super()._handle_coordinator_update()
 
 
-class QubeComputedSensor(CoordinatorEntity, SensorEntity):
+class QubeComputedSensor(QubeEntity, SensorEntity):
     """Computed status sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
@@ -1116,35 +904,16 @@ class QubeComputedSensor(CoordinatorEntity, SensorEntity):
         unique_suffix: str,
         kind: str,
         source: EntityDef,
-        show_label: bool,
-        multi_device: bool,
         version: str,
     ) -> None:
         """Initialize computed sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._kind = kind
         self._source = source
-        self._version = version
-        self._multi_device = bool(multi_device)
-        self._show_label = bool(show_label)
-        self._label = hub.label or "qube1"
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
-        self._attr_has_entity_name = True
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_qube_{unique_suffix}"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
+        self._attr_unique_id = self._scoped_uid(f"qube_{unique_suffix}")
 
     @property
     def native_value(self) -> str | None:
@@ -1294,10 +1063,8 @@ class TariffEnergyTracker:
         return self._totals.get(tariff, 0.0)
 
 
-class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
+class QubeTariffEnergySensor(QubeEntity, RestoreSensor):
     """Tariff energy sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
@@ -1306,25 +1073,17 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         tracker: TariffEnergyTracker,
         tariff: str,
         translation_key: str,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         base_unique: str | None = None,
     ) -> None:
         """Initialize tariff sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._tracker = tracker
         self._tariff = tariff
-        self._label = hub.label or "qube1"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
-        self._attr_has_entity_name = True
         base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
-        self._attr_unique_id = _scope_unique_id(base_uid, hub.host, hub.unit)
+        self._attr_unique_id = self._scoped_uid(base_uid)
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1355,17 +1114,6 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             self._tracker.restore_total(self._tariff, value, last_reset)
 
     @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
-
-    @property
     def native_value(self) -> float:
         """Return value."""
         return round(self._tracker.get_total(self._tariff), 3)
@@ -1382,10 +1130,8 @@ class QubeTariffEnergySensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         super()._handle_coordinator_update()
 
 
-class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
+class QubeTariffTotalEnergySensor(QubeEntity, SensorEntity):
     """Tariff total sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
@@ -1393,38 +1139,19 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         hub: QubeHub,
         tracker: TariffEnergyTracker,
         translation_key: str,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         base_unique: str,
     ) -> None:
         """Initialize total sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._tracker = tracker
-        self._label = hub.label or "qube1"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
-        self._attr_has_entity_name = True
-        self._attr_unique_id = _scope_unique_id(base_unique, hub.host, hub.unit)
+        self._attr_unique_id = self._scoped_uid(base_unique)
         self._attr_device_class = SensorDeviceClass.ENERGY
         with contextlib.suppress(ValueError, TypeError):
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "kWh"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> float:
@@ -1443,10 +1170,8 @@ class QubeTariffTotalEnergySensor(CoordinatorEntity, SensorEntity):
         super()._handle_coordinator_update()
 
 
-class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
+class QubeSCOPSensor(QubeEntity, SensorEntity):
     """SCOP sensor."""
-
-    _attr_should_poll = False
 
     def __init__(
         self,
@@ -1457,40 +1182,21 @@ class QubeSCOPSensor(CoordinatorEntity, SensorEntity):
         scope: str,
         translation_key: str,
         unique_base: str,
-        show_label: bool,
-        multi_device: bool,
         version: str,
     ) -> None:
         """Initialize SCOP sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._electric = electric_tracker
         self._thermic = thermic_tracker
         self._scope = scope
-        self._label = hub.label or "qube1"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
         self._attr_translation_key = translation_key
         self.entity_id = f"sensor.{self._label}_{translation_key}"
-        self._attr_has_entity_name = True
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{unique_base}"
+        self._attr_unique_id = self._scoped_uid(unique_base)
         self._attr_suggested_display_precision = 1
         self._attr_native_unit_of_measurement = "CoP"
         with contextlib.suppress(Exception):
             self._attr_state_class = SensorStateClass.TOTAL
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     def _current_totals(self) -> tuple[float | None, float | None]:
         if self._scope == "total":

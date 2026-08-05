@@ -7,10 +7,9 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .entity import QubeEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -29,9 +28,6 @@ async def async_setup_entry(
     data = entry.runtime_data
     hub = data.hub
     coordinator = data.coordinator
-    # show_label is no longer used (entity IDs are auto-generated from device name)
-    show_label = False
-    multi_device = data.multi_device
     version = data.version or "unknown"
 
     entities: list[SwitchEntity] = []
@@ -40,9 +36,7 @@ async def async_setup_entry(
             continue
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             continue
-        entities.append(
-            QubeSwitch(coordinator, hub, show_label, multi_device, ent, version)
-        )
+        entities.append(QubeSwitch(coordinator, hub, ent, version))
 
     async_add_entities(entities)
 
@@ -70,28 +64,19 @@ CONTROL_SWITCHES = frozenset({
 })
 
 
-class QubeSwitch(CoordinatorEntity, SwitchEntity):
+class QubeSwitch(QubeEntity, SwitchEntity):
     """Qube switch entity."""
-
-    _attr_should_poll = False
-    _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         ent: EntityDef,
         version: str = "unknown",
     ) -> None:
         """Initialize the switch."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, hub, version)
         self._ent = ent
-        self._hub = hub
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
         # Control switches go in Controls section, others in Configuration
         if ent.vendor_id not in CONTROL_SWITCHES:
             self._attr_entity_category = EntityCategory.CONFIG
@@ -99,7 +84,7 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
             self._attr_entity_registry_visible_default = False
         # Use vendor_id for stable, predictable entity IDs
         if ent.vendor_id:
-            self.entity_id = f"switch.{hub.label}_{ent.vendor_id}"
+            self.entity_id = f"switch.{self._label}_{ent.vendor_id}"
         if ent.translation_key:
             self._attr_translation_key = ent.translation_key
         else:
@@ -107,22 +92,11 @@ class QubeSwitch(CoordinatorEntity, SwitchEntity):
         # Always scope unique_id per device (host_unit prefix) to ensure stability
         # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
-            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
+            self._attr_unique_id = self._scoped_uid(ent.unique_id)
         else:
             suffix = f"{ent.write_type or 'coil'}_{ent.address}".lower()
             base_uid = f"qube_switch_{suffix}"
-            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{base_uid}"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
+            self._attr_unique_id = self._scoped_uid(base_uid)
 
     @property
     def is_on(self) -> bool | None:

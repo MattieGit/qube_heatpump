@@ -6,10 +6,8 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .entity import QubeEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -41,9 +39,6 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    # show_label is no longer used (entity IDs are auto-generated from device name)
-    show_label = False
-    multi_device = data.multi_device
 
     sg_a = _find_switch(hub, "bms_sgready_a")
     sg_b = _find_switch(hub, "bms_sgready_b")
@@ -57,8 +52,6 @@ async def async_setup_entry(
             QubeSGReadyModeSelect(
                 coordinator,
                 hub,
-                show_label,
-                multi_device,
                 version,
                 sg_a,
                 sg_b,
@@ -77,31 +70,22 @@ def _find_switch(hub: QubeHub, vendor_id: str) -> EntityDef | None:
     return None
 
 
-class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
+class QubeSGReadyModeSelect(QubeEntity, SelectEntity):
     """Select entity for SG Ready mode."""
 
-    _attr_should_poll = False
-    _attr_has_entity_name = True
     _attr_options = SGREADY_OPTIONS
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         sgready_a: EntityDef,
         sgready_b: EntityDef,
         entry_id: str,
     ) -> None:
         """Initialize the select entity."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._version = str(version) if version else "unknown"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._label = hub.label or "qube1"
+        super().__init__(coordinator, hub, version)
         self._ent_a = sgready_a
         self._ent_b = sgready_b
         self._key_a = self._entity_key(sgready_a)
@@ -112,18 +96,7 @@ class QubeSGReadyModeSelect(CoordinatorEntity, SelectEntity):
         self._attr_translation_key = "sgready_mode"
         self.entity_id = f"select.{self._label}_sg_ready_mode"
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_sgready_mode"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
+        self._attr_unique_id = self._scoped_uid("sgready_mode")
 
     @property
     def current_option(self) -> str | None:

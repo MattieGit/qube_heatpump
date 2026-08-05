@@ -277,8 +277,6 @@ class TestQubeSensorUniqueIdFallback:
         sensor = QubeSensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             version="1.0",
             ent=ent,
         )
@@ -315,8 +313,6 @@ class TestQubeSensorUniqueIdFallback:
         sensor = QubeSensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             version="1.0",
             ent=ent,
         )
@@ -351,8 +347,6 @@ class TestQubeSensorUniqueIdFallback:
         sensor = QubeSensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=True,
-            multi_device=True,
             version="1.0",
             ent=ent,
         )
@@ -390,8 +384,6 @@ class TestQubeInfoSensorCountsFallback:
         sensor = QubeInfoSensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             version="1.0",
             total_counts=None,
         )
@@ -434,8 +426,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -471,8 +461,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -508,8 +496,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -546,8 +532,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="total",
             translation_key="scop_month",
             unique_base="qube_scop_monthly",
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -587,8 +571,6 @@ class TestQubeSCOPSensorEdgeCases:
             scope="CH",  # Single tariff
             translation_key="scop_ch_month",
             unique_base="qube_scop_ch_monthly",
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -631,8 +613,6 @@ class TestQubeComputedSensorStatusMappings:
                 unique_suffix="status_full",
                 kind="status",
                 source=source,
-                show_label=False,
-                multi_device=False,
                 version="1.0",
             )
 
@@ -682,8 +662,6 @@ class TestQubeComputedSensorStatusMappings:
                 unique_suffix="status_full",
                 kind="status",
                 source=source,
-                show_label=False,
-                multi_device=False,
                 version="1.0",
             )
 
@@ -735,8 +713,6 @@ class TestQubeComputedSensorStatusMappings:
                 unique_suffix="status_full",
                 kind="status",
                 source=source,
-                show_label=False,
-                multi_device=False,
                 version="1.0",
             )
 
@@ -776,8 +752,6 @@ class TestQubeComputedSensorStatusMappings:
             unique_suffix="driewegklep_dhw_cv",
             kind="drieweg",
             source=source,
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -819,8 +793,6 @@ class TestQubeComputedSensorStatusMappings:
             unique_suffix="vierwegklep_verwarmen_koelen",
             kind="vierweg",
             source=source,
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -858,8 +830,6 @@ class TestQubeComputedSensorStatusMappings:
             unique_suffix="status_full",
             kind="status",
             source=source,
-            show_label=False,
-            multi_device=False,
             version="1.0",
         )
 
@@ -924,8 +894,6 @@ class TestQubeIPAddressSensorDeviceClass:
             sensor = QubeIPAddressSensor(
                 coordinator=coordinator,
                 hub=hub,
-                show_label=False,
-                multi_device=False,
                 version="1.0",
             )
 

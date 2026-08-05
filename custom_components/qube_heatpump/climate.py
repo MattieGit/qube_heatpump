@@ -146,13 +146,9 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
 
         self.entity_id = f"climate.{hub.label}_thermostat"
         self._attr_unique_id = f"{hub.host}_{hub.unit}_thermostat"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{hub.host}:{hub.unit}")},
+            name=hub.device_name,
             manufacturer="Qube",
             model="Heat Pump",
             sw_version=self._version,

@@ -6,10 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.const import EntityCategory, UnitOfTemperature
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .entity import QubeEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -40,9 +38,6 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    # show_label is no longer used (entity IDs are auto-generated from device name)
-    show_label = False
-    multi_device = data.multi_device
 
     entities: list[NumberEntity] = []
     for ent in hub.entities:
@@ -61,8 +56,6 @@ async def async_setup_entry(
             QubeSetpointNumber(
                 coordinator,
                 hub,
-                show_label,
-                multi_device,
                 version,
                 ent,
             )
@@ -71,30 +64,21 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
+class QubeSetpointNumber(QubeEntity, NumberEntity):
     """Number entity for Qube setpoints."""
 
-    _attr_should_poll = False
-    _attr_has_entity_name = True
     _attr_mode = NumberMode.BOX
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         version: str,
         ent: EntityDef,
     ) -> None:
         """Initialize the number entity."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, hub, version)
         self._ent = ent
-        self._hub = hub
-        self._label = hub.label or "qube1"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
 
         # Set name from translation or entity name
         if ent.translation_key:
@@ -109,11 +93,10 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
         # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
             base_uid = f"{ent.unique_id}_setpoint"
-            self._attr_unique_id = f"{hub.host}_{hub.unit}_{base_uid}"
         else:
             suffix = f"{ent.input_type or 'holding'}_{ent.address}".lower()
             base_uid = f"qube_setpoint_{suffix}"
-            self._attr_unique_id = f"{hub.host}_{hub.unit}_{base_uid}"
+        self._attr_unique_id = self._scoped_uid(base_uid)
 
         # Number configuration
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -121,17 +104,6 @@ class QubeSetpointNumber(CoordinatorEntity, NumberEntity):
         self._attr_native_max_value = DEFAULT_MAX_TEMP
         self._attr_native_step = DEFAULT_STEP
         self._attr_entity_category = EntityCategory.CONFIG
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     @property
     def native_value(self) -> float | None:

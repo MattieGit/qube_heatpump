@@ -6,10 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import EntityCategory
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .entity import QubeEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -29,9 +27,6 @@ async def async_setup_entry(
     hub = data.hub
     coordinator = data.coordinator
     version = data.version or "unknown"
-    # show_label is no longer used (entity IDs are auto-generated from device name)
-    show_label = False
-    multi_device = data.multi_device
 
     async_add_entities(
         [
@@ -39,54 +34,31 @@ async def async_setup_entry(
                 coordinator,
                 hub,
                 entry.entry_id,
-                show_label,
-                multi_device,
                 version,
             ),
         ]
     )
 
 
-class QubeReloadButton(CoordinatorEntity, ButtonEntity):
+class QubeReloadButton(QubeEntity, ButtonEntity):
     """Button to reload the Qube integration."""
-
-    _attr_should_poll = False
-    _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
         entry_id: str,
-        show_label: bool,
-        multi_device: bool,
         version: str,
     ) -> None:
         """Initialize the reload button."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._entry_id = entry_id
-        self._multi_device = bool(multi_device)
-        self._version = version
-        label = hub.label or "qube1"
-        self._show_label = bool(show_label)
         self._attr_translation_key = "qube_reload"
-        self.entity_id = f"button.{label}_reload"
+        self.entity_id = f"button.{self._label}_reload"
 
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_qube_reload"
+        self._attr_unique_id = self._scoped_uid("qube_reload")
         self._attr_entity_category = EntityCategory.CONFIG
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
 
     async def async_press(self) -> None:
         """Handle the button press to reload the config entry."""

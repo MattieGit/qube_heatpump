@@ -231,8 +231,6 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
     number_single = QubeSetpointNumber(
         coordinator=coordinator,
         hub=hub,
-        show_label=True,
-        multi_device=False,
         version="1.0",
         ent=ent,
     )
@@ -242,8 +240,6 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
     number_multi = QubeSetpointNumber(
         coordinator=coordinator,
         hub=hub,
-        show_label=True,
-        multi_device=True,
         version="1.0",
         ent=ent,
     )
