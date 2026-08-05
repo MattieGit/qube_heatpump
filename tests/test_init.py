@@ -178,27 +178,27 @@ async def test_async_setup_entry_label_default(
 
 
 def test_is_alarm_entity() -> None:
-    """Test _is_alarm_entity detection."""
-    from custom_components.qube_heatpump import _is_alarm_entity
+    """Test is_alarm_entity detection (now consolidated in helpers.py)."""
+    from custom_components.qube_heatpump.helpers import is_alarm_entity
     from custom_components.qube_heatpump.hub import EntityDef
 
     # Alarm by name containing "alarm"
     ent1 = EntityDef(platform="binary_sensor", name="Alarm Test", address=100)
-    assert _is_alarm_entity(ent1) is True
+    assert is_alarm_entity(ent1) is True
 
     # Alarm by vendor_id starting with "al_"
     ent2 = EntityDef(
         platform="binary_sensor", name="Test", address=101, vendor_id="al_test"
     )
-    assert _is_alarm_entity(ent2) is True
+    assert is_alarm_entity(ent2) is True
 
     # Not an alarm - wrong platform
     ent3 = EntityDef(platform="sensor", name="Alarm Test", address=102)
-    assert _is_alarm_entity(ent3) is False
+    assert is_alarm_entity(ent3) is False
 
     # Not an alarm - no alarm indicator
     ent4 = EntityDef(platform="binary_sensor", name="Test", address=103)
-    assert _is_alarm_entity(ent4) is False
+    assert is_alarm_entity(ent4) is False
 
 
 def test_alarm_group_object_id() -> None:

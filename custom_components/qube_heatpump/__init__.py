@@ -31,6 +31,7 @@ from .const import (
 )
 from .coordinator import QubeCoordinator
 from .dhw_scheduler import async_setup_dhw_schedule
+from .helpers import is_alarm_entity
 from .hub import QubeHub
 
 
@@ -58,20 +59,6 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _is_alarm_entity(ent: Any) -> bool:
-    """Check if an entity is an alarm entity."""
-    if ent.platform != "binary_sensor":
-        return False
-    vendor_id = (ent.vendor_id or "").lower()
-    name_lower = (ent.name or "").lower()
-    return (
-        "alarm" in vendor_id
-        or vendor_id.startswith("al_")
-        or "alarm" in name_lower
-        or name_lower.startswith("al ")
-    )
 
 
 def _alarm_group_object_id(label: str) -> str:
@@ -312,7 +299,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # (registry lookup can return stale entity IDs after reinstall)
     entity_ids: list[str] = []
     for ent in hub.entities:
-        if not _is_alarm_entity(ent):
+        if not is_alarm_entity(ent):
             continue
         vendor_id = getattr(ent, "vendor_id", None)
         if vendor_id:

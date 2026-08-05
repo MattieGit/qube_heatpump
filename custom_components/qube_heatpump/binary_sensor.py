@@ -12,6 +12,7 @@ from homeassistant.const import EntityCategory
 
 from .const import CONF_THERMOSTAT_ENABLED
 from .entity import QubeEntity
+from .helpers import is_alarm_entity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -102,7 +103,7 @@ async def async_setup_entry(
         if ent.platform != "binary_sensor":
             continue
         entities.append(QubeBinarySensor(coordinator, hub, ent, version))
-        if _is_alarm_entity(ent):
+        if is_alarm_entity(ent):
             alarm_entities.append(ent)
 
     if alarm_entities:
@@ -208,17 +209,6 @@ class QubeAlarmStatusBinarySensor(QubeEntity, BinarySensorEntity):
             if isinstance(val, bool) and val:
                 return True
         return False
-
-
-def _is_alarm_entity(ent: EntityDef) -> bool:
-    """Check if entity is an alarm."""
-    if ent.platform != "binary_sensor":
-        return False
-    name = (ent.name or "").lower()
-    if "alarm" in name:
-        return True
-    vendor = (ent.vendor_id or "").lower()
-    return vendor.startswith("al")
 
 
 def _entity_state_key(ent: EntityDef) -> str:

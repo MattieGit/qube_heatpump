@@ -250,40 +250,40 @@ class TestBinarySensorAlarmHelpers:
     """Tests for binary sensor alarm helper functions."""
 
     def test_is_alarm_entity_wrong_platform(self) -> None:
-        """Test _is_alarm_entity returns False for non-binary_sensor."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity returns False for non-binary_sensor."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(platform="sensor", name="Alarm Test", address=100)
-        assert _is_alarm_entity(ent) is False
+        assert is_alarm_entity(ent) is False
 
     def test_is_alarm_entity_by_name(self) -> None:
-        """Test _is_alarm_entity detects alarm in name."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity detects alarm in name."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(platform="binary_sensor", name="Some Alarm Sensor", address=100)
-        assert _is_alarm_entity(ent) is True
+        assert is_alarm_entity(ent) is True
 
     def test_is_alarm_entity_by_vendor_id(self) -> None:
-        """Test _is_alarm_entity detects vendor_id starting with 'al'."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity detects vendor_id starting with 'al'."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor", name="Test", address=100, vendor_id="alarm_xyz"
         )
-        assert _is_alarm_entity(ent) is True
+        assert is_alarm_entity(ent) is True
 
     def test_is_alarm_entity_not_alarm(self) -> None:
-        """Test _is_alarm_entity returns False for non-alarm."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity returns False for non-alarm."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor", name="Temperature", address=100, vendor_id="temp"
         )
-        assert _is_alarm_entity(ent) is False
+        assert is_alarm_entity(ent) is False
 
     def test_entity_state_key_with_unique_id(self) -> None:
         """Test _entity_state_key returns unique_id when set."""
