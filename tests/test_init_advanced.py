@@ -235,20 +235,19 @@ async def test_write_register_no_runtime_data(
         original_data = entry.runtime_data
         entry.runtime_data = None
 
-        with patch("custom_components.qube_heatpump._LOGGER.error") as mock_error:
-            await hass.services.async_call(
-                DOMAIN,
-                "write_register",
-                {"address": 100, "value": 42.0, "data_type": "uint16"},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
-
+        try:
+            # Should raise a HomeAssistantError about the entry not being loaded
+            with pytest.raises(HomeAssistantError):
+                await hass.services.async_call(
+                    DOMAIN,
+                    "write_register",
+                    {"address": 100, "value": 42.0},
+                    blocking=True,
+                )
+                await hass.async_block_till_done()
+        finally:
             # Restore for cleanup
             entry.runtime_data = original_data
-
-            # Should have logged error about not loaded
-            mock_error.assert_called()
 
 
 async def test_write_register_no_hub(
@@ -299,20 +298,19 @@ async def test_write_register_no_hub(
         original_hub = entry.runtime_data.hub
         entry.runtime_data.hub = None
 
-        with patch("custom_components.qube_heatpump._LOGGER.error") as mock_error:
-            await hass.services.async_call(
-                DOMAIN,
-                "write_register",
-                {"address": 100, "value": 42.0, "data_type": "uint16"},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
-
+        try:
+            # Should raise a HomeAssistantError about the missing hub
+            with pytest.raises(HomeAssistantError):
+                await hass.services.async_call(
+                    DOMAIN,
+                    "write_register",
+                    {"address": 100, "value": 42.0},
+                    blocking=True,
+                )
+                await hass.async_block_till_done()
+        finally:
             # Restore for cleanup
             entry.runtime_data.hub = original_hub
-
-            # Should have logged error about no hub
-            mock_error.assert_called()
 
 
 async def test_write_register_write_fails(
@@ -365,7 +363,7 @@ async def test_write_register_write_fails(
             await hass.services.async_call(
                 DOMAIN,
                 "write_register",
-                {"address": 100, "value": 42.0, "data_type": "uint16"},
+                {"address": 100, "value": 42.0},
                 blocking=True,
             )
 

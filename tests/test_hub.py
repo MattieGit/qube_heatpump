@@ -503,7 +503,7 @@ async def test_hub_write_register_not_connected(hass: HomeAssistant) -> None:
         # Don't connect
 
         with pytest.raises(ConnectionError, match="Client not connected"):
-            await hub.async_write_register(100, 42, "uint16")
+            await hub.async_write_register(100, 42)
 
 
 async def test_hub_get_all_entities(hass: HomeAssistant) -> None:

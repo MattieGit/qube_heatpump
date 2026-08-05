@@ -57,6 +57,7 @@ type QubeConfigEntry = ConfigEntry[QubeData]
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall
+    from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,9 +134,6 @@ WRITE_REGISTER_SCHEMA = vol.Schema(
     {
         vol.Required("address"): vol.Coerce(int),
         vol.Required("value"): vol.Coerce(float),
-        vol.Optional("data_type", default="uint16"): vol.In(
-            {"uint16", "int16", "float32"}
-        ),
         vol.Optional("entry_id"): str,
         vol.Optional("label"): str,
     }
@@ -148,38 +146,65 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
     data = WRITE_REGISTER_SCHEMA(data)
     target = _resolve_entry(hass, data.get("entry_id"), data.get("label"))
     if target is None:
-        _LOGGER.error(
+        raise HomeAssistantError(
             "Write_register: unable to resolve integration entry; specify entry_id or label"
         )
-        return
     target_data = target.runtime_data
     if not target_data:
-        _LOGGER.error(
-            "Write_register: integration entry %s is not loaded", target.entry_id
+        raise HomeAssistantError(
+            f"Write_register: integration entry {target.entry_id} is not loaded"
         )
-        return
     hub_target = target_data.hub
     if hub_target is None:
-        _LOGGER.error("Write_register: no hub available for entry %s", target.entry_id)
-        return
+        raise HomeAssistantError(
+            f"Write_register: no hub available for entry {target.entry_id}"
+        )
     await hub_target.async_connect()
-    data_type = str(data["data_type"]).lower()
 
     try:
         await hub_target.async_write_register(
             data["address"],
             data["value"],
-            data_type,
         )
     except ConnectionError as err:
-        _LOGGER.exception("Write_register failed")
         raise HomeAssistantError(str(err)) from err
-    except Exception:
+    except Exception as err:
         _LOGGER.exception("Write_register: failed to write address %s", data["address"])
-        raise
+        raise HomeAssistantError(str(err)) from err
     coordinator_target = target_data.coordinator
     if coordinator_target is not None:
         await coordinator_target.async_request_refresh()
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Qube Heat Pump integration's services.
+
+    Services are registered once at component setup and survive individual
+    config entries being unloaded; handlers resolve the target entry at
+    call time.
+    """
+
+    async def _reconfigure_wrapper(call: ServiceCall) -> None:
+        await _service_reconfigure(hass, call)
+
+    hass.services.async_register(
+        DOMAIN,
+        "reconfigure",
+        _reconfigure_wrapper,
+        schema=vol.Schema({vol.Optional("entry_id"): str}),
+    )
+
+    async def _write_register_wrapper(call: ServiceCall) -> None:
+        await _service_write_register(hass, call)
+
+    hass.services.async_register(
+        DOMAIN,
+        "write_register",
+        _write_register_wrapper,
+        schema=WRITE_REGISTER_SCHEMA,
+    )
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:
@@ -257,30 +282,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # Note: We no longer reload existing entries when adding new ones.
     # Unique IDs are always scoped with host_unit prefix, so they remain
     # stable regardless of how many devices are configured.
-
-    if not hass.services.has_service(DOMAIN, "reconfigure"):
-
-        async def _reconfigure_wrapper(call: ServiceCall) -> None:
-            await _service_reconfigure(hass, call)
-
-        hass.services.async_register(
-            DOMAIN,
-            "reconfigure",
-            _reconfigure_wrapper,
-            schema=vol.Schema({vol.Optional("entry_id"): str}),
-        )
-
-    if not hass.services.has_service(DOMAIN, "write_register"):
-
-        async def _write_register_wrapper(call: ServiceCall) -> None:
-            await _service_write_register(hass, call)
-
-        hass.services.async_register(
-            DOMAIN,
-            "write_register",
-            _write_register_wrapper,
-            schema=WRITE_REGISTER_SCHEMA,
-        )
 
     # Restore the monotonic cache from disk so that float32 jitter
     # after restart doesn't produce false decreases in total_increasing sensors.

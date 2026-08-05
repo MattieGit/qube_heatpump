@@ -574,7 +574,7 @@
         },
         "write_register": {
             "name": "Schrijf holding register",
-            "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp. Ondersteunt uint16, int16 en float32 registers en spiegelt het gedrag van de native modbus.write_register service.",
+            "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp, met het datatype van de bijbehorende schrijfbare entiteit.",
             "fields": {
                 "address": {
                     "name": "Register adres",
@@ -582,11 +582,7 @@
                 },
                 "value": {
                     "name": "Waarde",
-                    "description": "De waarde om in het register op te slaan. Float waarden worden gecodeerd als big-endian IEEE 754 wanneer data_type float32 is."
-                },
-                "data_type": {
-                    "name": "Data type",
-                    "description": "Register data type. Gebruik float32 voor 32-bit floating point registers."
+                    "description": "De waarde om in het register op te slaan."
                 },
                 "entry_id": {
                     "name": "Config entry ID",

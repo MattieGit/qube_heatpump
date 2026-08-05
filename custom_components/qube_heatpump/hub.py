@@ -385,9 +385,7 @@ class QubeHub:
             f"No unique_id for setpoint entity at address {ent.address}"
         )
 
-    async def async_write_register(
-        self, address: int, value: float, data_type: str = "uint16"
-    ) -> None:
+    async def async_write_register(self, address: int, value: float) -> None:
         """Write a value to a register via the library client.
 
         This is a low-level method for the write_register service.
