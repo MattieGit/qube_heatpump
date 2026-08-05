@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,22 +15,15 @@ from custom_components.qube_heatpump.sensor import (
     TariffEnergyTracker,
     _find_binary_by_address,
     _find_status_source,
-    _scope_unique_id,
     _start_of_day,
     _start_of_month,
 )
 from homeassistant.util import dt as dt_util
 
 if TYPE_CHECKING:
+    from freezegun.api import FrozenDateTimeFactory
+
     from homeassistant.core import HomeAssistant
-
-
-def test_scope_unique_id() -> None:
-    """Test _scope_unique_id always scopes with host_unit prefix."""
-    # Always prefixes with host_unit for stability
-    assert _scope_unique_id("base", "192.168.1.1", 1) == "192.168.1.1_1_base"
-    assert _scope_unique_id("sensor", "10.0.0.5", 2) == "10.0.0.5_2_sensor"
-    assert _scope_unique_id("test", "1.2.3.4", 1) == "1.2.3.4_1_test"
 
 
 def test_start_of_month() -> None:
@@ -899,3 +892,112 @@ class TestQubeIPAddressSensorDeviceClass:
 
         # Should still work even if IP device class doesn't exist
         assert sensor.native_value == "1.2.3.4"
+
+
+class TestQubeSensorCOPThrottle:
+    """Tests for the COP-sensor throttle logic.
+
+    The throttle decision (30s window / 0.2 threshold) was moved out of the
+    `native_value` property into `_handle_coordinator_update`, so that
+    `native_value` is a pure read. These tests exercise the throttle math via
+    `_compute_throttled_value` directly - the same call `_handle_coordinator_
+    update` makes - since driving the real coordinator callback requires full
+    entity-platform wiring (`self.hass`, `self.entity_id`, a registered
+    platform) that these focused unit tests intentionally don't set up.
+    """
+
+    @staticmethod
+    def _make_cop_sensor(coordinator: MagicMock) -> Any:
+        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.sensor import QubeSensor
+
+        hub = MagicMock()
+        hub.host = "1.2.3.4"
+        hub.unit = 1
+        hub.label = "qube1"
+        hub.entry_id = "test_entry"
+
+        ent = EntityDef(
+            platform="sensor",
+            name="COP",
+            address=300,
+            unique_id="cop_calc",
+            translation_key="cop_calc",
+        )
+
+        return QubeSensor(coordinator=coordinator, hub=hub, version="1.0", ent=ent)
+
+    def test_initial_value_is_available_immediately(self) -> None:
+        """The first display value is computed at construction time.
+
+        Before the refactor, the very first `native_value` read (which
+        happens right after the entity is added to hass, before any
+        coordinator update fires) both computed and cached the initial
+        value. The stored-value approach must replicate that.
+        """
+        coordinator = MagicMock()
+        coordinator.data = {"cop_calc": 3.5}
+        sensor = self._make_cop_sensor(coordinator)
+
+        assert sensor.native_value == 3.5
+
+    def test_small_change_within_window_is_throttled(
+        self, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """A small value change inside the 30s window keeps the cached value."""
+        coordinator = MagicMock()
+        coordinator.data = {"cop_calc": 3.5}
+        sensor = self._make_cop_sensor(coordinator)
+        assert sensor.native_value == 3.5
+
+        coordinator.data = {"cop_calc": 3.6}  # diff 0.1 < threshold 0.2
+        freezer.tick(timedelta(seconds=10))  # < 30s window
+        sensor._cop_display_value = sensor._compute_throttled_value()
+
+        assert sensor.native_value == 3.5
+
+    def test_value_updates_once_window_elapses(
+        self, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """Once the 30s window passes, a small delta is applied."""
+        coordinator = MagicMock()
+        coordinator.data = {"cop_calc": 3.5}
+        sensor = self._make_cop_sensor(coordinator)
+        assert sensor.native_value == 3.5
+
+        coordinator.data = {"cop_calc": 3.6}
+        freezer.tick(timedelta(seconds=31))
+        sensor._cop_display_value = sensor._compute_throttled_value()
+
+        assert sensor.native_value == 3.6
+
+    def test_large_change_updates_immediately(
+        self, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """A change >= the 0.2 threshold updates immediately, window or not."""
+        coordinator = MagicMock()
+        coordinator.data = {"cop_calc": 3.5}
+        sensor = self._make_cop_sensor(coordinator)
+        assert sensor.native_value == 3.5
+
+        coordinator.data = {"cop_calc": 4.0}  # diff 0.5 >= threshold
+        freezer.tick(timedelta(seconds=5))
+        sensor._cop_display_value = sensor._compute_throttled_value()
+
+        assert sensor.native_value == 4.0
+
+    def test_native_value_does_not_mutate_throttle_cache(self) -> None:
+        """native_value must be a pure read for COP sensors.
+
+        Repeated reads - without a coordinator update in between - must
+        neither pick up new coordinator data nor mutate the throttle cache,
+        proving the mutation moved out of the property entirely.
+        """
+        coordinator = MagicMock()
+        coordinator.data = {"cop_calc": 3.5}
+        sensor = self._make_cop_sensor(coordinator)
+        assert sensor.native_value == 3.5
+
+        coordinator.data = {"cop_calc": 9.9}
+        assert sensor.native_value == 3.5
+        assert sensor.native_value == 3.5

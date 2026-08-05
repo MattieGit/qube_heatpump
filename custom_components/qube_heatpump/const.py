@@ -1,7 +1,17 @@
 """Constants for the Qube Heat Pump integration."""
 
+from homeassistant.const import Platform
+
 DOMAIN = "qube_heatpump"
-PLATFORMS = ["binary_sensor", "button", "climate", "number", "select", "sensor", "switch"]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.CLIMATE,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 TARIFF_OPTIONS = ("CH", "DHW")
 

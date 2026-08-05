@@ -12,7 +12,7 @@ from homeassistant.const import EntityCategory
 
 from .const import CONF_THERMOSTAT_ENABLED
 from .entity import QubeEntity
-from .helpers import is_alarm_entity
+from .helpers import entity_data_key as _entity_state_key, is_alarm_entity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -169,11 +169,7 @@ class QubeBinarySensor(QubeEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if the binary sensor is on."""
-        key = (
-            self._ent.unique_id
-            or f"binary_sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
-        )
-        val = self.coordinator.data.get(key)
+        val = self.coordinator.data.get(_entity_state_key(self._ent))
         return None if val is None else bool(val)
 
 
@@ -209,14 +205,6 @@ class QubeAlarmStatusBinarySensor(QubeEntity, BinarySensorEntity):
             if isinstance(val, bool) and val:
                 return True
         return False
-
-
-def _entity_state_key(ent: EntityDef) -> str:
-    """Generate state key for entity."""
-    if ent.unique_id:
-        return ent.unique_id
-    suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
-    return f"binary_sensor_{suffix}"
 
 
 class QubeThermostatTimeoutSensor(QubeEntity, BinarySensorEntity):

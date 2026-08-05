@@ -10,6 +10,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .entity import QubeEntity
+from .helpers import entity_data_key
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -101,11 +102,7 @@ class QubeSwitch(QubeEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true if switch is on."""
-        key = (
-            self._ent.unique_id
-            or f"switch_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
-        )
-        val = self.coordinator.data.get(key)
+        val = self.coordinator.data.get(entity_data_key(self._ent))
         return None if val is None else bool(val)
 
     async def async_turn_on(self, **kwargs: Any) -> None:

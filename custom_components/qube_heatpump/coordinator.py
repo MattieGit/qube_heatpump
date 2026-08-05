@@ -22,6 +22,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .helpers import entity_data_key as _entity_key
 
 # Number of consecutive failures before creating a repair issue
 CONSECUTIVE_FAILURES_THRESHOLD = 5
@@ -43,13 +44,6 @@ def _needs_monotonic_clamping(ent: EntityDef) -> bool:
     except (TypeError, ValueError, AttributeError):
         return False
     return bool(vendor.startswith("workinghours"))
-
-
-def _entity_key(ent: EntityDef) -> str:
-    """Generate a key for the coordinator data."""
-    if ent.unique_id:
-        return ent.unique_id
-    return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
 
 
 class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):

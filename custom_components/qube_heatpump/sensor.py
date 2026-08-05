@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, TARIFF_OPTIONS
 from .entity import QubeEntity
+from .helpers import entity_data_key as _entity_key
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -505,17 +506,18 @@ class QubeSensor(QubeEntity, SensorEntity):
                 self._attr_suggested_display_precision = int(ent.precision)
 
         # Throttling for COP sensors to reduce update frequency
+        self._is_cop_sensor = (
+            ent.translation_key in COP_THROTTLE_KEYS or ent.unique_id in COP_THROTTLE_KEYS
+        )
         self._throttle_last_value: float | None = None
         self._throttle_last_update: datetime | None = None
-
-    @property
-    def native_value(self) -> StateType:
-        """Return native value."""
-        key = (
-            self._ent.unique_id
-            or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
+        self._cop_display_value: StateType = (
+            self._compute_throttled_value() if self._is_cop_sensor else None
         )
-        value = self.coordinator.data.get(key)
+
+    def _compute_value(self) -> StateType:
+        """Compute the sensor's display value (before any COP throttling)."""
+        value = self.coordinator.data.get(_entity_key(self._ent))
         if value is None:
             return None
 
@@ -546,34 +548,49 @@ class QubeSensor(QubeEntity, SensorEntity):
             except (TypeError, ValueError):
                 pass
 
-        # Throttle COP sensors to reduce update frequency
-        # Only update if enough time passed or value changed significantly
-        if unique_id in COP_THROTTLE_KEYS or translation_key in COP_THROTTLE_KEYS:
-            now = dt_util.utcnow()
-            try:
-                current_value = float(value)
-            except (TypeError, ValueError):
-                pass
-            else:
-                # Check if we should throttle this update
-                if (
-                    self._throttle_last_value is not None
-                    and self._throttle_last_update is not None
-                ):
-                    time_diff = (now - self._throttle_last_update).total_seconds()
-                    value_diff = abs(current_value - self._throttle_last_value)
-                    # Return cached value if not enough time passed and value stable
-                    if (
-                        time_diff < COP_THROTTLE_SECONDS
-                        and value_diff < COP_THROTTLE_THRESHOLD
-                    ):
-                        return self._throttle_last_value
-                # Update throttle cache
-                self._throttle_last_value = current_value
-                self._throttle_last_update = now
-                return current_value
-
         return value
+
+    def _compute_throttled_value(self) -> StateType:
+        """Compute the COP display value, throttling frequent small changes.
+
+        Only updates the cached value if enough time passed or the value
+        changed significantly. Must be called at most once per coordinator
+        update cycle (from `_handle_coordinator_update`) since it mutates the
+        throttle cache.
+        """
+        value = self._compute_value()
+        if value is None:
+            return None
+
+        now = dt_util.utcnow()
+        try:
+            current_value = float(value)
+        except (TypeError, ValueError):
+            return value
+
+        if self._throttle_last_value is not None and self._throttle_last_update is not None:
+            time_diff = (now - self._throttle_last_update).total_seconds()
+            value_diff = abs(current_value - self._throttle_last_value)
+            # Return cached value if not enough time passed and value stable
+            if time_diff < COP_THROTTLE_SECONDS and value_diff < COP_THROTTLE_THRESHOLD:
+                return self._throttle_last_value
+
+        self._throttle_last_value = current_value
+        self._throttle_last_update = now
+        return current_value
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        if self._is_cop_sensor:
+            self._cop_display_value = self._compute_throttled_value()
+        super()._handle_coordinator_update()
+
+    @property
+    def native_value(self) -> StateType:
+        """Return native value."""
+        if self._is_cop_sensor:
+            return self._cop_display_value
+        return self._compute_value()
 
 
 class QubeInfoSensor(QubeEntity, SensorEntity):
@@ -714,8 +731,7 @@ class QubeMetricSensor(QubeEntity, SensorEntity):
         self.entity_id = f"sensor.{self._label}_metric_{kind}"
         # Always scope unique_id per device for stability
         self._attr_unique_id = self._scoped_uid(f"metric_{kind}")
-        with contextlib.suppress(Exception):
-            self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> int | None:
@@ -726,14 +742,6 @@ class QubeMetricSensor(QubeEntity, SensorEntity):
         if self._kind == "errors_read":
             return getattr(hub, "err_read", None)
         return None
-
-
-def _entity_key(ent: EntityDef) -> str:
-    """Generate entity key."""
-    return (
-        ent.unique_id
-        or f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
-    )
 
 
 def _find_status_source(hub: QubeHub) -> EntityDef | None:
@@ -756,11 +764,6 @@ def _find_binary_by_address(hub: QubeHub, address: int) -> EntityDef | None:
     return None
 
 
-def _scope_unique_id(base: str, host: str, unit: int) -> str:
-    """Scope unique_id per device using host_unit prefix for stability."""
-    return f"{host}_{unit}_{base}"
-
-
 def _energy_data_key() -> str:
     """Return the coordinator data key for energy total (unscoped)."""
     return "energy_total_electric"
@@ -781,8 +784,7 @@ class QubeStandbyPowerSensor(QubeEntity, SensorEntity):
         self.entity_id = f"sensor.{self._label}_standby_power"
         self._attr_unique_id = self._scoped_uid(STANDBY_POWER_UNIQUE_BASE)
         self._attr_device_class = SensorDeviceClass.POWER
-        with contextlib.suppress(ValueError, TypeError):
-            self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = "W"
         self._attr_native_value = STANDBY_POWER_WATTS
 
@@ -804,8 +806,7 @@ class QubeStandbyEnergySensor(QubeEntity, RestoreSensor):
         self.entity_id = f"sensor.{self._label}_standby_energy"
         self._attr_unique_id = self._scoped_uid(STANDBY_ENERGY_UNIQUE_BASE)
         self._attr_device_class = SensorDeviceClass.ENERGY
-        with contextlib.suppress(ValueError, TypeError):
-            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "kWh"
 
     async def async_added_to_hass(self) -> None:
@@ -869,8 +870,7 @@ class QubeTotalEnergyIncludingStandbySensor(QubeEntity, SensorEntity):
         # Scoped unique_id for entity registry
         self._attr_unique_id = self._scoped_uid(TOTAL_ENERGY_UNIQUE_BASE)
         self._attr_device_class = SensorDeviceClass.ENERGY
-        with contextlib.suppress(ValueError, TypeError):
-            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "kWh"
 
     @property
@@ -1085,8 +1085,7 @@ class QubeTariffEnergySensor(QubeEntity, RestoreSensor):
         base_uid = f"{(base_unique or TARIFF_SENSOR_BASE)}_{tariff.lower()}"
         self._attr_unique_id = self._scoped_uid(base_uid)
         self._attr_device_class = SensorDeviceClass.ENERGY
-        with contextlib.suppress(ValueError, TypeError):
-            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "kWh"
 
     async def async_added_to_hass(self) -> None:
@@ -1149,8 +1148,7 @@ class QubeTariffTotalEnergySensor(QubeEntity, SensorEntity):
         self.entity_id = f"sensor.{self._label}_{translation_key}"
         self._attr_unique_id = self._scoped_uid(base_unique)
         self._attr_device_class = SensorDeviceClass.ENERGY
-        with contextlib.suppress(ValueError, TypeError):
-            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "kWh"
 
     @property
@@ -1195,8 +1193,7 @@ class QubeSCOPSensor(QubeEntity, SensorEntity):
         self._attr_unique_id = self._scoped_uid(unique_base)
         self._attr_suggested_display_precision = 1
         self._attr_native_unit_of_measurement = "CoP"
-        with contextlib.suppress(Exception):
-            self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_state_class = SensorStateClass.TOTAL
 
     def _current_totals(self) -> tuple[float | None, float | None]:
         if self._scope == "total":

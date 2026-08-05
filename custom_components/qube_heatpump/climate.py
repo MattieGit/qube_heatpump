@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+from datetime import timedelta
 import logging
 import time
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -83,7 +84,6 @@ async def async_setup_entry(
 
     async_add_entities([
         QubeVirtualThermostat(
-            hass,
             entry,
             hub,
             coordinator,
@@ -107,7 +107,11 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         HVACMode.COOL,
         HVACMode.HEAT_COOL,
     ]
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_supported_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TURN_OFF
+        | ClimateEntityFeature.TURN_ON
+    )
     _attr_target_temperature_step = THERMOSTAT_STEP
     _attr_min_temp = THERMOSTAT_MIN_TEMP
     _attr_max_temp = THERMOSTAT_MAX_TEMP
@@ -115,7 +119,6 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
 
     def __init__(
         self,
-        hass: HomeAssistant,
         entry: QubeConfigEntry,
         hub: QubeHub,
         coordinator: Any,
@@ -226,8 +229,6 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         )
 
         # Periodic timeout check
-        from datetime import timedelta
-
         self._cancel_timeout_check = async_track_time_interval(
             self.hass,
             self._async_check_timeout,

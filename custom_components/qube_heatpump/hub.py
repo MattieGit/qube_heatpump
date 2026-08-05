@@ -7,6 +7,7 @@ import contextlib
 from dataclasses import dataclass
 import ipaddress
 import logging
+import re
 import socket
 from typing import TYPE_CHECKING, Any
 
@@ -210,6 +211,9 @@ class QubeHub:
         self._err_connect: int = 0
         self._err_read: int = 0
         self._resolved_ip: str | None = None
+        # Slugify the device name once to create a stable label
+        slug = re.sub(r"[^a-z0-9]+", "_", self._device_name.lower())
+        self._label = slug.strip("_") or "qube"
 
     def load_library_entities(self) -> None:
         """Load all entity definitions from the library."""
@@ -253,11 +257,7 @@ class QubeHub:
     @property
     def label(self) -> str:
         """Return label derived from device name (for backwards compatibility)."""
-        # Slugify the device name to create a label
-        import re
-        slug = self._device_name.lower()
-        slug = re.sub(r"[^a-z0-9]+", "_", slug)
-        return slug.strip("_") or "qube"
+        return self._label
 
     @property
     def device_name(self) -> str:

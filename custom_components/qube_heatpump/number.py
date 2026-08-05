@@ -8,6 +8,7 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
 from .entity import QubeEntity
+from .helpers import entity_data_key
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -108,11 +109,7 @@ class QubeSetpointNumber(QubeEntity, NumberEntity):
     @property
     def native_value(self) -> float | None:
         """Return the current value."""
-        key = (
-            self._ent.unique_id
-            or f"sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
-        )
-        val = self.coordinator.data.get(key)
+        val = self.coordinator.data.get(entity_data_key(self._ent))
         if val is None:
             return None
         try:

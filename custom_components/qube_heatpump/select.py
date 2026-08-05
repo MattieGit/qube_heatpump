@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.select import SelectEntity
 
 from .entity import QubeEntity
+from .helpers import entity_data_key
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -88,8 +89,8 @@ class QubeSGReadyModeSelect(QubeEntity, SelectEntity):
         super().__init__(coordinator, hub, version)
         self._ent_a = sgready_a
         self._ent_b = sgready_b
-        self._key_a = self._entity_key(sgready_a)
-        self._key_b = self._entity_key(sgready_b)
+        self._key_a = entity_data_key(sgready_a)
+        self._key_b = entity_data_key(sgready_b)
         self._assumed_option = DEFAULT_OPTION
         self._entry_id = entry_id
 
@@ -102,11 +103,14 @@ class QubeSGReadyModeSelect(QubeEntity, SelectEntity):
     def current_option(self) -> str | None:
         """Return the current selected option."""
         derived = self._derive_option()
-        if derived is None:
-            return self._assumed_option
-        if derived != self._assumed_option:
+        return self._assumed_option if derived is None else derived
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        derived = self._derive_option()
+        if derived is not None:
             self._assumed_option = derived
-        return derived
+        super()._handle_coordinator_update()
 
     async def async_select_option(self, option: str) -> None:
         """Select a new option."""
@@ -140,10 +144,3 @@ class QubeSGReadyModeSelect(QubeEntity, SelectEntity):
             return bool(value)
         except (ValueError, TypeError):
             return None
-
-    @staticmethod
-    def _entity_key(ent: EntityDef) -> str:
-        if ent.unique_id:
-            return ent.unique_id
-        suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
-        return f"switch_{suffix}"
