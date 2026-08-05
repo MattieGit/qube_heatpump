@@ -16,7 +16,10 @@ if TYPE_CHECKING:
 
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import (
+    TimestampDataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
@@ -49,7 +52,7 @@ def _entity_key(ent: EntityDef) -> str:
     return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
 
 
-class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     """Qube Heat Pump custom coordinator."""
 
     def __init__(self, hass: HomeAssistant, hub: QubeHub, entry: ConfigEntry) -> None:

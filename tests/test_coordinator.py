@@ -20,6 +20,7 @@ from tests.conftest import add_bulk_read
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
 
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
     from homeassistant.core import HomeAssistant
 
 
@@ -608,6 +609,72 @@ async def test_monotonic_cache_load_skips_populated_cache(
 
     # Values should be unchanged (not overwritten by the 9999.0 on disk)
     assert client.monotonic_cache == original_values
+
+
+async def test_coordinator_tracks_last_update_success_time(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """After a successful refresh, last_update_success_time is populated.
+
+    QubeCoordinator must derive from TimestampDataUpdateCoordinator so the
+    shared TariffEnergyTracker dedup guard in sensor.py has a real token to
+    compare against instead of a permanent None.
+    """
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+    assert coordinator.last_update_success_time is not None
+
+
+def test_tariff_energy_tracker_dedup_with_real_token() -> None:
+    """A tracker fed the same token twice applies the base-total delta once.
+
+    With a real (non-None) token, calling update() a second time with the
+    same token but an increased base total must NOT add the delta again -
+    the dedup guard should treat the second call as a redundant refresh of
+    the same coordinator cycle. With the current always-None token this
+    guard never engages, so the delta would be added on every call.
+    """
+    from datetime import datetime, timezone
+
+    from custom_components.qube_heatpump.const import TARIFF_OPTIONS
+    from custom_components.qube_heatpump.sensor import TariffEnergyTracker
+
+    tracker = TariffEnergyTracker(
+        base_key="energy_total",
+        binary_key="tariff_binary",
+        tariffs=list(TARIFF_OPTIONS),
+    )
+
+    token = datetime(2026, 8, 5, 12, 0, 0, tzinfo=timezone.utc)
+
+    # binary_key False -> "CH" tariff (see _refresh_current_tariff).
+    # First call establishes the baseline total.
+    tracker.update({"energy_total": 100.0, "tariff_binary": False}, token)
+    assert tracker._totals["CH"] == 0.0
+
+    # Second call, SAME token, but total increased - must be treated as a
+    # duplicate notification of the same underlying reading and NOT double
+    # count the delta.
+    tracker.update({"energy_total": 105.0, "tariff_binary": False}, token)
+    assert tracker._totals["CH"] == 0.0, (
+        "Delta must not be applied twice for the same dedup token"
+    )
+
+    # A genuinely new token should apply the delta exactly once.
+    next_token = datetime(2026, 8, 5, 12, 5, 0, tzinfo=timezone.utc)
+    tracker.update({"energy_total": 105.0, "tariff_binary": False}, next_token)
+    assert tracker._totals["CH"] == 5.0
 
 
 async def test_coordinator_uses_batched_bulk_read(
