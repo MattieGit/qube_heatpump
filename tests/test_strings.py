@@ -327,3 +327,50 @@ class TestSentenceCaseHelper:
         assert _is_sentence_case("Electric consumption DHW (month)") is True
         assert _is_sentence_case("Thermic yield CH (day)") is True
         assert _is_sentence_case("Anti-legionella enabled") is True
+
+
+def test_translation_files_in_sync() -> None:
+    """strings.json, en.json and nl.json must have identical key trees."""
+    import json
+    from pathlib import Path
+
+    base = Path("custom_components/qube_heatpump")
+    strings = json.loads((base / "strings.json").read_text())
+    en = json.loads((base / "translations/en.json").read_text())
+    nl = json.loads((base / "translations/nl.json").read_text())
+
+    def key_tree(d: dict, prefix: str = "") -> set[str]:
+        keys: set[str] = set()
+        for k, v in d.items():
+            path = f"{prefix}.{k}" if prefix else k
+            if isinstance(v, dict):
+                keys |= key_tree(v, path)
+            else:
+                keys.add(path)
+        return keys
+
+    s_keys, en_keys, nl_keys = key_tree(strings), key_tree(en), key_tree(nl)
+    assert s_keys == en_keys, (
+        f"strings vs en drift: only-strings={sorted(s_keys - en_keys)} "
+        f"only-en={sorted(en_keys - s_keys)}"
+    )
+    assert s_keys == nl_keys, (
+        f"strings vs nl drift: only-strings={sorted(s_keys - nl_keys)} "
+        f"only-nl={sorted(nl_keys - s_keys)}"
+    )
+
+
+def test_no_binary_sensor_keys_under_sensor() -> None:
+    """Binary-sensor translation keys must not be duplicated under entity.sensor."""
+    import json
+    from pathlib import Path
+
+    base = Path("custom_components/qube_heatpump")
+    for fname in ("strings.json", "translations/en.json", "translations/nl.json"):
+        data = json.loads((base / fname).read_text())
+        sensor_keys = set(data.get("entity", {}).get("sensor", {}))
+        binary_keys = set(data.get("entity", {}).get("binary_sensor", {}))
+        overlap = sensor_keys & binary_keys
+        assert not overlap, (
+            f"{fname}: keys in both sensor and binary_sensor: {sorted(overlap)}"
+        )

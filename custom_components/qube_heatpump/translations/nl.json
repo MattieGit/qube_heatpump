@@ -13,10 +13,26 @@
                 "title": "Qube warmtepomp",
                 "description": "Voer het IP-adres of de hostnaam van de warmtepomp in.\nHulp nodig? Bekijk de [documentatie]({docs_url}).",
                 "data": {
-                    "host": "Host/IP"
+                    "host": "Host/IP",
+                    "name": "Apparaatnaam"
                 },
                 "data_description": {
-                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50)."
+                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
+                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Dit bepaalt entiteit-ID's zoals sensor.qube_1_supply_temp."
+                }
+            },
+            "reconfigure_confirm": {
+                "title": "Qube warmtepomp opnieuw configureren",
+                "description": "Werk de verbindingsinstellingen van je Qube warmtepomp bij.",
+                "data": {
+                    "host": "Host/IP",
+                    "port": "Poort",
+                    "name": "Apparaatnaam"
+                },
+                "data_description": {
+                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in.",
+                    "port": "Modbus TCP-poort (standaard: 502).",
+                    "name": "Naam voor deze warmtepomp."
                 }
             }
         }
