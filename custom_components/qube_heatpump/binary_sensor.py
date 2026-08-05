@@ -12,7 +12,7 @@ from homeassistant.const import EntityCategory
 
 from .const import CONF_THERMOSTAT_ENABLED
 from .entity import QubeEntity
-from .helpers import entity_data_key as _entity_state_key, is_alarm_entity
+from .helpers import entity_data_key, is_alarm_entity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -169,7 +169,7 @@ class QubeBinarySensor(QubeEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if the binary sensor is on."""
-        val = self.coordinator.data.get(_entity_state_key(self._ent))
+        val = self.coordinator.data.get(entity_data_key(self._ent))
         return None if val is None else bool(val)
 
 
@@ -194,7 +194,7 @@ class QubeAlarmStatusBinarySensor(QubeEntity, BinarySensorEntity):
         self._attr_translation_key = "alarm_sensors_active"
         self.entity_id = f"binary_sensor.{self._label}_alarm_sensors_active"
         self._attr_icon = "mdi:alarm-light"
-        self._keys = [_entity_state_key(ent) for ent in alarm_entities]
+        self._keys = [entity_data_key(ent) for ent in alarm_entities]
 
     @property
     def is_on(self) -> bool:

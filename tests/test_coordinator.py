@@ -864,7 +864,7 @@ async def test_coordinator_suppresses_non_finite_warnings_after_cap(
         if r.levelno == logging.DEBUG and "non-finite" in r.message.lower()
     ]
     assert len(debug_records) == 1
-    assert "2" in debug_records[0].message
+    assert "2 additional" in debug_records[0].message
 
 
 async def test_coordinator_does_not_resolve_ip_per_poll(

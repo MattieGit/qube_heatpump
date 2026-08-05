@@ -186,68 +186,49 @@ async def test_service_reconfigure_unexpected_error(
 
 async def test_write_register_no_runtime_data(
     hass: HomeAssistant,
+    mock_qube_client: MagicMock,
 ) -> None:
-    """Test write_register handles entry without runtime_data."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.close = AsyncMock(return_value=None)
-        client.read_entity = AsyncMock(return_value=45.0)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-        client._client.write_register = AsyncMock(
-            return_value=MagicMock(isError=lambda: False)
-        )
+    """write_register rejects an explicit entry_id for an entry HA has unloaded.
 
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
+    HA 2026.1.3 deletes the `runtime_data` attribute entirely on unload
+    (it does not set it to None), so `target.runtime_data` raises a raw
+    AttributeError rather than returning a falsy value. A second, still
+    loaded entry is present so the single-entry fallback in
+    `_resolve_entry` cannot resolve the target on its own - resolution
+    must go through the explicit entry_id, landing on the unloaded entry.
+    """
+    entry1 = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube 1",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry1.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
+    entry2 = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.5"},
+        title="Qube 2",
+        unique_id=f"{DOMAIN}-1.2.3.5-502",
+    )
+    entry2.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry2.entry_id)
+    await hass.async_block_till_done()
+
+    # Unload entry1; HA deletes its runtime_data attribute (not set to None).
+    assert await hass.config_entries.async_unload(entry1.entry_id)
+    await hass.async_block_till_done()
+    assert not hasattr(entry1, "runtime_data")
+
+    with pytest.raises(HomeAssistantError, match="not loaded"):
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": 100, "value": 42.0, "entry_id": entry1.entry_id},
+            blocking=True,
         )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Temporarily clear runtime_data to test error path
-        original_data = entry.runtime_data
-        entry.runtime_data = None
-
-        try:
-            # Should raise a HomeAssistantError about the entry not being loaded
-            with pytest.raises(HomeAssistantError):
-                await hass.services.async_call(
-                    DOMAIN,
-                    "write_register",
-                    {"address": 100, "value": 42.0},
-                    blocking=True,
-                )
-                await hass.async_block_till_done()
-        finally:
-            # Restore for cleanup
-            entry.runtime_data = original_data
 
 
 async def test_write_register_no_hub(

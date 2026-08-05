@@ -286,8 +286,8 @@ class TestBinarySensorAlarmHelpers:
         assert is_alarm_entity(ent) is False
 
     def test_entity_state_key_with_unique_id(self) -> None:
-        """Test _entity_state_key returns unique_id when set."""
-        from custom_components.qube_heatpump.binary_sensor import _entity_state_key
+        """Test entity_data_key returns unique_id when set."""
+        from custom_components.qube_heatpump.helpers import entity_data_key
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
@@ -296,11 +296,11 @@ class TestBinarySensorAlarmHelpers:
             address=100,
             unique_id="my_unique_id",
         )
-        assert _entity_state_key(ent) == "my_unique_id"
+        assert entity_data_key(ent) == "my_unique_id"
 
     def test_entity_state_key_fallback(self) -> None:
-        """Test _entity_state_key returns generated key when no unique_id."""
-        from custom_components.qube_heatpump.binary_sensor import _entity_state_key
+        """Test entity_data_key returns generated key when no unique_id."""
+        from custom_components.qube_heatpump.helpers import entity_data_key
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
@@ -310,7 +310,7 @@ class TestBinarySensorAlarmHelpers:
             input_type="discrete",
         )
         ent.unique_id = None
-        assert _entity_state_key(ent) == "binary_sensor_discrete_100"
+        assert entity_data_key(ent) == "binary_sensor_discrete_100"
 
 
 class TestSwitchSGReady:

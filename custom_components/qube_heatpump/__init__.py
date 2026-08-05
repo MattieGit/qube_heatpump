@@ -16,7 +16,7 @@ from homeassistant.config_entries import (
     ConfigEntryState,
 )
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.setup import async_setup_component
 
 from .const import (
@@ -60,6 +60,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 def _alarm_group_object_id(label: str) -> str:
@@ -149,7 +151,7 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
         raise HomeAssistantError(
             "Write_register: unable to resolve integration entry; specify entry_id or label"
         )
-    target_data = target.runtime_data
+    target_data = getattr(target, "runtime_data", None)
     if not target_data:
         raise HomeAssistantError(
             f"Write_register: integration entry {target.entry_id} is not loaded"
