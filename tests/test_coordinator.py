@@ -227,7 +227,7 @@ async def test_coordinator_handles_no_data(
 def test_needs_monotonic_clamping_workinghours() -> None:
     """Test _needs_monotonic_clamping detects workinghours entities."""
     from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     # Test workinghours vendor_id
     ent2 = EntityDef(
@@ -255,7 +255,7 @@ def test_needs_monotonic_clamping_workinghours() -> None:
 def test_needs_monotonic_clamping_edge_cases() -> None:
     """Test _needs_monotonic_clamping handles edge cases."""
     from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     # Test None name and vendor_id
     ent = EntityDef(platform="sensor", name=None, address=100, vendor_id=None)
@@ -265,7 +265,7 @@ def test_needs_monotonic_clamping_edge_cases() -> None:
 def test_entity_key_generation() -> None:
     """Test _entity_key generates correct keys."""
     from custom_components.qube_heatpump.coordinator import _entity_key
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     # Test with unique_id
     ent = EntityDef(
@@ -413,7 +413,7 @@ def test_rounding_before_monotonic_clamp() -> None:
     import struct
 
     from custom_components.qube_heatpump.coordinator import _entity_key
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     # Simulate an energy sensor (kWh, precision=2, total_increasing)
     ent = EntityDef(

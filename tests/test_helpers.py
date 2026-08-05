@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from custom_components.qube_heatpump.entity_defs import EntityDef
 from custom_components.qube_heatpump.helpers import is_alarm_entity
-from custom_components.qube_heatpump.hub import EntityDef
 
 
 class TestIsAlarmEntity:

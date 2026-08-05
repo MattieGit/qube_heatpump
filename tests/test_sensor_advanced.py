@@ -42,7 +42,7 @@ def test_start_of_day() -> None:
 
 def test_find_status_source_fallback_enum() -> None:
     """Test _find_status_source falls back to enum device_class."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
     ent1 = EntityDef(platform="sensor", name="Other", address=100, device_class="enum")
@@ -53,7 +53,7 @@ def test_find_status_source_fallback_enum() -> None:
 
 def test_find_status_source_fallback_name() -> None:
     """Test _find_status_source falls back to name containing status."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
     ent1 = EntityDef(platform="sensor", name="Unit Status Value", address=100)
@@ -64,7 +64,7 @@ def test_find_status_source_fallback_name() -> None:
 
 def test_find_status_source_no_match() -> None:
     """Test _find_status_source returns None when no match."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
     ent1 = EntityDef(platform="sensor", name="Temperature", address=100)
@@ -75,7 +75,7 @@ def test_find_status_source_no_match() -> None:
 
 def test_find_binary_by_address_found() -> None:
     """Test _find_binary_by_address finds entity."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
     ent1 = EntityDef(platform="binary_sensor", name="Test", address=4)
@@ -86,7 +86,7 @@ def test_find_binary_by_address_found() -> None:
 
 def test_find_binary_by_address_not_found() -> None:
     """Test _find_binary_by_address returns None when not found."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
     ent1 = EntityDef(platform="binary_sensor", name="Test", address=5)
@@ -246,7 +246,7 @@ class TestQubeSensorUniqueIdFallback:
         self, hass: HomeAssistant
     ) -> None:
         """Test sensor uses input_type in unique_id when unique_id not set."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import QubeSensor
 
         hub = MagicMock()
@@ -281,7 +281,7 @@ class TestQubeSensorUniqueIdFallback:
         self, hass: HomeAssistant
     ) -> None:
         """Test sensor uses write_type in unique_id fallback."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import QubeSensor
 
         hub = MagicMock()
@@ -315,7 +315,7 @@ class TestQubeSensorUniqueIdFallback:
 
     async def test_sensor_unique_id_multi_device(self, hass: HomeAssistant) -> None:
         """Test sensor unique_id includes host_unit prefix in multi_device mode."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import QubeSensor
 
         hub = MagicMock()
@@ -353,7 +353,7 @@ class TestQubeInfoSensorCountsFallback:
 
     async def test_info_sensor_counts_fallback(self, hass: HomeAssistant) -> None:
         """Test info sensor falls back to counting entities when counts are None."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import QubeInfoSensor
 
         hub = MagicMock()
@@ -576,7 +576,7 @@ class TestQubeComputedSensorStatusMappings:
 
     async def test_computed_sensor_status_standby(self, hass: HomeAssistant) -> None:
         """Test computed sensor returns standby for codes 1, 14, 18."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import (
             QubeComputedSensor,
             _entity_key,
@@ -613,7 +613,7 @@ class TestQubeComputedSensorStatusMappings:
 
     async def test_computed_sensor_status_mappings(self, hass: HomeAssistant) -> None:
         """Test computed sensor status code mappings."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import (
             QubeComputedSensor,
             _entity_key,
@@ -664,7 +664,7 @@ class TestQubeComputedSensorStatusMappings:
         self, hass: HomeAssistant
     ) -> None:
         """req_antileg_1 overrides the status code, except when ALARM."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import (
             QubeComputedSensor,
             _entity_key,
@@ -715,7 +715,7 @@ class TestQubeComputedSensorStatusMappings:
 
     async def test_computed_sensor_drieweg(self, hass: HomeAssistant) -> None:
         """Test computed sensor drieweg (3-way valve) mapping."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import (
             QubeComputedSensor,
             _entity_key,
@@ -756,7 +756,7 @@ class TestQubeComputedSensorStatusMappings:
 
     async def test_computed_sensor_vierweg(self, hass: HomeAssistant) -> None:
         """Test computed sensor vierweg (4-way valve) mapping."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import (
             QubeComputedSensor,
             _entity_key,
@@ -797,7 +797,7 @@ class TestQubeComputedSensorStatusMappings:
 
     async def test_computed_sensor_none_value(self, hass: HomeAssistant) -> None:
         """Test computed sensor returns None when source value is None."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import QubeComputedSensor
 
         hub = MagicMock()
@@ -908,7 +908,7 @@ class TestQubeSensorCOPThrottle:
 
     @staticmethod
     def _make_cop_sensor(coordinator: MagicMock) -> Any:
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.sensor import QubeSensor
 
         hub = MagicMock()

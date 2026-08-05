@@ -12,7 +12,8 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
-    from .hub import EntityDef, QubeHub
+    from .entity_defs import EntityDef
+    from .hub import QubeHub
 
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store

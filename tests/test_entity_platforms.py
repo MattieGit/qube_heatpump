@@ -19,7 +19,7 @@ class TestSwitchUniqueIdFallback:
 
     async def test_switch_unique_id_fallback(self, hass: HomeAssistant) -> None:
         """Test switch uses write_type in unique_id when unique_id not set."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.switch import QubeSwitch
 
         hub = MagicMock()
@@ -51,7 +51,7 @@ class TestSwitchUniqueIdFallback:
 
     async def test_switch_unique_id_multi_device(self, hass: HomeAssistant) -> None:
         """Test switch unique_id includes label in multi_device mode."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.switch import QubeSwitch
 
         hub = MagicMock()
@@ -83,7 +83,7 @@ class TestSwitchUniqueIdFallback:
 
     async def test_switch_translation_key_fallback(self, hass: HomeAssistant) -> None:
         """Test switch uses translation_key when set."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.switch import QubeSwitch
 
         hub = MagicMock()
@@ -114,7 +114,7 @@ class TestSwitchUniqueIdFallback:
 
     async def test_switch_name_fallback(self, hass: HomeAssistant) -> None:
         """Test switch uses name when translation_key not set."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.switch import QubeSwitch
 
         hub = MagicMock()
@@ -149,7 +149,7 @@ class TestBinarySensorUniqueIdFallback:
     async def test_binary_sensor_unique_id_fallback(self, hass: HomeAssistant) -> None:
         """Test binary sensor uses input_type in unique_id when unique_id not set."""
         from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -183,7 +183,7 @@ class TestBinarySensorUniqueIdFallback:
     ) -> None:
         """Test binary sensor unique_id includes label in multi_device mode."""
         from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -217,7 +217,7 @@ class TestBinarySensorUniqueIdFallback:
     ) -> None:
         """Test binary sensor uses translation_key when set."""
         from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
 
         hub = MagicMock()
         hub.host = "1.2.3.4"
@@ -251,24 +251,24 @@ class TestBinarySensorAlarmHelpers:
 
     def test_is_alarm_entity_wrong_platform(self) -> None:
         """Test is_alarm_entity returns False for non-binary_sensor."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.helpers import is_alarm_entity
-        from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(platform="sensor", name="Alarm Test", address=100)
         assert is_alarm_entity(ent) is False
 
     def test_is_alarm_entity_by_name(self) -> None:
         """Test is_alarm_entity detects alarm in name."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.helpers import is_alarm_entity
-        from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(platform="binary_sensor", name="Some Alarm Sensor", address=100)
         assert is_alarm_entity(ent) is True
 
     def test_is_alarm_entity_by_vendor_id(self) -> None:
         """Test is_alarm_entity detects vendor_id starting with 'al'."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.helpers import is_alarm_entity
-        from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor", name="Test", address=100, vendor_id="alarm_xyz"
@@ -277,8 +277,8 @@ class TestBinarySensorAlarmHelpers:
 
     def test_is_alarm_entity_not_alarm(self) -> None:
         """Test is_alarm_entity returns False for non-alarm."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.helpers import is_alarm_entity
-        from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor", name="Temperature", address=100, vendor_id="temp"
@@ -287,8 +287,8 @@ class TestBinarySensorAlarmHelpers:
 
     def test_entity_state_key_with_unique_id(self) -> None:
         """Test entity_data_key returns unique_id when set."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.helpers import entity_data_key
-        from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor",
@@ -300,8 +300,8 @@ class TestBinarySensorAlarmHelpers:
 
     def test_entity_state_key_fallback(self) -> None:
         """Test entity_data_key returns generated key when no unique_id."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.helpers import entity_data_key
-        from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor",
@@ -318,7 +318,7 @@ class TestSwitchSGReady:
 
     async def test_switch_sgready_properties(self, hass: HomeAssistant) -> None:
         """Test SG Ready switch has correct properties."""
-        from custom_components.qube_heatpump.hub import EntityDef
+        from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.switch import QubeSwitch
         from homeassistant.const import EntityCategory
 
@@ -355,7 +355,7 @@ async def test_binary_sensor_hidden_vendor_ids(
 ) -> None:
     """Test binary sensor with hidden vendor IDs."""
     from custom_components.qube_heatpump.binary_sensor import QubeBinarySensor
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
     hub.host = "1.2.3.4"

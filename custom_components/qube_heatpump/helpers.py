@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .hub import EntityDef
+    from .entity_defs import EntityDef
 
 
 def entity_data_key(ent: EntityDef) -> str:

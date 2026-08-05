@@ -22,7 +22,8 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
-    from .hub import EntityDef, QubeHub
+    from .entity_defs import EntityDef
+    from .hub import QubeHub
 
 _LOGGER = logging.getLogger(__name__)
 

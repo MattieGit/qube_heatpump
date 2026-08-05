@@ -191,7 +191,7 @@ async def test_select_device_info(
 
 async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
     """Test select unique_id uses host_unit prefix in multi_device mode."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
     from custom_components.qube_heatpump.select import QubeSGReadyModeSelect
 
     hub = MagicMock()

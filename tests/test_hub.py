@@ -264,7 +264,7 @@ async def test_hub_write_setpoint(hass: HomeAssistant) -> None:
 
 async def test_hub_write_switch_success(hass: HomeAssistant) -> None:
     """Test hub async_write_switch with library method."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -296,7 +296,7 @@ async def test_hub_write_switch_failure(hass: HomeAssistant) -> None:
     """Test hub async_write_switch handles failure."""
     import pytest
 
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -328,7 +328,7 @@ async def test_hub_write_switch_no_unique_id(hass: HomeAssistant) -> None:
     """Test hub async_write_switch raises with no unique_id."""
     import pytest
 
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -356,7 +356,7 @@ async def test_hub_write_switch_no_unique_id(hass: HomeAssistant) -> None:
 
 async def test_hub_write_setpoint_success(hass: HomeAssistant) -> None:
     """Test hub async_write_setpoint with library method."""
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -387,7 +387,7 @@ async def test_hub_write_setpoint_failure(hass: HomeAssistant) -> None:
     """Test hub async_write_setpoint handles failure."""
     import pytest
 
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -418,7 +418,7 @@ async def test_hub_write_setpoint_no_unique_id(hass: HomeAssistant) -> None:
     """Test hub async_write_setpoint raises with no unique_id."""
     import pytest
 
-    from custom_components.qube_heatpump.hub import EntityDef
+    from custom_components.qube_heatpump.entity_defs import EntityDef
 
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True

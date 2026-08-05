@@ -40,7 +40,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
-    from .hub import EntityDef, QubeHub
+    from .entity_defs import EntityDef
+    from .hub import QubeHub
 
 _LOGGER = logging.getLogger(__name__)
 

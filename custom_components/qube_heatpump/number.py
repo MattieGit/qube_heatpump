@@ -15,7 +15,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
-    from .hub import EntityDef, QubeHub
+    from .entity_defs import EntityDef
+    from .hub import QubeHub
 
 
 # Default min/max for temperature setpoints
