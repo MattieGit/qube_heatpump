@@ -142,7 +142,6 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the hub."""
         try:
-            await self.hub.async_resolve_ip()
             await self.hub.async_connect()
         except Exception as exc:
             self._consecutive_failures += 1
@@ -159,7 +158,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
 
         client = self.hub.client
         results: dict[str, Any] = {}
-        warn_count = 0
+        nonfinite_count = 0
         warn_cap = 5
 
         # Fetch all values in a handful of batched block reads instead of
@@ -177,7 +176,8 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
 
             key = _entity_key(ent)
             if isinstance(value, (int, float)) and not math.isfinite(float(value)):
-                if warn_count < warn_cap:
+                nonfinite_count += 1
+                if nonfinite_count <= warn_cap:
                     _LOGGER.warning(
                         "Non-finite value (%s) for %s %s@%s; treating as unavailable",
                         value,
@@ -185,7 +185,6 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
                         ent.input_type or ent.write_type or "register",
                         ent.address,
                     )
-                    warn_count += 1
                 results[key] = None
                 continue
 
@@ -210,7 +209,10 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         if client is not None and client.monotonic_cache:
             self._schedule_save()
 
-        if warn_count > warn_cap:
-            _LOGGER.debug("Additional read failures suppressed in this cycle")
+        if nonfinite_count > warn_cap:
+            _LOGGER.debug(
+                "%d additional non-finite values suppressed this cycle",
+                nonfinite_count - warn_cap,
+            )
 
         return results

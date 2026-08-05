@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -19,6 +20,7 @@ from tests.conftest import add_bulk_read
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
+    import pytest
 
     from custom_components.qube_heatpump.coordinator import QubeCoordinator
     from homeassistant.core import HomeAssistant
@@ -809,3 +811,95 @@ async def test_coordinator_uses_batched_bulk_read(
     state = hass.states.get("sensor.qube_1_temp_supply")
     assert state is not None
     assert state.state == "45.0"
+
+
+async def test_coordinator_suppresses_non_finite_warnings_after_cap(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Only the first 5 non-finite values warn; the rest are one debug summary.
+
+    Reproduces the unreachable-suppression-notice defect: warn_count only
+    ever incremented up to warn_cap, so the old `warn_count > warn_cap`
+    check after the loop could never be true and the debug summary line
+    never fired no matter how many non-finite values were seen.
+    """
+    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+
+    bulk_values: dict = dict.fromkeys(SENSORS, 45.0)
+    bulk_values |= dict.fromkeys(BINARY_SENSORS, False)
+    bulk_values |= dict.fromkeys(SWITCHES, False)
+
+    # Force exactly 7 sensor values to be non-finite (NaN).
+    nonfinite_keys = list(SENSORS)[:7]
+    for key in nonfinite_keys:
+        bulk_values[key] = float("nan")
+
+    mock_qube_client.get_all_entities = AsyncMock(return_value=bulk_values)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    with caplog.at_level(logging.DEBUG, logger="custom_components.qube_heatpump"):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+
+    warning_records = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and "Non-finite value" in r.message
+    ]
+    assert len(warning_records) == 5
+
+    debug_records = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.DEBUG and "non-finite" in r.message.lower()
+    ]
+    assert len(debug_records) == 1
+    assert "2" in debug_records[0].message
+
+
+async def test_coordinator_does_not_resolve_ip_per_poll(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """DNS resolution only happens once at setup, not on every poll cycle.
+
+    async_resolve_ip only feeds a diagnostic sensor and already runs once
+    during async_setup_entry (__init__.py); resolving DNS again every 15s
+    inside _async_update_data was redundant per-poll work.
+    """
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeHub.async_resolve_ip",
+        new_callable=AsyncMock,
+    ) as mock_resolve_ip:
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_HOST: "1.2.3.4"},
+            title="Qube Heat Pump",
+        )
+        entry.add_to_hass(hass)
+
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert entry.state is ConfigEntryState.LOADED
+        calls_after_setup = mock_resolve_ip.call_count
+        assert calls_after_setup >= 1  # Setup itself still resolves once.
+
+        # Trigger a coordinator refresh via time advancement.
+        freezer.tick(timedelta(seconds=31))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+        # The refresh must not have called async_resolve_ip again.
+        assert mock_resolve_ip.call_count == calls_after_setup
