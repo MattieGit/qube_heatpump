@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
+from typing import TYPE_CHECKING
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -26,8 +26,12 @@ from custom_components.qube_heatpump.const import (
     CONF_THERMOSTAT_SENSOR,
     DOMAIN,
 )
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+
+if TYPE_CHECKING:
+    from unittest.mock import MagicMock
+
+    from homeassistant.core import HomeAssistant
 
 SNAPSHOT_PATH = Path(__file__).parent / "snapshots" / "entity_ids.json"
 
