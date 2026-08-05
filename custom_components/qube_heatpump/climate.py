@@ -287,6 +287,8 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
             self._sensor_timed_out = True
             self._entry.runtime_data.thermostat_sensor_timed_out = True
             await self._async_set_demand(False)
+            self._is_heating = False
+            self._is_cooling = False
             self.async_write_ha_state()
 
     async def _async_control_heating(self) -> None:

@@ -384,3 +384,39 @@ async def test_sensor_timeout_turns_off_demand_and_sets_flag(
     hass.states.async_set(SENSOR_ENTITY_ID, "20.5")
     await hass.async_block_till_done()
     assert entry.runtime_data.thermostat_sensor_timed_out is False
+
+
+async def test_sensor_timeout_recovery_reenables_heating_when_still_cold(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """After a timeout, demand must re-enable once the sensor reports a still-cold value.
+
+    Regression test: `_async_check_timeout` used to turn demand off without
+    resetting `_is_heating`, so `_async_control_heating`'s HEAT guard
+    (`too_cold and not self._is_heating`) stayed False forever after recovery.
+    """
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
+    # Setup itself triggers the initial control pass which starts heating.
+    assert True in _demand_calls(mock_qube_client)
+
+    mock_qube_client.write_switch.reset_mock()
+    future_monotonic = time.monotonic() + THERMOSTAT_SENSOR_TIMEOUT + 1
+    with patch(
+        "custom_components.qube_heatpump.climate.time.monotonic",
+        return_value=future_monotonic,
+    ):
+        freezer.tick(timedelta(seconds=61))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+    assert _demand_calls(mock_qube_client) == [False]
+
+    # Sensor recovers, but the reading is still well below target - tolerance
+    # (target 20.5, tolerance 0.3 -> too_cold threshold 20.2).
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "19.0")
+    await hass.async_block_till_done()
+
+    assert _demand_calls(mock_qube_client) == [True]
