@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
     from . import QubeConfigEntry
 
-TO_REDACT = {"host", "port", "unique_id"}
+TO_REDACT = {"host", "port", "unique_id", "ip_address", "resolved_ip"}
 
 
 async def async_get_config_entry_diagnostics(
@@ -20,6 +20,7 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     data = entry.runtime_data
     hub = data.hub
+    coordinator = data.coordinator
 
     summary = {
         "entry": {
@@ -27,20 +28,25 @@ async def async_get_config_entry_diagnostics(
             "data": entry.data,
             "options": entry.options,
         },
+        "firmware_version": data.version,
         "hub": {
-            "host": getattr(hub, "host", None),
-            "port": getattr(hub, "port", None),
-            "label": getattr(hub, "label", None),
+            "host": hub.host,
+            "port": hub.port,
+            "resolved_ip": hub.resolved_ip,
+            "label": hub.label,
             "multi_device": data.multi_device,
+            "err_connect": hub.err_connect,
+            "err_read": hub.err_read,
         },
         "entities": [
             {
-                "name": getattr(e, "name", None),
-                "unique_id": getattr(e, "unique_id", None),
-                "platform": getattr(e, "platform", None),
-                "address": getattr(e, "address", None),
+                "name": ent.name,
+                "unique_id": ent.unique_id,
+                "platform": ent.platform,
+                "address": ent.address,
             }
-            for e in list(getattr(hub, "entities", []))[:10]
+            for ent in hub.entities
         ],
+        "coordinator_data": coordinator.data,
     }
     return async_redact_data(summary, TO_REDACT)

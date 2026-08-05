@@ -10,11 +10,92 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.setup import async_setup_component
 
 from tests.conftest import add_bulk_read
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+
+
+async def test_services_registered_by_async_setup_alone(
+    hass: HomeAssistant,
+) -> None:
+    """Services are registered at component setup, before any config entry exists.
+
+    Registration must live in the module-level async_setup() so the
+    services register once and survive individual config entries being
+    unloaded, instead of being (re-)registered per config entry.
+    """
+    assert not hass.services.has_service(DOMAIN, "reconfigure")
+    assert not hass.services.has_service(DOMAIN, "write_register")
+
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+
+    assert hass.services.has_service(DOMAIN, "reconfigure")
+    assert hass.services.has_service(DOMAIN, "write_register")
+
+
+async def test_services_survive_last_entry_unload(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Services stay registered after the last config entry unloads.
+
+    Calling write_register afterwards should fail cleanly with a
+    HomeAssistantError (no loaded entry to resolve), not disappear from
+    the service registry.
+    """
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.services.has_service(DOMAIN, "reconfigure")
+    assert hass.services.has_service(DOMAIN, "write_register")
+
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": 173, "value": 42.0},
+            blocking=True,
+        )
+
+
+async def test_write_register_service_unresolvable_entry_id(
+    hass: HomeAssistant,
+) -> None:
+    """write_register raises HomeAssistantError when entry_id resolves to nothing.
+
+    Exercised at the service-call level (via hass.services.async_call),
+    not by calling _resolve_entry directly, to prove the target-is-None
+    guard clause actually raises instead of silently logging and
+    returning. No config entry is set up at all here: services are
+    registered by async_setup alone.
+    """
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+
+    with pytest.raises(
+        HomeAssistantError, match="unable to resolve integration entry"
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": 173, "value": 42.0, "entry_id": "bogus_entry_id"},
+            blocking=True,
+        )
 
 
 async def test_write_register_service_registered(
@@ -148,7 +229,7 @@ async def test_write_register_service_no_matching_entity(
             await hass.services.async_call(
                 DOMAIN,
                 "write_register",
-                {"address": 99999, "value": 42.0, "data_type": "uint16"},
+                {"address": 99999, "value": 42.0},
                 blocking=True,
             )
 

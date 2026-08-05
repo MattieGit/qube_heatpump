@@ -9,10 +9,10 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_THERMOSTAT_ENABLED, DOMAIN
+from .const import CONF_THERMOSTAT_ENABLED
+from .entity import QubeEntity
+from .helpers import entity_data_key, is_alarm_entity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -95,20 +95,15 @@ async def async_setup_entry(
     data = entry.runtime_data
     hub = data.hub
     coordinator = data.coordinator
-    multi_device = data.multi_device
     version = data.version or "unknown"
-    # show_label is no longer used (entity IDs are auto-generated from device name)
-    show_label = False
 
     entities: list[BinarySensorEntity] = []
     alarm_entities: list[EntityDef] = []
     for ent in hub.entities:
         if ent.platform != "binary_sensor":
             continue
-        entities.append(
-            QubeBinarySensor(coordinator, hub, show_label, multi_device, ent, version)
-        )
-        if _is_alarm_entity(ent):
+        entities.append(QubeBinarySensor(coordinator, hub, ent, version))
+        if is_alarm_entity(ent):
             alarm_entities.append(ent)
 
     if alarm_entities:
@@ -116,8 +111,6 @@ async def async_setup_entry(
             QubeAlarmStatusBinarySensor(
                 coordinator,
                 hub,
-                show_label,
-                multi_device,
                 alarm_entities,
                 version,
             )
@@ -132,29 +125,19 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class QubeBinarySensor(QubeEntity, BinarySensorEntity):
     """Representation of a Qube binary sensor."""
-
-    _attr_should_poll = False
-    _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         ent: EntityDef,
         version: str = "unknown",
     ) -> None:
         """Initialize the binary sensor."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, hub, version)
         self._ent = ent
-        self._hub = hub
-        self._label = hub.label or "qube1"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
         if ent.translation_key:
             self._attr_translation_key = ent.translation_key
         else:
@@ -162,15 +145,15 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
         # Always scope unique_id per device (host_unit prefix) to ensure stability
         # when adding/removing devices - prevents entity duplication
         if ent.unique_id:
-            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{ent.unique_id}"
+            self._attr_unique_id = self._scoped_uid(ent.unique_id)
         else:
             suffix = f"{ent.input_type or 'input'}_{ent.address}".lower()
             base_uid = f"qube_binary_{suffix}"
-            self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_{base_uid}"
+            self._attr_unique_id = self._scoped_uid(base_uid)
         vendor_id = getattr(ent, "vendor_id", None)
         # Use vendor_id for stable, predictable entity IDs
         if vendor_id:
-            self.entity_id = f"binary_sensor.{hub.label}_{vendor_id}"
+            self.entity_id = f"binary_sensor.{self._label}_{vendor_id}"
         if vendor_id in HIDDEN_VENDOR_IDS:
             self._attr_entity_registry_visible_default = False
             self._attr_entity_registry_enabled_default = False
@@ -184,31 +167,15 @@ class QubeBinarySensor(CoordinatorEntity, BinarySensorEntity):
             self._attr_entity_category = entity_category
 
     @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
-
-    @property
     def is_on(self) -> bool | None:
         """Return True if the binary sensor is on."""
-        key = (
-            self._ent.unique_id
-            or f"binary_sensor_{self._ent.input_type or self._ent.write_type}_{self._ent.address}"
-        )
-        val = self.coordinator.data.get(key)
+        val = self.coordinator.data.get(entity_data_key(self._ent))
         return None if val is None else bool(val)
 
 
-class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class QubeAlarmStatusBinarySensor(QubeEntity, BinarySensorEntity):
     """Aggregate binary sensor for Qube alarm status."""
 
-    _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
@@ -216,37 +183,18 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self,
         coordinator: Any,
         hub: QubeHub,
-        show_label: bool,
-        multi_device: bool,
         alarm_entities: list[EntityDef],
         version: str = "unknown",
     ) -> None:
         """Initialize the alarm status binary sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
-        self._label = hub.label or "qube1"
-        self._show_label = bool(show_label)
-        self._multi_device = bool(multi_device)
-        self._version = version
+        super().__init__(coordinator, hub, version)
         self._tied_entities = list(alarm_entities)
         # Always scope unique_id per device for stability
-        self._attr_unique_id = f"{self._hub.host}_{self._hub.unit}_alarm_sensors_state"
+        self._attr_unique_id = self._scoped_uid("alarm_sensors_state")
         self._attr_translation_key = "alarm_sensors_active"
         self.entity_id = f"binary_sensor.{self._label}_alarm_sensors_active"
-        self._attr_has_entity_name = True
         self._attr_icon = "mdi:alarm-light"
-        self._keys = [_entity_state_key(ent) for ent in alarm_entities]
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
+        self._keys = [entity_data_key(ent) for ent in alarm_entities]
 
     @property
     def is_on(self) -> bool:
@@ -259,30 +207,9 @@ class QubeAlarmStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         return False
 
 
-def _is_alarm_entity(ent: EntityDef) -> bool:
-    """Check if entity is an alarm."""
-    if ent.platform != "binary_sensor":
-        return False
-    name = (ent.name or "").lower()
-    if "alarm" in name:
-        return True
-    vendor = (ent.vendor_id or "").lower()
-    return vendor.startswith("al")
-
-
-def _entity_state_key(ent: EntityDef) -> str:
-    """Generate state key for entity."""
-    if ent.unique_id:
-        return ent.unique_id
-    suffix = f"{ent.input_type or ent.write_type}_{ent.address}"
-    return f"binary_sensor_{suffix}"
-
-
-class QubeThermostatTimeoutSensor(CoordinatorEntity, BinarySensorEntity):
+class QubeThermostatTimeoutSensor(QubeEntity, BinarySensorEntity):
     """Binary sensor indicating the thermostat temperature sensor has timed out."""
 
-    _attr_should_poll = False
-    _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -294,26 +221,11 @@ class QubeThermostatTimeoutSensor(CoordinatorEntity, BinarySensorEntity):
         version: str = "unknown",
     ) -> None:
         """Initialize the timeout sensor."""
-        super().__init__(coordinator)
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._entry = entry
-        self._version = version
         self._attr_translation_key = "thermostat_sensor_timeout"
-        self._attr_unique_id = (
-            f"{hub.host}_{hub.unit}_thermostat_sensor_timeout"
-        )
-        self.entity_id = f"binary_sensor.{hub.label}_thermostat_sensor_timeout"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._hub.host}:{self._hub.unit}")},
-            name=self._hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
+        self._attr_unique_id = self._scoped_uid("thermostat_sensor_timeout")
+        self.entity_id = f"binary_sensor.{self._label}_thermostat_sensor_timeout"
 
     @property
     def is_on(self) -> bool:

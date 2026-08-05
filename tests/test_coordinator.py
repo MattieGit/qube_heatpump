@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -19,7 +20,9 @@ from tests.conftest import add_bulk_read
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
+    import pytest
 
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
     from homeassistant.core import HomeAssistant
 
 
@@ -221,14 +224,10 @@ async def test_coordinator_handles_no_data(
         assert entry.state is ConfigEntryState.LOADED
 
 
-def test_needs_monotonic_clamping_bedrijfsuren() -> None:
-    """Test _needs_monotonic_clamping detects bedrijfsuren entities."""
+def test_needs_monotonic_clamping_workinghours() -> None:
+    """Test _needs_monotonic_clamping detects workinghours entities."""
     from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
     from custom_components.qube_heatpump.hub import EntityDef
-
-    # Test bedrijfsuren name
-    ent = EntityDef(platform="sensor", name="Bedrijfsuren compressor", address=100)
-    assert _needs_monotonic_clamping(ent) is True
 
     # Test workinghours vendor_id
     ent2 = EntityDef(
@@ -614,6 +613,174 @@ async def test_monotonic_cache_load_skips_populated_cache(
     assert client.monotonic_cache == original_values
 
 
+async def test_coordinator_tracks_last_update_success_time(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """After a successful refresh, last_update_success_time is populated.
+
+    QubeCoordinator must derive from TimestampDataUpdateCoordinator so the
+    shared TariffEnergyTracker dedup guard in sensor.py has a real token to
+    compare against instead of a permanent None.
+    """
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+    assert coordinator.last_update_success_time is not None
+
+
+def test_tariff_energy_tracker_dedup_with_real_token() -> None:
+    """A tracker fed the same token twice applies the base-total delta once.
+
+    With a real (non-None) token, calling update() a second time with the
+    same token but an increased base total must NOT add the delta again -
+    the dedup guard should treat the second call as a redundant refresh of
+    the same coordinator cycle. With the current always-None token this
+    guard never engages, so the delta would be added on every call.
+    """
+    from datetime import datetime, timezone
+
+    from custom_components.qube_heatpump.const import TARIFF_OPTIONS
+    from custom_components.qube_heatpump.sensor import TariffEnergyTracker
+
+    tracker = TariffEnergyTracker(
+        base_key="energy_total",
+        binary_key="tariff_binary",
+        tariffs=list(TARIFF_OPTIONS),
+    )
+
+    token = datetime(2026, 8, 5, 12, 0, 0, tzinfo=timezone.utc)
+
+    # binary_key False -> "CH" tariff (see _refresh_current_tariff).
+    # First call establishes the baseline total.
+    tracker.update({"energy_total": 100.0, "tariff_binary": False}, token)
+    assert tracker._totals["CH"] == 0.0
+
+    # Second call, SAME token, but total increased - must be treated as a
+    # duplicate notification of the same underlying reading and NOT double
+    # count the delta.
+    tracker.update({"energy_total": 105.0, "tariff_binary": False}, token)
+    assert tracker._totals["CH"] == 0.0, (
+        "Delta must not be applied twice for the same dedup token"
+    )
+
+    # A genuinely new token should apply the delta exactly once.
+    next_token = datetime(2026, 8, 5, 12, 5, 0, tzinfo=timezone.utc)
+    tracker.update({"energy_total": 105.0, "tariff_binary": False}, next_token)
+    assert tracker._totals["CH"] == 5.0
+
+
+async def test_tariff_sensor_dedup_end_to_end_via_real_coordinator(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """End-to-end: real coordinator -> sensor callback -> tracker dedup.
+
+    Exercises the actual production wiring instead of a hand-built token:
+    the real `sensor.qube_1_electric_consumption_ch_month` entity created by
+    the real integration setup (already added to hass via async_add_entities,
+    so async_write_ha_state works normally), backed by the real
+    QubeCoordinator whose `last_update_success_time` was populated by HA's
+    TimestampDataUpdateCoordinator internals - not set manually here. Calling
+    the entity's actual `_handle_coordinator_update` does the real
+    `getattr(self.coordinator, "last_update_success_time", None)` call.
+
+    Simulates two notifications for the same completed refresh (identical
+    token) where the underlying data has ticked up in between - the
+    dedup guard must apply the delta only once. Before the coordinator.py
+    fix (plain DataUpdateCoordinator, token always None) this test fails
+    because the guard's `token is not None` condition never engages and the
+    delta is applied on every call.
+    """
+    from custom_components.qube_heatpump.coordinator import QubeCoordinator
+    from custom_components.qube_heatpump.sensor import QubeTariffEnergySensor
+    from homeassistant.helpers import entity_platform
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    coordinator: QubeCoordinator = entry.runtime_data.coordinator
+
+    # Mirror sensor.py's own tolerant access (getattr with a None default)
+    # rather than a plain attribute read, so this test reproduces the actual
+    # doubled-delta symptom on the old base class instead of merely tripping
+    # over an AttributeError before reaching the dedup logic.
+    def _token() -> object:
+        return getattr(coordinator, "last_update_success_time", None)
+
+    # Real refresh already happened during setup, so this is whatever token
+    # production wiring actually produces - not fabricated by the test.
+    real_token = _token()
+
+    # Find the real, already-added QubeTariffEnergySensor entity (CH monthly
+    # electric consumption) via the real entity platform - not a throwaway
+    # instance, so async_write_ha_state works without extra scaffolding.
+    entity: QubeTariffEnergySensor | None = None
+    for platform in entity_platform.async_get_platforms(hass, DOMAIN):
+        if platform.domain != "sensor":
+            continue
+        for candidate in platform.entities.values():
+            if getattr(candidate, "_attr_translation_key", None) == (
+                "electric_consumption_ch_month"
+            ):
+                entity = candidate
+                break
+    assert entity is not None, "electric_consumption_ch_month sensor not found"
+    assert isinstance(entity, QubeTariffEnergySensor)
+
+    tracker = entity._tracker
+    base_key = tracker.base_key
+    baseline = coordinator.data.get(base_key)
+    assert isinstance(baseline, (int, float)), (
+        f"Expected a numeric baseline for {base_key}, got {baseline!r}"
+    )
+    totals_before = dict(tracker._totals)
+
+    # No real refresh has happened since setup (no listener has yet called
+    # _handle_coordinator_update), so the dedup guard hasn't engaged at all.
+    assert tracker._last_token is None
+
+    # First notification for this refresh: base total ticks up +5, applies
+    # the delta exactly once.
+    coordinator.data[base_key] = baseline + 5.0
+    entity._handle_coordinator_update()
+    assert _token() == real_token, (
+        "No new refresh should have happened between the two notifications"
+    )
+    assert tracker._totals["CH"] == totals_before["CH"] + 5.0
+
+    # Underlying data ticks up again, but this is a duplicate notification
+    # for the SAME completed refresh (same token) - must not double count.
+    # On the buggy base class real_token is always None, so the guard's
+    # `token is not None` condition never engages and this delta gets
+    # applied a second time (totals would read +10 instead of +5).
+    coordinator.data[base_key] = baseline + 10.0
+    entity._handle_coordinator_update()
+    assert tracker._totals["CH"] == totals_before["CH"] + 5.0, (
+        "Delta must not be applied twice for the same real coordinator token"
+    )
+
+    # Confirms the fix's wiring specifically: production code must be able
+    # to obtain a genuinely non-None token from the real coordinator.
+    assert real_token is not None
+
+
 async def test_coordinator_uses_batched_bulk_read(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
@@ -644,3 +811,95 @@ async def test_coordinator_uses_batched_bulk_read(
     state = hass.states.get("sensor.qube_1_temp_supply")
     assert state is not None
     assert state.state == "45.0"
+
+
+async def test_coordinator_suppresses_non_finite_warnings_after_cap(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Only the first 5 non-finite values warn; the rest are one debug summary.
+
+    Reproduces the unreachable-suppression-notice defect: warn_count only
+    ever incremented up to warn_cap, so the old `warn_count > warn_cap`
+    check after the loop could never be true and the debug summary line
+    never fired no matter how many non-finite values were seen.
+    """
+    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+
+    bulk_values: dict = dict.fromkeys(SENSORS, 45.0)
+    bulk_values |= dict.fromkeys(BINARY_SENSORS, False)
+    bulk_values |= dict.fromkeys(SWITCHES, False)
+
+    # Force exactly 7 sensor values to be non-finite (NaN).
+    nonfinite_keys = list(SENSORS)[:7]
+    for key in nonfinite_keys:
+        bulk_values[key] = float("nan")
+
+    mock_qube_client.get_all_entities = AsyncMock(return_value=bulk_values)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+    )
+    entry.add_to_hass(hass)
+
+    with caplog.at_level(logging.DEBUG, logger="custom_components.qube_heatpump"):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+
+    warning_records = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and "Non-finite value" in r.message
+    ]
+    assert len(warning_records) == 5
+
+    debug_records = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.DEBUG and "non-finite" in r.message.lower()
+    ]
+    assert len(debug_records) == 1
+    assert "2 additional" in debug_records[0].message
+
+
+async def test_coordinator_does_not_resolve_ip_per_poll(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """DNS resolution only happens once at setup, not on every poll cycle.
+
+    async_resolve_ip only feeds a diagnostic sensor and already runs once
+    during async_setup_entry (__init__.py); resolving DNS again every 15s
+    inside _async_update_data was redundant per-poll work.
+    """
+    with patch(
+        "custom_components.qube_heatpump.hub.QubeHub.async_resolve_ip",
+        new_callable=AsyncMock,
+    ) as mock_resolve_ip:
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_HOST: "1.2.3.4"},
+            title="Qube Heat Pump",
+        )
+        entry.add_to_hass(hass)
+
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert entry.state is ConfigEntryState.LOADED
+        calls_after_setup = mock_resolve_ip.call_count
+        assert calls_after_setup >= 1  # Setup itself still resolves once.
+
+        # Trigger a coordinator refresh via time advancement.
+        freezer.tick(timedelta(seconds=31))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+        # The refresh must not have called async_resolve_ip again.
+        assert mock_resolve_ip.call_count == calls_after_setup

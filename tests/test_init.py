@@ -8,9 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import (
-    CONF_ENTITY_PREFIX,
     CONF_HOST,
-    DEFAULT_ENTITY_PREFIX,
     DOMAIN,
 )
 from homeassistant.config_entries import ConfigEntryState
@@ -180,27 +178,27 @@ async def test_async_setup_entry_label_default(
 
 
 def test_is_alarm_entity() -> None:
-    """Test _is_alarm_entity detection."""
-    from custom_components.qube_heatpump import _is_alarm_entity
+    """Test is_alarm_entity detection (now consolidated in helpers.py)."""
+    from custom_components.qube_heatpump.helpers import is_alarm_entity
     from custom_components.qube_heatpump.hub import EntityDef
 
     # Alarm by name containing "alarm"
     ent1 = EntityDef(platform="binary_sensor", name="Alarm Test", address=100)
-    assert _is_alarm_entity(ent1) is True
+    assert is_alarm_entity(ent1) is True
 
     # Alarm by vendor_id starting with "al_"
     ent2 = EntityDef(
         platform="binary_sensor", name="Test", address=101, vendor_id="al_test"
     )
-    assert _is_alarm_entity(ent2) is True
+    assert is_alarm_entity(ent2) is True
 
     # Not an alarm - wrong platform
     ent3 = EntityDef(platform="sensor", name="Alarm Test", address=102)
-    assert _is_alarm_entity(ent3) is False
+    assert is_alarm_entity(ent3) is False
 
     # Not an alarm - no alarm indicator
     ent4 = EntityDef(platform="binary_sensor", name="Test", address=103)
-    assert _is_alarm_entity(ent4) is False
+    assert is_alarm_entity(ent4) is False
 
 
 def test_alarm_group_object_id() -> None:
@@ -216,18 +214,6 @@ def test_alarm_group_object_id() -> None:
     assert result == "qube_alarms_qube_1"
 
 
-def test_derive_label_from_title() -> None:
-    """Test derive_label_from_title function."""
-    from custom_components.qube_heatpump.helpers import derive_label_from_title
-
-    # With parentheses
-    assert derive_label_from_title("Qube Heat Pump (qube.local)") == "qube_local"
-    assert derive_label_from_title("Qube Heat Pump (192.168.1.50)") == "192_168_1_50"
-
-    # Without parentheses - fallback to slug
-    assert derive_label_from_title("My Heat Pump") == "my_heat_pump"
-
-
 async def test_resolve_entry_by_label(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
@@ -240,7 +226,6 @@ async def test_resolve_entry_by_label(
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (testlabel)",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
-        options={CONF_ENTITY_PREFIX: "testlabel"},
     )
     entry.add_to_hass(hass)
 
@@ -265,7 +250,6 @@ async def test_resolve_entry_no_match(
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (testlabel)",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
-        options={CONF_ENTITY_PREFIX: "testlabel"},
     )
     entry.add_to_hass(hass)
 
@@ -278,7 +262,6 @@ async def test_resolve_entry_no_match(
         data={CONF_HOST: "1.2.3.5"},
         title="Qube Heat Pump (other)",
         unique_id=f"{DOMAIN}-1.2.3.5-502",
-        options={CONF_ENTITY_PREFIX: "other"},
     )
     entry2.add_to_hass(hass)
     await hass.config_entries.async_setup(entry2.entry_id)
@@ -301,7 +284,6 @@ async def test_resolve_entry_by_hub_label(
         data={CONF_HOST: "1.2.3.4"},
         title="Qube Heat Pump (qube1)",
         unique_id=f"{DOMAIN}-1.2.3.4-502",
-        options={CONF_ENTITY_PREFIX: "qube1"},
     )
     entry.add_to_hass(hass)
 

@@ -213,7 +213,6 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
     hub.unit = 2
     hub.label = "qube1"
     hub.entry_id = "test_entry_id"
-    hub.get_friendly_name = MagicMock(return_value=None)
 
     coordinator = MagicMock()
     coordinator.data = {}
@@ -227,14 +226,11 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
     ent.translation_key = "setpoint_heat_day"
     ent.input_type = "holding"
     ent.vendor_id = "setpoint_heat_day"
-    ent.min_value = 15.0
 
     # Single device - always has host_unit prefix for stability
     number_single = QubeSetpointNumber(
         coordinator=coordinator,
         hub=hub,
-        show_label=True,
-        multi_device=False,
         version="1.0",
         ent=ent,
     )
@@ -244,8 +240,6 @@ async def test_number_unique_id_multi_device(hass: HomeAssistant) -> None:
     number_multi = QubeSetpointNumber(
         coordinator=coordinator,
         hub=hub,
-        show_label=True,
-        multi_device=True,
         version="1.0",
         ent=ent,
     )

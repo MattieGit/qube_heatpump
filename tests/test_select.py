@@ -199,7 +199,6 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
     hub.unit = 2
     hub.label = "qube1"
     hub.device_name = "Qube Heat Pump"
-    hub.get_friendly_name = MagicMock(return_value=None)
 
     coordinator = MagicMock()
     coordinator.data = {}
@@ -224,8 +223,6 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
     select_single = QubeSGReadyModeSelect(
         coordinator=coordinator,
         hub=hub,
-        show_label=True,
-        multi_device=False,
         version="1.0",
         sgready_a=sgready_a,
         sgready_b=sgready_b,
@@ -237,8 +234,6 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
     select_multi = QubeSGReadyModeSelect(
         coordinator=coordinator,
         hub=hub,
-        show_label=True,
-        multi_device=True,
         version="1.0",
         sgready_a=sgready_a,
         sgready_b=sgready_b,

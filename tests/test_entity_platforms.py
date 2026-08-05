@@ -26,7 +26,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -44,8 +43,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -61,7 +58,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -79,8 +75,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=True,
-            multi_device=True,
             ent=ent,
         )
 
@@ -96,7 +90,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -113,8 +106,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -130,7 +121,6 @@ class TestSwitchUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -147,8 +137,6 @@ class TestSwitchUniqueIdFallback:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -167,7 +155,6 @@ class TestBinarySensorUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -185,8 +172,6 @@ class TestBinarySensorUniqueIdFallback:
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -204,7 +189,6 @@ class TestBinarySensorUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -222,8 +206,6 @@ class TestBinarySensorUniqueIdFallback:
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=True,
-            multi_device=True,
             ent=ent,
         )
 
@@ -241,7 +223,6 @@ class TestBinarySensorUniqueIdFallback:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -258,8 +239,6 @@ class TestBinarySensorUniqueIdFallback:
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -271,44 +250,44 @@ class TestBinarySensorAlarmHelpers:
     """Tests for binary sensor alarm helper functions."""
 
     def test_is_alarm_entity_wrong_platform(self) -> None:
-        """Test _is_alarm_entity returns False for non-binary_sensor."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity returns False for non-binary_sensor."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(platform="sensor", name="Alarm Test", address=100)
-        assert _is_alarm_entity(ent) is False
+        assert is_alarm_entity(ent) is False
 
     def test_is_alarm_entity_by_name(self) -> None:
-        """Test _is_alarm_entity detects alarm in name."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity detects alarm in name."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(platform="binary_sensor", name="Some Alarm Sensor", address=100)
-        assert _is_alarm_entity(ent) is True
+        assert is_alarm_entity(ent) is True
 
     def test_is_alarm_entity_by_vendor_id(self) -> None:
-        """Test _is_alarm_entity detects vendor_id starting with 'al'."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity detects vendor_id starting with 'al'."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor", name="Test", address=100, vendor_id="alarm_xyz"
         )
-        assert _is_alarm_entity(ent) is True
+        assert is_alarm_entity(ent) is True
 
     def test_is_alarm_entity_not_alarm(self) -> None:
-        """Test _is_alarm_entity returns False for non-alarm."""
-        from custom_components.qube_heatpump.binary_sensor import _is_alarm_entity
+        """Test is_alarm_entity returns False for non-alarm."""
+        from custom_components.qube_heatpump.helpers import is_alarm_entity
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
             platform="binary_sensor", name="Temperature", address=100, vendor_id="temp"
         )
-        assert _is_alarm_entity(ent) is False
+        assert is_alarm_entity(ent) is False
 
     def test_entity_state_key_with_unique_id(self) -> None:
-        """Test _entity_state_key returns unique_id when set."""
-        from custom_components.qube_heatpump.binary_sensor import _entity_state_key
+        """Test entity_data_key returns unique_id when set."""
+        from custom_components.qube_heatpump.helpers import entity_data_key
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
@@ -317,11 +296,11 @@ class TestBinarySensorAlarmHelpers:
             address=100,
             unique_id="my_unique_id",
         )
-        assert _entity_state_key(ent) == "my_unique_id"
+        assert entity_data_key(ent) == "my_unique_id"
 
     def test_entity_state_key_fallback(self) -> None:
-        """Test _entity_state_key returns generated key when no unique_id."""
-        from custom_components.qube_heatpump.binary_sensor import _entity_state_key
+        """Test entity_data_key returns generated key when no unique_id."""
+        from custom_components.qube_heatpump.helpers import entity_data_key
         from custom_components.qube_heatpump.hub import EntityDef
 
         ent = EntityDef(
@@ -331,7 +310,7 @@ class TestBinarySensorAlarmHelpers:
             input_type="discrete",
         )
         ent.unique_id = None
-        assert _entity_state_key(ent) == "binary_sensor_discrete_100"
+        assert entity_data_key(ent) == "binary_sensor_discrete_100"
 
 
 class TestSwitchSGReady:
@@ -347,7 +326,6 @@ class TestSwitchSGReady:
         hub.host = "1.2.3.4"
         hub.unit = 1
         hub.label = "qube1"
-        hub.get_friendly_name = MagicMock(return_value=None)
 
         coordinator = MagicMock()
         coordinator.data = {}
@@ -364,8 +342,6 @@ class TestSwitchSGReady:
         switch = QubeSwitch(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 
@@ -385,7 +361,6 @@ async def test_binary_sensor_hidden_vendor_ids(
     hub.host = "1.2.3.4"
     hub.unit = 1
     hub.label = "qube1"
-    hub.get_friendly_name = MagicMock(return_value=None)
 
     coordinator = MagicMock()
     coordinator.data = {}
@@ -403,8 +378,6 @@ async def test_binary_sensor_hidden_vendor_ids(
         sensor = QubeBinarySensor(
             coordinator=coordinator,
             hub=hub,
-            show_label=False,
-            multi_device=False,
             ent=ent,
         )
 

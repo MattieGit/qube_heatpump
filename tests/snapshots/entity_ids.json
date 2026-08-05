@@ -1,0 +1,1266 @@
+{
+  "standard": [
+    {
+      "entity_id": "binary_sensor.qube_1_al_dewpoint_active",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_al_dewpoint_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_al_maxtime_antileg_active",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_al_maxtime_antileg_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_al_maxtime_dhw_active",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_al_maxtime_dhw_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_al_underfloorsafety_active",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_al_underfloorsafety_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alarm_sensors_active",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_alarm_sensors_state"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alarmmng_al_pwrplus",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_alarmmng_al_pwrplus"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alarmmng_al_workinghour",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_alarmmng_al_workinghour"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alrm_flw",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_alrm_flw"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_bms_demand",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_bms_demand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_boostersecurity",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_boostersecurity"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_bufferprb_en",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_bufferprb_en"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_coolingalrms",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_coolingalrms"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_daynightmode",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_daynightmode"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dewpoint",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dewpoint"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_bufferpmp_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_bufferpmp_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_cooling_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_cooling_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_fourwayvlv_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_fourwayvlv_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_heaterstep1_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_heaterstep1_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_heaterstep2_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_heaterstep2_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_heaterstep3_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_heaterstep3_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_srcpmp_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_srcpmp_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_threewayvlv_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_threewayvlv_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_usrpmp_val",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_dout_usrpmp_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_en_dhwpid",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_en_dhwpid"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_glbal",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_glbal"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_heatingalrms",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_heatingalrms"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_id_demand",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_id_demand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_id_summerwinter",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_id_summerwinter"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_keybonoff",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_keybonoff"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_plantdemand",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_plantdemand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_plantprb_en",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_plantprb_en"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_req_antileg_1",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_req_antileg_1"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_roomprb_en",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_roomprb_en"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_srcflw",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_srcflw"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_srsalrm",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_srsalrm"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_surplus_pv",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_surplus_pv"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_thermostatdemand",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_thermostatdemand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_usralrms",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_usralrms"
+    },
+    {
+      "entity_id": "button.qube_1_reload",
+      "platform": "button",
+      "unique_id": "1.2.3.4_1_qube_reload"
+    },
+    {
+      "entity_id": "number.qube_1_tapw_timeprogram_dhwsetp_nolinq",
+      "platform": "number",
+      "unique_id": "1.2.3.4_1_tapw_timeprogram_dhwsetp_nolinq_setpoint"
+    },
+    {
+      "entity_id": "number.qube_1_usr_pid_coolsetp",
+      "platform": "number",
+      "unique_id": "1.2.3.4_1_usr_pid_coolsetp_setpoint"
+    },
+    {
+      "entity_id": "number.qube_1_usr_pid_heatsetp",
+      "platform": "number",
+      "unique_id": "1.2.3.4_1_usr_pid_heatsetp_setpoint"
+    },
+    {
+      "entity_id": "select.qube_1_sg_ready_mode",
+      "platform": "select",
+      "unique_id": "1.2.3.4_1_sgready_mode"
+    },
+    {
+      "entity_id": "sensor.qube_1_aout_srcpmp_val",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_aout_srcpmp_val"
+    },
+    {
+      "entity_id": "sensor.qube_1_aout_srcvalve_val",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_aout_srcvalve_val"
+    },
+    {
+      "entity_id": "sensor.qube_1_aout_usrpmp_val",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_aout_usrpmp_val"
+    },
+    {
+      "entity_id": "sensor.qube_1_comppwrreq",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_comppwrreq"
+    },
+    {
+      "entity_id": "sensor.qube_1_compressor_speed",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_compressor_speed"
+    },
+    {
+      "entity_id": "sensor.qube_1_coolsetp_1",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_coolsetp_1"
+    },
+    {
+      "entity_id": "sensor.qube_1_cop_calc",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_cop_calc"
+    },
+    {
+      "entity_id": "sensor.qube_1_dhw_regreq",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_dhw_regreq"
+    },
+    {
+      "entity_id": "sensor.qube_1_dhw_setp",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_dhw_setp"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_ch_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_energy_tariff_daily_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_ch_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_energy_tariff_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_electric_energy_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_dhw_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_energy_tariff_daily_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_dhw_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_energy_tariff_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_energy_total_electric",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_energy_total_electric"
+    },
+    {
+      "entity_id": "sensor.qube_1_energy_total_thermic",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_energy_total_thermic"
+    },
+    {
+      "entity_id": "sensor.qube_1_flow",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_flow"
+    },
+    {
+      "entity_id": "sensor.qube_1_flow_rate",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_flow_rate"
+    },
+    {
+      "entity_id": "sensor.qube_1_fourway_valve_status",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_vierwegklep_verwarmen_koelen"
+    },
+    {
+      "entity_id": "sensor.qube_1_heatsetp_1",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_heatsetp_1"
+    },
+    {
+      "entity_id": "sensor.qube_1_info",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_info_sensor"
+    },
+    {
+      "entity_id": "sensor.qube_1_ip_address",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_ip_address"
+    },
+    {
+      "entity_id": "sensor.qube_1_metric_errors_connect",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_metric_errors_connect"
+    },
+    {
+      "entity_id": "sensor.qube_1_metric_errors_read",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_metric_errors_read"
+    },
+    {
+      "entity_id": "sensor.qube_1_modbus_roomtemp",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_modbus_roomtemp"
+    },
+    {
+      "entity_id": "sensor.qube_1_plantsetp",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_plantsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_power_electric",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_power_electric"
+    },
+    {
+      "entity_id": "sensor.qube_1_power_thermic",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_power_thermic"
+    },
+    {
+      "entity_id": "sensor.qube_1_regsetp",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_regsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_regulation_buffersetp_max",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_regulation_buffersetp_max"
+    },
+    {
+      "entity_id": "sensor.qube_1_regulation_buffersetp_min",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_regulation_buffersetp_min"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_ch_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_scop_ch_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_ch_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_scop_ch_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_scop_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_dhw_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_scop_dhw_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_dhw_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_scop_dhw_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_scop_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_dhw",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_setpoint_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_cool_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_setpoint_room_cool_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_cool_night",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_setpoint_room_cool_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_heat_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_setpoint_room_heat_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_heat_night",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_setpoint_room_heat_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_standby_energy",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_energy_standby"
+    },
+    {
+      "entity_id": "sensor.qube_1_standby_power",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_power_standby"
+    },
+    {
+      "entity_id": "sensor.qube_1_status_code",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_status_code"
+    },
+    {
+      "entity_id": "sensor.qube_1_status_heatpump",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_status_full"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dhws",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_tapw_timeprogram_dhws"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dhws_prog",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_tapw_timeprogram_dhws_prog"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dhwsetp_nolinq",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_tapw_timeprogram_dhwsetp_nolinq"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dt_bms",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_tapw_timeprogram_dt_bms"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_dhw",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_outside",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_outside"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_return",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_return"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_room",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_room"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_source_in",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_source_in"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_source_out",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_source_out"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_supply",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_temp_supply"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_ch_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_thermic_tariff_daily_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_ch_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_thermic_energy_tariff_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_thermic_energy_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_dhw_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_thermic_tariff_daily_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_dhw_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_thermic_energy_tariff_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_month",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_thermic_energy_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_coolsetp_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_thermostat_coolsetp_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_coolsetp_night",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_thermostat_coolsetp_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_heatsetp_day",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_thermostat_heatsetp_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_heatsetp_night",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_thermostat_heatsetp_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_threeway_valve_status",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_qube_driewegklep_dhw_cv"
+    },
+    {
+      "entity_id": "sensor.qube_1_total_energy_incl_standby",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_energy_total_incl_standby"
+    },
+    {
+      "entity_id": "sensor.qube_1_usr_pid_coolsetp",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_usr_pid_coolsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_usr_pid_heatsetp",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_usr_pid_heatsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_cool_hrsret",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_workinghours_cool_hrsret"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_dhw_hrsret",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_workinghours_dhw_hrsret"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heat_hrsret",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_workinghours_heat_hrsret"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heater1_hrs",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_workinghours_heater1_hrs"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heater2_hrs",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_workinghours_heater2_hrs"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heater3_hrs",
+      "platform": "sensor",
+      "unique_id": "1.2.3.4_1_workinghours_heater3_hrs"
+    },
+    {
+      "entity_id": "switch.qube_1_antilegionella_frcstart_ant",
+      "platform": "switch",
+      "unique_id": "1.2.3.4_1_antilegionella_frcstart_ant"
+    },
+    {
+      "entity_id": "switch.qube_1_bms_summerwinter",
+      "platform": "switch",
+      "unique_id": "1.2.3.4_1_bms_summerwinter"
+    },
+    {
+      "entity_id": "switch.qube_1_en_plantsetp_compens",
+      "platform": "switch",
+      "unique_id": "1.2.3.4_1_en_plantsetp_compens"
+    },
+    {
+      "entity_id": "switch.qube_1_modbus_demand",
+      "platform": "switch",
+      "unique_id": "1.2.3.4_1_modbus_demand"
+    },
+    {
+      "entity_id": "switch.qube_1_tapw_timeprogram_bms_forced",
+      "platform": "switch",
+      "unique_id": "1.2.3.4_1_tapw_timeprogram_bms_forced"
+    }
+  ],
+  "thermostat_enabled": [
+    {
+      "entity_id": "binary_sensor.qube_1_al_dewpoint_active",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_al_dewpoint_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_al_maxtime_antileg_active",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_al_maxtime_antileg_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_al_maxtime_dhw_active",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_al_maxtime_dhw_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_al_underfloorsafety_active",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_al_underfloorsafety_active"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alarm_sensors_active",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_alarm_sensors_state"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alarmmng_al_pwrplus",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_alarmmng_al_pwrplus"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alarmmng_al_workinghour",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_alarmmng_al_workinghour"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_alrm_flw",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_alrm_flw"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_bms_demand",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_bms_demand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_boostersecurity",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_boostersecurity"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_bufferprb_en",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_bufferprb_en"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_coolingalrms",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_coolingalrms"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_daynightmode",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_daynightmode"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dewpoint",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dewpoint"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_bufferpmp_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_bufferpmp_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_cooling_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_cooling_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_fourwayvlv_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_fourwayvlv_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_heaterstep1_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_heaterstep1_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_heaterstep2_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_heaterstep2_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_heaterstep3_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_heaterstep3_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_srcpmp_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_srcpmp_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_threewayvlv_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_threewayvlv_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_dout_usrpmp_val",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_dout_usrpmp_val"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_en_dhwpid",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_en_dhwpid"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_glbal",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_glbal"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_heatingalrms",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_heatingalrms"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_id_demand",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_id_demand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_id_summerwinter",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_id_summerwinter"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_keybonoff",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_keybonoff"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_plantdemand",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_plantdemand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_plantprb_en",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_plantprb_en"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_req_antileg_1",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_req_antileg_1"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_roomprb_en",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_roomprb_en"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_srcflw",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_srcflw"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_srsalrm",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_srsalrm"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_surplus_pv",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_surplus_pv"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_thermostat_sensor_timeout",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_thermostat_sensor_timeout"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_thermostatdemand",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_thermostatdemand"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_usralrms",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_usralrms"
+    },
+    {
+      "entity_id": "button.qube_1_reload",
+      "platform": "button",
+      "unique_id": "5.6.7.8_1_qube_reload"
+    },
+    {
+      "entity_id": "climate.qube_1_thermostat",
+      "platform": "climate",
+      "unique_id": "5.6.7.8_1_thermostat"
+    },
+    {
+      "entity_id": "number.qube_1_tapw_timeprogram_dhwsetp_nolinq",
+      "platform": "number",
+      "unique_id": "5.6.7.8_1_tapw_timeprogram_dhwsetp_nolinq_setpoint"
+    },
+    {
+      "entity_id": "number.qube_1_usr_pid_coolsetp",
+      "platform": "number",
+      "unique_id": "5.6.7.8_1_usr_pid_coolsetp_setpoint"
+    },
+    {
+      "entity_id": "number.qube_1_usr_pid_heatsetp",
+      "platform": "number",
+      "unique_id": "5.6.7.8_1_usr_pid_heatsetp_setpoint"
+    },
+    {
+      "entity_id": "select.qube_1_sg_ready_mode",
+      "platform": "select",
+      "unique_id": "5.6.7.8_1_sgready_mode"
+    },
+    {
+      "entity_id": "sensor.qube_1_aout_srcpmp_val",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_aout_srcpmp_val"
+    },
+    {
+      "entity_id": "sensor.qube_1_aout_srcvalve_val",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_aout_srcvalve_val"
+    },
+    {
+      "entity_id": "sensor.qube_1_aout_usrpmp_val",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_aout_usrpmp_val"
+    },
+    {
+      "entity_id": "sensor.qube_1_comppwrreq",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_comppwrreq"
+    },
+    {
+      "entity_id": "sensor.qube_1_compressor_speed",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_compressor_speed"
+    },
+    {
+      "entity_id": "sensor.qube_1_coolsetp_1",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_coolsetp_1"
+    },
+    {
+      "entity_id": "sensor.qube_1_cop_calc",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_cop_calc"
+    },
+    {
+      "entity_id": "sensor.qube_1_dhw_regreq",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_dhw_regreq"
+    },
+    {
+      "entity_id": "sensor.qube_1_dhw_setp",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_dhw_setp"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_ch_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_energy_tariff_daily_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_ch_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_energy_tariff_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_electric_energy_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_dhw_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_energy_tariff_daily_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_electric_consumption_dhw_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_energy_tariff_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_energy_total_electric",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_energy_total_electric"
+    },
+    {
+      "entity_id": "sensor.qube_1_energy_total_thermic",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_energy_total_thermic"
+    },
+    {
+      "entity_id": "sensor.qube_1_flow",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_flow"
+    },
+    {
+      "entity_id": "sensor.qube_1_flow_rate",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_flow_rate"
+    },
+    {
+      "entity_id": "sensor.qube_1_fourway_valve_status",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_vierwegklep_verwarmen_koelen"
+    },
+    {
+      "entity_id": "sensor.qube_1_heatsetp_1",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_heatsetp_1"
+    },
+    {
+      "entity_id": "sensor.qube_1_info",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_info_sensor"
+    },
+    {
+      "entity_id": "sensor.qube_1_ip_address",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_ip_address"
+    },
+    {
+      "entity_id": "sensor.qube_1_metric_errors_connect",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_metric_errors_connect"
+    },
+    {
+      "entity_id": "sensor.qube_1_metric_errors_read",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_metric_errors_read"
+    },
+    {
+      "entity_id": "sensor.qube_1_modbus_roomtemp",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_modbus_roomtemp"
+    },
+    {
+      "entity_id": "sensor.qube_1_plantsetp",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_plantsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_power_electric",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_power_electric"
+    },
+    {
+      "entity_id": "sensor.qube_1_power_thermic",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_power_thermic"
+    },
+    {
+      "entity_id": "sensor.qube_1_regsetp",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_regsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_regulation_buffersetp_max",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_regulation_buffersetp_max"
+    },
+    {
+      "entity_id": "sensor.qube_1_regulation_buffersetp_min",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_regulation_buffersetp_min"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_ch_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_scop_ch_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_ch_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_scop_ch_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_scop_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_dhw_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_scop_dhw_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_dhw_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_scop_dhw_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_scop_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_scop_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_dhw",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_setpoint_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_cool_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_setpoint_room_cool_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_cool_night",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_setpoint_room_cool_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_heat_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_setpoint_room_heat_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_setpoint_room_heat_night",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_setpoint_room_heat_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_standby_energy",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_energy_standby"
+    },
+    {
+      "entity_id": "sensor.qube_1_standby_power",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_power_standby"
+    },
+    {
+      "entity_id": "sensor.qube_1_status_code",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_status_code"
+    },
+    {
+      "entity_id": "sensor.qube_1_status_heatpump",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_status_full"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dhws",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_tapw_timeprogram_dhws"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dhws_prog",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_tapw_timeprogram_dhws_prog"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dhwsetp_nolinq",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_tapw_timeprogram_dhwsetp_nolinq"
+    },
+    {
+      "entity_id": "sensor.qube_1_tapw_timeprogram_dt_bms",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_tapw_timeprogram_dt_bms"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_dhw",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_outside",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_outside"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_return",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_return"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_room",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_room"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_source_in",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_source_in"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_source_out",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_source_out"
+    },
+    {
+      "entity_id": "sensor.qube_1_temp_supply",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_temp_supply"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_ch_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_thermic_tariff_daily_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_ch_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_thermic_energy_tariff_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_thermic_energy_daily"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_dhw_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_thermic_tariff_daily_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_dhw_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_thermic_energy_tariff_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermic_yield_month",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_thermic_energy_monthly"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_coolsetp_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_thermostat_coolsetp_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_coolsetp_night",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_thermostat_coolsetp_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_heatsetp_day",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_thermostat_heatsetp_day"
+    },
+    {
+      "entity_id": "sensor.qube_1_thermostat_heatsetp_night",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_thermostat_heatsetp_night"
+    },
+    {
+      "entity_id": "sensor.qube_1_threeway_valve_status",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_qube_driewegklep_dhw_cv"
+    },
+    {
+      "entity_id": "sensor.qube_1_total_energy_incl_standby",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_energy_total_incl_standby"
+    },
+    {
+      "entity_id": "sensor.qube_1_usr_pid_coolsetp",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_usr_pid_coolsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_usr_pid_heatsetp",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_usr_pid_heatsetp"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_cool_hrsret",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_workinghours_cool_hrsret"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_dhw_hrsret",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_workinghours_dhw_hrsret"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heat_hrsret",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_workinghours_heat_hrsret"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heater1_hrs",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_workinghours_heater1_hrs"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heater2_hrs",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_workinghours_heater2_hrs"
+    },
+    {
+      "entity_id": "sensor.qube_1_workinghours_heater3_hrs",
+      "platform": "sensor",
+      "unique_id": "5.6.7.8_1_workinghours_heater3_hrs"
+    },
+    {
+      "entity_id": "switch.qube_1_antilegionella_frcstart_ant",
+      "platform": "switch",
+      "unique_id": "5.6.7.8_1_antilegionella_frcstart_ant"
+    },
+    {
+      "entity_id": "switch.qube_1_bms_summerwinter",
+      "platform": "switch",
+      "unique_id": "5.6.7.8_1_bms_summerwinter"
+    },
+    {
+      "entity_id": "switch.qube_1_en_plantsetp_compens",
+      "platform": "switch",
+      "unique_id": "5.6.7.8_1_en_plantsetp_compens"
+    },
+    {
+      "entity_id": "switch.qube_1_modbus_demand",
+      "platform": "switch",
+      "unique_id": "5.6.7.8_1_modbus_demand"
+    },
+    {
+      "entity_id": "switch.qube_1_tapw_timeprogram_bms_forced",
+      "platform": "switch",
+      "unique_id": "5.6.7.8_1_tapw_timeprogram_bms_forced"
+    }
+  ]
+}

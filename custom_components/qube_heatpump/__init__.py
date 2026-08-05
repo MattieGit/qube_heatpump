@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass
-import json
 import logging
-from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
@@ -18,7 +16,7 @@ from homeassistant.config_entries import (
     ConfigEntryState,
 )
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.setup import async_setup_component
 
 from .const import (
@@ -33,6 +31,7 @@ from .const import (
 )
 from .coordinator import QubeCoordinator
 from .dhw_scheduler import async_setup_dhw_schedule
+from .helpers import is_alarm_entity
 from .hub import QubeHub
 
 
@@ -58,22 +57,11 @@ type QubeConfigEntry = ConfigEntry[QubeData]
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall
+    from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
-
-def _is_alarm_entity(ent: Any) -> bool:
-    """Check if an entity is an alarm entity."""
-    if ent.platform != "binary_sensor":
-        return False
-    vendor_id = (ent.vendor_id or "").lower()
-    name_lower = (ent.name or "").lower()
-    return (
-        "alarm" in vendor_id
-        or vendor_id.startswith("al_")
-        or "alarm" in name_lower
-        or name_lower.startswith("al ")
-    )
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 def _alarm_group_object_id(label: str) -> str:
@@ -148,9 +136,6 @@ WRITE_REGISTER_SCHEMA = vol.Schema(
     {
         vol.Required("address"): vol.Coerce(int),
         vol.Required("value"): vol.Coerce(float),
-        vol.Optional("data_type", default="uint16"): vol.In(
-            {"uint16", "int16", "float32"}
-        ),
         vol.Optional("entry_id"): str,
         vol.Optional("label"): str,
     }
@@ -163,38 +148,65 @@ async def _service_write_register(hass: HomeAssistant, call: ServiceCall) -> Non
     data = WRITE_REGISTER_SCHEMA(data)
     target = _resolve_entry(hass, data.get("entry_id"), data.get("label"))
     if target is None:
-        _LOGGER.error(
+        raise HomeAssistantError(
             "Write_register: unable to resolve integration entry; specify entry_id or label"
         )
-        return
-    target_data = target.runtime_data
+    target_data = getattr(target, "runtime_data", None)
     if not target_data:
-        _LOGGER.error(
-            "Write_register: integration entry %s is not loaded", target.entry_id
+        raise HomeAssistantError(
+            f"Write_register: integration entry {target.entry_id} is not loaded"
         )
-        return
     hub_target = target_data.hub
     if hub_target is None:
-        _LOGGER.error("Write_register: no hub available for entry %s", target.entry_id)
-        return
+        raise HomeAssistantError(
+            f"Write_register: no hub available for entry {target.entry_id}"
+        )
     await hub_target.async_connect()
-    data_type = str(data["data_type"]).lower()
 
     try:
         await hub_target.async_write_register(
             data["address"],
             data["value"],
-            data_type,
         )
     except ConnectionError as err:
-        _LOGGER.exception("Write_register failed")
         raise HomeAssistantError(str(err)) from err
-    except Exception:
+    except Exception as err:
         _LOGGER.exception("Write_register: failed to write address %s", data["address"])
-        raise
+        raise HomeAssistantError(str(err)) from err
     coordinator_target = target_data.coordinator
     if coordinator_target is not None:
         await coordinator_target.async_request_refresh()
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Qube Heat Pump integration's services.
+
+    Services are registered once at component setup and survive individual
+    config entries being unloaded; handlers resolve the target entry at
+    call time.
+    """
+
+    async def _reconfigure_wrapper(call: ServiceCall) -> None:
+        await _service_reconfigure(hass, call)
+
+    hass.services.async_register(
+        DOMAIN,
+        "reconfigure",
+        _reconfigure_wrapper,
+        schema=vol.Schema({vol.Optional("entry_id"): str}),
+    )
+
+    async def _write_register_wrapper(call: ServiceCall) -> None:
+        await _service_write_register(hass, call)
+
+    hass.services.async_register(
+        DOMAIN,
+        "write_register",
+        _write_register_wrapper,
+        schema=WRITE_REGISTER_SCHEMA,
+    )
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool:
@@ -225,18 +237,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         hass.config_entries.async_update_entry(entry, data=new_data, title=device_name)
 
     hub = QubeHub(hass, host, port, entry.entry_id, unit_id, device_name)
-
-    # Load fallback translations (manual resolution to avoid device prefix)
-    translations_path = Path(__file__).parent / "translations" / "en.json"
-    if translations_path.exists():
-
-        def _load_translations() -> dict[str, Any]:
-            with translations_path.open("r", encoding="utf-8") as f:
-                return cast("dict[str, Any]", json.load(f))
-
-        with contextlib.suppress(OSError, ValueError):
-            translations = await hass.async_add_executor_job(_load_translations)
-            hub.set_translations(translations)
 
     await hub.async_resolve_ip()
 
@@ -285,30 +285,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # Unique IDs are always scoped with host_unit prefix, so they remain
     # stable regardless of how many devices are configured.
 
-    if not hass.services.has_service(DOMAIN, "reconfigure"):
-
-        async def _reconfigure_wrapper(call: ServiceCall) -> None:
-            await _service_reconfigure(hass, call)
-
-        hass.services.async_register(
-            DOMAIN,
-            "reconfigure",
-            _reconfigure_wrapper,
-            schema=vol.Schema({vol.Optional("entry_id"): str}),
-        )
-
-    if not hass.services.has_service(DOMAIN, "write_register"):
-
-        async def _write_register_wrapper(call: ServiceCall) -> None:
-            await _service_write_register(hass, call)
-
-        hass.services.async_register(
-            DOMAIN,
-            "write_register",
-            _write_register_wrapper,
-            schema=WRITE_REGISTER_SCHEMA,
-        )
-
     # Restore the monotonic cache from disk so that float32 jitter
     # after restart doesn't produce false decreases in total_increasing sensors.
     await coordinator.async_load_monotonic_cache()
@@ -326,7 +302,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # (registry lookup can return stale entity IDs after reinstall)
     entity_ids: list[str] = []
     for ent in hub.entities:
-        if not _is_alarm_entity(ent):
+        if not is_alarm_entity(ent):
             continue
         vendor_id = getattr(ent, "vendor_id", None)
         if vendor_id:

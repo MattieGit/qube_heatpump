@@ -7,6 +7,7 @@ import contextlib
 from dataclasses import dataclass
 import ipaddress
 import logging
+import re
 import socket
 from typing import TYPE_CHECKING, Any
 
@@ -23,11 +24,6 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _slugify(text: str) -> str:
-    """Make text safe for use as an ID."""
-    return "".join(ch if ch.isalnum() else "_" for ch in str(text)).strip("_").lower()
 
 
 @dataclass
@@ -51,7 +47,6 @@ class EntityDef:
     unique_id: str | None = None
     offset: float | None = None
     scale: float | None = None
-    min_value: float | None = None
     translation_key: str | None = None
     writable: bool = False
     # Reference to the library's entity definition
@@ -216,7 +211,9 @@ class QubeHub:
         self._err_connect: int = 0
         self._err_read: int = 0
         self._resolved_ip: str | None = None
-        self._translations: dict[str, Any] = {}
+        # Slugify the device name once to create a stable label
+        slug = re.sub(r"[^a-z0-9]+", "_", self._device_name.lower())
+        self._label = slug.strip("_") or "qube"
 
     def load_library_entities(self) -> None:
         """Load all entity definitions from the library."""
@@ -242,24 +239,6 @@ class QubeHub:
             len(SWITCHES),
         )
 
-    def set_translations(self, translations: dict[str, Any]) -> None:
-        """Set translations for friendly name resolution."""
-        self._translations = translations
-
-    def get_friendly_name(self, platform: str, key: str | None) -> str | None:
-        """Get friendly name from translations."""
-        if not key or not self._translations:
-            return None
-        with contextlib.suppress(Exception):
-            val = (
-                self._translations.get("entity", {})
-                .get(platform, {})
-                .get(key, {})
-                .get("name")
-            )
-            return val if isinstance(val, str) else None
-        return None
-
     @property
     def host(self) -> str:
         """Return host."""
@@ -278,11 +257,7 @@ class QubeHub:
     @property
     def label(self) -> str:
         """Return label derived from device name (for backwards compatibility)."""
-        # Slugify the device name to create a label
-        import re
-        slug = self._device_name.lower()
-        slug = re.sub(r"[^a-z0-9]+", "_", slug)
-        return slug.strip("_") or "qube"
+        return self._label
 
     @property
     def device_name(self) -> str:
@@ -346,12 +321,6 @@ class QubeHub:
                 await self._client.close()
             self._client = None
 
-    def set_unit_id(self, unit_id: int) -> None:
-        """Set unit ID."""
-        self._unit = int(unit_id)
-        if self._client is not None:
-            self._client.unit = self._unit
-
     @property
     def client(self) -> QubeClient | None:
         """Return the underlying QubeClient instance."""
@@ -383,26 +352,6 @@ class QubeHub:
             raise ConnectionError("Client not connected")
 
         return await self._client.get_all_entities()
-
-    async def async_read_value(self, ent: EntityDef) -> Any:
-        """Read a single entity value via the library client."""
-        if self._client is None:
-            raise ConnectionError("Client not connected")
-
-        # Use library entity if available
-        if ent._library_entity is not None:
-            return await self._client.read_entity(ent._library_entity)
-
-        # Fallback: Use key-based reads
-        if ent.unique_id:
-            if ent.platform == "binary_sensor":
-                return await self._client.read_binary_sensor(ent.unique_id)
-            if ent.platform == "switch":
-                return await self._client.read_switch(ent.unique_id)
-            if ent.platform == "sensor":
-                return await self._client.read_sensor(ent.unique_id)
-
-        return None
 
     async def async_write_switch(self, ent: EntityDef, on: bool) -> None:
         """Write a switch state via the library client."""
@@ -436,9 +385,7 @@ class QubeHub:
             f"No unique_id for setpoint entity at address {ent.address}"
         )
 
-    async def async_write_register(
-        self, address: int, value: float, data_type: str = "uint16"
-    ) -> None:
+    async def async_write_register(self, address: int, value: float) -> None:
         """Write a value to a register via the library client.
 
         This is a low-level method for the write_register service.

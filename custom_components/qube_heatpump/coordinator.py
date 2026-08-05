@@ -16,9 +16,13 @@ if TYPE_CHECKING:
 
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import (
+    TimestampDataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .helpers import entity_data_key as _entity_key
 
 # Number of consecutive failures before creating a repair issue
 CONSECUTIVE_FAILURES_THRESHOLD = 5
@@ -36,23 +40,13 @@ def _needs_monotonic_clamping(ent: EntityDef) -> bool:
         return True
     # Working hours counters should never decrease
     try:
-        name = str(ent.name or "").strip().lower()
         vendor = str(ent.vendor_id or "").strip().lower()
     except (TypeError, ValueError, AttributeError):
         return False
-    if name.startswith("bedrijfsuren"):
-        return True
     return bool(vendor.startswith("workinghours"))
 
 
-def _entity_key(ent: EntityDef) -> str:
-    """Generate a key for the coordinator data."""
-    if ent.unique_id:
-        return ent.unique_id
-    return f"{ent.platform}_{ent.input_type or ent.write_type}_{ent.address}"
-
-
-class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     """Qube Heat Pump custom coordinator."""
 
     def __init__(self, hass: HomeAssistant, hub: QubeHub, entry: ConfigEntry) -> None:
@@ -142,7 +136,6 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the hub."""
         try:
-            await self.hub.async_resolve_ip()
             await self.hub.async_connect()
         except Exception as exc:
             self._consecutive_failures += 1
@@ -159,7 +152,7 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         client = self.hub.client
         results: dict[str, Any] = {}
-        warn_count = 0
+        nonfinite_count = 0
         warn_cap = 5
 
         # Fetch all values in a handful of batched block reads instead of
@@ -177,7 +170,8 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             key = _entity_key(ent)
             if isinstance(value, (int, float)) and not math.isfinite(float(value)):
-                if warn_count < warn_cap:
+                nonfinite_count += 1
+                if nonfinite_count <= warn_cap:
                     _LOGGER.warning(
                         "Non-finite value (%s) for %s %s@%s; treating as unavailable",
                         value,
@@ -185,7 +179,6 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         ent.input_type or ent.write_type or "register",
                         ent.address,
                     )
-                    warn_count += 1
                 results[key] = None
                 continue
 
@@ -210,7 +203,10 @@ class QubeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if client is not None and client.monotonic_cache:
             self._schedule_save()
 
-        if warn_count > warn_cap:
-            _LOGGER.debug("Additional read failures suppressed in this cycle")
+        if nonfinite_count > warn_cap:
+            _LOGGER.debug(
+                "%d additional non-finite values suppressed this cycle",
+                nonfinite_count - warn_cap,
+            )
 
         return results

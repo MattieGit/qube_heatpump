@@ -13,10 +13,26 @@
                 "title": "Qube warmtepomp",
                 "description": "Voer het IP-adres of de hostnaam van de warmtepomp in.\nHulp nodig? Bekijk de [documentatie]({docs_url}).",
                 "data": {
-                    "host": "Host/IP"
+                    "host": "Host/IP",
+                    "name": "Apparaatnaam"
                 },
                 "data_description": {
-                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50)."
+                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
+                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Dit bepaalt entiteit-ID's zoals sensor.qube_1_supply_temp."
+                }
+            },
+            "reconfigure_confirm": {
+                "title": "Qube warmtepomp opnieuw configureren",
+                "description": "Werk de verbindingsinstellingen van je Qube warmtepomp bij.",
+                "data": {
+                    "host": "Host/IP",
+                    "port": "Poort",
+                    "name": "Apparaatnaam"
+                },
+                "data_description": {
+                    "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in.",
+                    "port": "Modbus TCP-poort (standaard: 502).",
+                    "name": "Naam voor deze warmtepomp."
                 }
             }
         }
@@ -558,7 +574,7 @@
         },
         "write_register": {
             "name": "Schrijf holding register",
-            "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp. Ondersteunt uint16, int16 en float32 registers en spiegelt het gedrag van de native modbus.write_register service.",
+            "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp, met het datatype van de bijbehorende schrijfbare entiteit.",
             "fields": {
                 "address": {
                     "name": "Register adres",
@@ -566,11 +582,7 @@
                 },
                 "value": {
                     "name": "Waarde",
-                    "description": "De waarde om in het register op te slaan. Float waarden worden gecodeerd als big-endian IEEE 754 wanneer data_type float32 is."
-                },
-                "data_type": {
-                    "name": "Data type",
-                    "description": "Register data type. Gebruik float32 voor 32-bit floating point registers."
+                    "description": "De waarde om in het register op te slaan."
                 },
                 "entry_id": {
                     "name": "Config entry ID",

@@ -88,117 +88,6 @@
   },
   "entity": {
     "sensor": {
-      "dout_srcpmp_val": {
-        "name": "Source pump power supply"
-      },
-      "dout_usrpmp_val": {
-        "name": "User pump power supply"
-      },
-      "dout_fourwayvlv_val": {
-        "name": "Four-way valve control"
-      },
-      "dout_cooling_val": {
-        "name": "Cooling active output"
-      },
-      "dout_threewayvlv_val": {
-        "name": "Three-way valve output (CH/DHW)"
-      },
-      "dout_bufferpmp_val": {
-        "name": "Buffer pump output"
-      },
-      "dout_heaterstep1_val": {
-        "name": "Heater 1 output"
-      },
-      "dout_heaterstep2_val": {
-        "name": "Heater 2 output"
-      },
-      "dout_heaterstep3_val": {
-        "name": "Heater 3 output"
-      },
-      "keybonoff": {
-        "name": "Heat pump keypad status"
-      },
-      "al_maxtime_antileg_active": {
-        "name": "Alarm: Max time anti-legionella exceeded"
-      },
-      "al_maxtime_dhw_active": {
-        "name": "Alarm: Max time DHW exceeded"
-      },
-      "al_dewpoint_active": {
-        "name": "Alarm: Dewpoint activated"
-      },
-      "al_underfloorsafety_active": {
-        "name": "Alarm: Supply too hot (CH)"
-      },
-      "alrm_flw": {
-        "name": "Alarm: Flow CH"
-      },
-      "usralrms": {
-        "name": "Alarm: Collective alarm CH"
-      },
-      "coolingalrms": {
-        "name": "Alarm: Collective alarm cooling"
-      },
-      "heatingalrms": {
-        "name": "Alarm: Collective alarm heating"
-      },
-      "alarmmng_al_workinghour": {
-        "name": "Alarm: Working hours"
-      },
-      "srsalrm": {
-        "name": "Alarm: Collective alarm source"
-      },
-      "glbal": {
-        "name": "Alarm: Global"
-      },
-      "alarmmng_al_pwrplus": {
-        "name": "Alarm: Collective alarm compressor"
-      },
-      "roomprb_en": {
-        "name": "Room sensor activated"
-      },
-      "plantdemand": {
-        "name": "Plant sensor demand"
-      },
-      "en_dhwpid": {
-        "name": "DHW controller enabled"
-      },
-      "plantprb_en": {
-        "name": "Plant sensor activated"
-      },
-      "bufferprb_en": {
-        "name": "Buffer sensor activated"
-      },
-      "id_demand": {
-        "name": "Digital input demand"
-      },
-      "id_summerwinter": {
-        "name": "Digital input summer mode activated"
-      },
-      "dewpoint": {
-        "name": "Digital input dewpoint activated"
-      },
-      "boostersecurity": {
-        "name": "Digital input booster activated"
-      },
-      "srcflw": {
-        "name": "Digital input source flow activated"
-      },
-      "daynightmode": {
-        "name": "Day/night mode status"
-      },
-      "thermostatdemand": {
-        "name": "Internal thermostat demand"
-      },
-      "req_antileg_1": {
-        "name": "Anti-legionella enabled"
-      },
-      "bms_demand": {
-        "name": "Heat demand active"
-      },
-      "surplus_pv": {
-        "name": "PV surplus active"
-      },
       "thermostat_heatsetp_day": {
         "name": "LinQ setpoint heating (day)"
       },
@@ -685,7 +574,7 @@
     },
     "write_register": {
       "name": "Write holding register",
-      "description": "Write a value to a Modbus holding register exposed by the Qube heat pump. Supports uint16, int16, and float32 registers and mirrors the behaviour of Home Assistant's native modbus.write_register service.",
+      "description": "Write a value to a Modbus holding register exposed by the Qube heat pump, using the data type of the matching writable entity.",
       "fields": {
         "address": {
           "name": "Register address",
@@ -693,11 +582,7 @@
         },
         "value": {
           "name": "Value",
-          "description": "The value to store in the register. Float values are encoded as big-endian IEEE 754 when data_type is float32."
-        },
-        "data_type": {
-          "name": "Data type",
-          "description": "Register data type. Use float32 for 32-bit floating point registers."
+          "description": "The value to store in the register."
         },
         "entry_id": {
           "name": "Config entry ID",
