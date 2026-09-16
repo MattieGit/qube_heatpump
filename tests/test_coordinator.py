@@ -225,17 +225,17 @@ async def test_coordinator_handles_no_data(
 
 
 def test_needs_monotonic_clamping_workinghours() -> None:
-    """Test _needs_monotonic_clamping detects workinghours entities."""
-    from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
-    from custom_components.qube_heatpump.entity_defs import EntityDef
+    """Test _needs_monotonic_clamping follows the derived total_increasing class."""
+    from python_qube_heatpump import SENSORS
 
-    # Test workinghours vendor_id
-    ent2 = EntityDef(
-        platform="sensor",
-        name="Working Hours",
-        address=101,
-        vendor_id="workinghours_comp",
+    from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
+    from custom_components.qube_heatpump.entity_defs import (
+        EntityDef,
+        _library_to_ha_entity,
     )
+
+    # Working-hour counters are total_increasing via entity_defs
+    ent2 = _library_to_ha_entity(SENSORS["workinghours_heat_hrsret"])
     assert _needs_monotonic_clamping(ent2) is True
 
     # Test total_increasing state_class

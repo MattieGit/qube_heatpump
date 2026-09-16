@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
+from homeassistant.components.sensor import SensorStateClass
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import (
@@ -46,15 +47,13 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _needs_monotonic_clamping(ent: EntityDef) -> bool:
-    """Check if an entity needs monotonic clamping."""
-    if ent.state_class == "total_increasing":
-        return True
-    # Working hours counters should never decrease
-    try:
-        vendor = str(ent.vendor_id or "").strip().lower()
-    except (TypeError, ValueError, AttributeError):
-        return False
-    return bool(vendor.startswith("workinghours"))
+    """Check if an entity needs monotonic clamping.
+
+    Energy totals and working-hour counters are mapped to
+    ``total_increasing`` by entity_defs, so the state class is the only
+    signal needed.
+    """
+    return ent.state_class == SensorStateClass.TOTAL_INCREASING
 
 
 class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
