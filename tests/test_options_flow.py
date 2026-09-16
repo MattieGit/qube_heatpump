@@ -118,17 +118,18 @@ async def test_options_flow_rejects_a_bad_host(
     assert mock_config_entry.data[CONF_HOST] == "1.2.3.4"
 
 
-async def test_options_flow_host_change_rewrites_unique_id_and_device(
+async def test_options_flow_host_change_keeps_the_device(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
     mock_config_entry: MockConfigEntry,
     device_registry: dr.DeviceRegistry,
 ) -> None:
-    """Moving the device to a new host re-registers it under the new identifier."""
+    """Moving the device to a new host updates the entry but keeps its device."""
     await setup_integration(hass, mock_config_entry)
-    assert device_registry.async_get_device_by_identifier(
-        (DOMAIN, "1.2.3.4:1"), mock_config_entry.entry_id
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, mock_config_entry.entry_id), mock_config_entry.entry_id
     )
+    assert device is not None
 
     result = await _start_options_flow(hass, mock_config_entry)
     with _tcp_ok():
@@ -141,15 +142,11 @@ async def test_options_flow_host_change_rewrites_unique_id_and_device(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.data[CONF_HOST] == "192.0.2.99"
     assert mock_config_entry.unique_id == f"{DOMAIN}-192.0.2.99-502"
-    assert (
-        device_registry.async_get_device_by_identifier(
-            (DOMAIN, "1.2.3.4:1"), mock_config_entry.entry_id
-        )
-        is None
+    devices = dr.async_entries_for_config_entry(
+        device_registry, mock_config_entry.entry_id
     )
-    assert device_registry.async_get_device_by_identifier(
-        (DOMAIN, "192.0.2.99:1"), mock_config_entry.entry_id
-    )
+    assert [d.id for d in devices] == [device.id]
+    assert devices[0].identifiers == {(DOMAIN, mock_config_entry.entry_id)}
 
 
 async def test_options_flow_thermostat_step_creates_the_thermostat(

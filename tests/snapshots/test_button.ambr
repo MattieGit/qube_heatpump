@@ -32,7 +32,7 @@
     'suggested_object_id': 'qube_1_clear_monotonic_cache',
     'supported_features': 0,
     'translation_key': 'clear_monotonic_cache',
-    'unique_id': '1.2.3.4_1_clear_monotonic_cache',
+    'unique_id': '01JQUBEHEATPUMP00000000000_clear_monotonic_cache',
     'unit_of_measurement': None,
   })
 # ---
@@ -83,7 +83,7 @@
     'suggested_object_id': 'qube_1_reload',
     'supported_features': 0,
     'translation_key': 'qube_reload',
-    'unique_id': '1.2.3.4_1_qube_reload',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_reload',
     'unit_of_measurement': None,
   })
 # ---

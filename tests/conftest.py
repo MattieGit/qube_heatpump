@@ -170,4 +170,5 @@ def mock_config_entry(config_entry_options: dict[str, Any]) -> MockConfigEntry:
         title="Qube Heat Pump",
         options=config_entry_options,
         entry_id=MOCK_ENTRY_ID,
+        version=2,
     )

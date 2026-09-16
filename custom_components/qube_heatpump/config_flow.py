@@ -16,7 +16,6 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -37,7 +36,6 @@ from .const import (
     CONF_PORT,
     CONF_THERMOSTAT_ENABLED,
     CONF_THERMOSTAT_SENSOR,
-    CONF_UNIT_ID,
     DEFAULT_DHW_END_TIME,
     DEFAULT_DHW_SETPOINT,
     DEFAULT_DHW_START_TIME,
@@ -45,7 +43,7 @@ from .const import (
     DEFAULT_PORT,
     DOMAIN,
 )
-from .helpers import async_resolve_host, get_device_by_identifier
+from .helpers import async_resolve_host
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -121,7 +119,7 @@ async def _async_validate_host(
 class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Qube Heat Pump."""
 
-    VERSION = 1
+    VERSION = 2
 
     @staticmethod
     @callback
@@ -414,16 +412,4 @@ class OptionsFlowHandler(OptionsFlow):
             update["title"] = new_name
         update["data"] = data
         self.hass.config_entries.async_update_entry(entry, **update)
-
-        if new_host != current_host:
-            # The device identifier embeds the host; drop the stale device so
-            # the reloaded entry registers a fresh one.
-            unit_id = int(
-                entry.options.get(CONF_UNIT_ID, entry.data.get(CONF_UNIT_ID, 1))
-            )
-            device_registry = dr.async_get(self.hass)
-            if old_device := get_device_by_identifier(
-                device_registry, (DOMAIN, f"{current_host}:{unit_id}"), entry.entry_id
-            ):
-                device_registry.async_remove_device(old_device.id)
         return self.async_create_entry(title="", data=options)

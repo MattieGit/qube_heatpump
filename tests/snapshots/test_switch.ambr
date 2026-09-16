@@ -32,7 +32,7 @@
     'suggested_object_id': 'qube_1_antilegionella_frcstart_ant',
     'supported_features': 0,
     'translation_key': 'antilegionella_frcstart_ant',
-    'unique_id': '1.2.3.4_1_antilegionella_frcstart_ant',
+    'unique_id': '01JQUBEHEATPUMP00000000000_antilegionella_frcstart_ant',
     'unit_of_measurement': None,
   })
 # ---
@@ -82,7 +82,7 @@
     'suggested_object_id': 'qube_1_bms_summerwinter',
     'supported_features': 0,
     'translation_key': 'bms_summerwinter',
-    'unique_id': '1.2.3.4_1_bms_summerwinter',
+    'unique_id': '01JQUBEHEATPUMP00000000000_bms_summerwinter',
     'unit_of_measurement': None,
   })
 # ---
@@ -132,7 +132,7 @@
     'suggested_object_id': 'qube_1_dhw_schedule_enabled',
     'supported_features': 0,
     'translation_key': 'dhw_schedule_enabled',
-    'unique_id': '1.2.3.4_1_dhw_schedule_enabled',
+    'unique_id': '01JQUBEHEATPUMP00000000000_dhw_schedule_enabled',
     'unit_of_measurement': None,
   })
 # ---
@@ -183,7 +183,7 @@
     'suggested_object_id': 'qube_1_en_plantsetp_compens',
     'supported_features': 0,
     'translation_key': 'en_plantsetp_compens',
-    'unique_id': '1.2.3.4_1_en_plantsetp_compens',
+    'unique_id': '01JQUBEHEATPUMP00000000000_en_plantsetp_compens',
     'unit_of_measurement': None,
   })
 # ---
@@ -233,7 +233,7 @@
     'suggested_object_id': 'qube_1_modbus_demand',
     'supported_features': 0,
     'translation_key': 'modbus_demand',
-    'unique_id': '1.2.3.4_1_modbus_demand',
+    'unique_id': '01JQUBEHEATPUMP00000000000_modbus_demand',
     'unit_of_measurement': None,
   })
 # ---
@@ -283,7 +283,7 @@
     'suggested_object_id': 'qube_1_tapw_timeprogram_bms_forced',
     'supported_features': 0,
     'translation_key': 'tapw_timeprogram_bms_forced',
-    'unique_id': '1.2.3.4_1_tapw_timeprogram_bms_forced',
+    'unique_id': '01JQUBEHEATPUMP00000000000_tapw_timeprogram_bms_forced',
     'unit_of_measurement': None,
   })
 # ---

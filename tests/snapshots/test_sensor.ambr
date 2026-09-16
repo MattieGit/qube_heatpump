@@ -37,7 +37,7 @@
     'suggested_object_id': 'qube_1_aout_srcpmp_val',
     'supported_features': 0,
     'translation_key': 'aout_srcpmp_val',
-    'unique_id': '1.2.3.4_1_aout_srcpmp_val',
+    'unique_id': '01JQUBEHEATPUMP00000000000_aout_srcpmp_val',
     'unit_of_measurement': '%',
   })
 # ---
@@ -94,7 +94,7 @@
     'suggested_object_id': 'qube_1_aout_srcvalve_val',
     'supported_features': 0,
     'translation_key': 'aout_srcvalve_val',
-    'unique_id': '1.2.3.4_1_aout_srcvalve_val',
+    'unique_id': '01JQUBEHEATPUMP00000000000_aout_srcvalve_val',
     'unit_of_measurement': '%',
   })
 # ---
@@ -151,7 +151,7 @@
     'suggested_object_id': 'qube_1_aout_usrpmp_val',
     'supported_features': 0,
     'translation_key': 'aout_usrpmp_val',
-    'unique_id': '1.2.3.4_1_aout_usrpmp_val',
+    'unique_id': '01JQUBEHEATPUMP00000000000_aout_usrpmp_val',
     'unit_of_measurement': '%',
   })
 # ---
@@ -208,7 +208,7 @@
     'suggested_object_id': 'qube_1_comppwrreq',
     'supported_features': 0,
     'translation_key': 'comppwrreq',
-    'unique_id': '1.2.3.4_1_comppwrreq',
+    'unique_id': '01JQUBEHEATPUMP00000000000_comppwrreq',
     'unit_of_measurement': '%',
   })
 # ---
@@ -265,7 +265,7 @@
     'suggested_object_id': 'qube_1_compressor_speed',
     'supported_features': 0,
     'translation_key': 'compressor_speed',
-    'unique_id': '1.2.3.4_1_compressor_speed',
+    'unique_id': '01JQUBEHEATPUMP00000000000_compressor_speed',
     'unit_of_measurement': 'rpm',
   })
 # ---
@@ -322,7 +322,7 @@
     'suggested_object_id': 'qube_1_coolsetp_1',
     'supported_features': 0,
     'translation_key': 'coolsetp_1',
-    'unique_id': '1.2.3.4_1_coolsetp_1',
+    'unique_id': '01JQUBEHEATPUMP00000000000_coolsetp_1',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -378,7 +378,7 @@
     'suggested_object_id': 'qube_1_cop_calc',
     'supported_features': 0,
     'translation_key': 'cop_calc',
-    'unique_id': '1.2.3.4_1_cop_calc',
+    'unique_id': '01JQUBEHEATPUMP00000000000_cop_calc',
     'unit_of_measurement': None,
   })
 # ---
@@ -433,7 +433,7 @@
     'suggested_object_id': 'qube_1_dhw_regreq',
     'supported_features': 0,
     'translation_key': 'dhw_regreq',
-    'unique_id': '1.2.3.4_1_dhw_regreq',
+    'unique_id': '01JQUBEHEATPUMP00000000000_dhw_regreq',
     'unit_of_measurement': '%',
   })
 # ---
@@ -485,7 +485,7 @@
     'suggested_object_id': 'qube_1_dhw_schedule_next_start',
     'supported_features': 0,
     'translation_key': 'dhw_schedule_next_start',
-    'unique_id': '1.2.3.4_1_dhw_schedule_next_start',
+    'unique_id': '01JQUBEHEATPUMP00000000000_dhw_schedule_next_start',
     'unit_of_measurement': None,
   })
 # ---
@@ -541,7 +541,7 @@
     'suggested_object_id': 'qube_1_dhw_setp',
     'supported_features': 0,
     'translation_key': 'dhw_setp',
-    'unique_id': '1.2.3.4_1_dhw_setp',
+    'unique_id': '01JQUBEHEATPUMP00000000000_dhw_setp',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -599,7 +599,7 @@
     'suggested_object_id': 'qube_1_electric_consumption_ch_day',
     'supported_features': 0,
     'translation_key': 'electric_consumption_ch_day',
-    'unique_id': '1.2.3.4_1_qube_energy_tariff_daily_ch',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_energy_tariff_daily_ch',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -658,7 +658,7 @@
     'suggested_object_id': 'qube_1_electric_consumption_ch_month',
     'supported_features': 0,
     'translation_key': 'electric_consumption_ch_month',
-    'unique_id': '1.2.3.4_1_qube_energy_tariff_ch',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_energy_tariff_ch',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -717,7 +717,7 @@
     'suggested_object_id': 'qube_1_electric_consumption_day',
     'supported_features': 0,
     'translation_key': 'electric_consumption_day',
-    'unique_id': '1.2.3.4_1_qube_electric_energy_daily',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_electric_energy_daily',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -776,7 +776,7 @@
     'suggested_object_id': 'qube_1_electric_consumption_dhw_day',
     'supported_features': 0,
     'translation_key': 'electric_consumption_dhw_day',
-    'unique_id': '1.2.3.4_1_qube_energy_tariff_daily_dhw',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_energy_tariff_daily_dhw',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -835,7 +835,7 @@
     'suggested_object_id': 'qube_1_electric_consumption_dhw_month',
     'supported_features': 0,
     'translation_key': 'electric_consumption_dhw_month',
-    'unique_id': '1.2.3.4_1_qube_energy_tariff_dhw',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_energy_tariff_dhw',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -894,7 +894,7 @@
     'suggested_object_id': 'qube_1_energy_total_electric',
     'supported_features': 0,
     'translation_key': 'energy_total_electric',
-    'unique_id': '1.2.3.4_1_energy_total_electric',
+    'unique_id': '01JQUBEHEATPUMP00000000000_energy_total_electric',
     'unit_of_measurement': 'kWh',
   })
 # ---
@@ -952,7 +952,7 @@
     'suggested_object_id': 'qube_1_energy_total_thermic',
     'supported_features': 0,
     'translation_key': 'energy_total_thermic',
-    'unique_id': '1.2.3.4_1_energy_total_thermic',
+    'unique_id': '01JQUBEHEATPUMP00000000000_energy_total_thermic',
     'unit_of_measurement': 'kWh',
   })
 # ---
@@ -1010,7 +1010,7 @@
     'suggested_object_id': 'qube_1_flow',
     'supported_features': 0,
     'translation_key': 'flow',
-    'unique_id': '1.2.3.4_1_flow',
+    'unique_id': '01JQUBEHEATPUMP00000000000_flow',
     'unit_of_measurement': 'L/min',
   })
 # ---
@@ -1068,7 +1068,7 @@
     'suggested_object_id': 'qube_1_flow_rate',
     'supported_features': 0,
     'translation_key': 'flow_rate',
-    'unique_id': '1.2.3.4_1_flow_rate',
+    'unique_id': '01JQUBEHEATPUMP00000000000_flow_rate',
     'unit_of_measurement': 'L/min',
   })
 # ---
@@ -1126,7 +1126,7 @@
     'suggested_object_id': 'qube_1_fourway_valve_status',
     'supported_features': 0,
     'translation_key': 'fourway_valve_status',
-    'unique_id': '1.2.3.4_1_qube_vierwegklep_verwarmen_koelen',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_vierwegklep_verwarmen_koelen',
     'unit_of_measurement': None,
   })
 # ---
@@ -1186,7 +1186,7 @@
     'suggested_object_id': 'qube_1_heatsetp_1',
     'supported_features': 0,
     'translation_key': 'heatsetp_1',
-    'unique_id': '1.2.3.4_1_heatsetp_1',
+    'unique_id': '01JQUBEHEATPUMP00000000000_heatsetp_1',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -1239,7 +1239,7 @@
     'suggested_object_id': 'qube_1_info',
     'supported_features': 0,
     'translation_key': 'info',
-    'unique_id': '1.2.3.4_1_info_sensor',
+    'unique_id': '01JQUBEHEATPUMP00000000000_info_sensor',
     'unit_of_measurement': None,
   })
 # ---
@@ -1297,7 +1297,7 @@
     'suggested_object_id': 'qube_1_ip_address',
     'supported_features': 0,
     'translation_key': 'ip_address',
-    'unique_id': '1.2.3.4_1_ip_address',
+    'unique_id': '01JQUBEHEATPUMP00000000000_ip_address',
     'unit_of_measurement': None,
   })
 # ---
@@ -1349,7 +1349,7 @@
     'suggested_object_id': 'qube_1_metric_errors_connect',
     'supported_features': 0,
     'translation_key': 'metric_errors_connect',
-    'unique_id': '1.2.3.4_1_metric_errors_connect',
+    'unique_id': '01JQUBEHEATPUMP00000000000_metric_errors_connect',
     'unit_of_measurement': None,
   })
 # ---
@@ -1402,7 +1402,7 @@
     'suggested_object_id': 'qube_1_metric_errors_read',
     'supported_features': 0,
     'translation_key': 'metric_errors_read',
-    'unique_id': '1.2.3.4_1_metric_errors_read',
+    'unique_id': '01JQUBEHEATPUMP00000000000_metric_errors_read',
     'unit_of_measurement': None,
   })
 # ---
@@ -1458,7 +1458,7 @@
     'suggested_object_id': 'qube_1_modbus_roomtemp',
     'supported_features': 0,
     'translation_key': 'modbus_roomtemp',
-    'unique_id': '1.2.3.4_1_modbus_roomtemp',
+    'unique_id': '01JQUBEHEATPUMP00000000000_modbus_roomtemp',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -1516,7 +1516,7 @@
     'suggested_object_id': 'qube_1_plantsetp',
     'supported_features': 0,
     'translation_key': 'plantsetp',
-    'unique_id': '1.2.3.4_1_plantsetp',
+    'unique_id': '01JQUBEHEATPUMP00000000000_plantsetp',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -1574,7 +1574,7 @@
     'suggested_object_id': 'qube_1_power_electric',
     'supported_features': 0,
     'translation_key': 'power_electric',
-    'unique_id': '1.2.3.4_1_power_electric',
+    'unique_id': '01JQUBEHEATPUMP00000000000_power_electric',
     'unit_of_measurement': 'W',
   })
 # ---
@@ -1632,7 +1632,7 @@
     'suggested_object_id': 'qube_1_power_thermic',
     'supported_features': 0,
     'translation_key': 'power_thermic',
-    'unique_id': '1.2.3.4_1_power_thermic',
+    'unique_id': '01JQUBEHEATPUMP00000000000_power_thermic',
     'unit_of_measurement': 'W',
   })
 # ---
@@ -1690,7 +1690,7 @@
     'suggested_object_id': 'qube_1_regsetp',
     'supported_features': 0,
     'translation_key': 'regsetp',
-    'unique_id': '1.2.3.4_1_regsetp',
+    'unique_id': '01JQUBEHEATPUMP00000000000_regsetp',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -1748,7 +1748,7 @@
     'suggested_object_id': 'qube_1_regulation_buffersetp_max',
     'supported_features': 0,
     'translation_key': 'regulation_buffersetp_max',
-    'unique_id': '1.2.3.4_1_regulation_buffersetp_max',
+    'unique_id': '01JQUBEHEATPUMP00000000000_regulation_buffersetp_max',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -1806,7 +1806,7 @@
     'suggested_object_id': 'qube_1_regulation_buffersetp_min',
     'supported_features': 0,
     'translation_key': 'regulation_buffersetp_min',
-    'unique_id': '1.2.3.4_1_regulation_buffersetp_min',
+    'unique_id': '01JQUBEHEATPUMP00000000000_regulation_buffersetp_min',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -1864,7 +1864,7 @@
     'suggested_object_id': 'qube_1_scop_ch_day',
     'supported_features': 0,
     'translation_key': 'scop_ch_day',
-    'unique_id': '1.2.3.4_1_qube_scop_ch_daily',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_scop_ch_daily',
     'unit_of_measurement': 'CoP',
   })
 # ---
@@ -1921,7 +1921,7 @@
     'suggested_object_id': 'qube_1_scop_ch_month',
     'supported_features': 0,
     'translation_key': 'scop_ch_month',
-    'unique_id': '1.2.3.4_1_qube_scop_ch_monthly',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_scop_ch_monthly',
     'unit_of_measurement': 'CoP',
   })
 # ---
@@ -1978,7 +1978,7 @@
     'suggested_object_id': 'qube_1_scop_day',
     'supported_features': 0,
     'translation_key': 'scop_day',
-    'unique_id': '1.2.3.4_1_qube_scop_daily',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_scop_daily',
     'unit_of_measurement': 'CoP',
   })
 # ---
@@ -2035,7 +2035,7 @@
     'suggested_object_id': 'qube_1_scop_dhw_day',
     'supported_features': 0,
     'translation_key': 'scop_dhw_day',
-    'unique_id': '1.2.3.4_1_qube_scop_dhw_daily',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_scop_dhw_daily',
     'unit_of_measurement': 'CoP',
   })
 # ---
@@ -2092,7 +2092,7 @@
     'suggested_object_id': 'qube_1_scop_dhw_month',
     'supported_features': 0,
     'translation_key': 'scop_dhw_month',
-    'unique_id': '1.2.3.4_1_qube_scop_dhw_monthly',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_scop_dhw_monthly',
     'unit_of_measurement': 'CoP',
   })
 # ---
@@ -2149,7 +2149,7 @@
     'suggested_object_id': 'qube_1_scop_month',
     'supported_features': 0,
     'translation_key': 'scop_month',
-    'unique_id': '1.2.3.4_1_qube_scop_monthly',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_scop_monthly',
     'unit_of_measurement': 'CoP',
   })
 # ---
@@ -2206,7 +2206,7 @@
     'suggested_object_id': 'qube_1_setpoint_dhw',
     'supported_features': 0,
     'translation_key': 'setpoint_dhw',
-    'unique_id': '1.2.3.4_1_setpoint_dhw',
+    'unique_id': '01JQUBEHEATPUMP00000000000_setpoint_dhw',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2264,7 +2264,7 @@
     'suggested_object_id': 'qube_1_setpoint_room_cool_day',
     'supported_features': 0,
     'translation_key': 'setpoint_room_cool_day',
-    'unique_id': '1.2.3.4_1_setpoint_room_cool_day',
+    'unique_id': '01JQUBEHEATPUMP00000000000_setpoint_room_cool_day',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2322,7 +2322,7 @@
     'suggested_object_id': 'qube_1_setpoint_room_cool_night',
     'supported_features': 0,
     'translation_key': 'setpoint_room_cool_night',
-    'unique_id': '1.2.3.4_1_setpoint_room_cool_night',
+    'unique_id': '01JQUBEHEATPUMP00000000000_setpoint_room_cool_night',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2380,7 +2380,7 @@
     'suggested_object_id': 'qube_1_setpoint_room_heat_day',
     'supported_features': 0,
     'translation_key': 'setpoint_room_heat_day',
-    'unique_id': '1.2.3.4_1_setpoint_room_heat_day',
+    'unique_id': '01JQUBEHEATPUMP00000000000_setpoint_room_heat_day',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2438,7 +2438,7 @@
     'suggested_object_id': 'qube_1_setpoint_room_heat_night',
     'supported_features': 0,
     'translation_key': 'setpoint_room_heat_night',
-    'unique_id': '1.2.3.4_1_setpoint_room_heat_night',
+    'unique_id': '01JQUBEHEATPUMP00000000000_setpoint_room_heat_night',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2496,7 +2496,7 @@
     'suggested_object_id': 'qube_1_standby_energy',
     'supported_features': 0,
     'translation_key': 'standby_energy',
-    'unique_id': '1.2.3.4_1_energy_standby',
+    'unique_id': '01JQUBEHEATPUMP00000000000_energy_standby',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -2554,7 +2554,7 @@
     'suggested_object_id': 'qube_1_standby_power',
     'supported_features': 0,
     'translation_key': 'standby_power',
-    'unique_id': '1.2.3.4_1_power_standby',
+    'unique_id': '01JQUBEHEATPUMP00000000000_power_standby',
     'unit_of_measurement': <UnitOfPower.WATT: 'W'>,
   })
 # ---
@@ -2607,7 +2607,7 @@
     'suggested_object_id': 'qube_1_status_code',
     'supported_features': 0,
     'translation_key': 'status_code',
-    'unique_id': '1.2.3.4_1_status_code',
+    'unique_id': '01JQUBEHEATPUMP00000000000_status_code',
     'unit_of_measurement': None,
   })
 # ---
@@ -2671,7 +2671,7 @@
     'suggested_object_id': 'qube_1_status_heatpump',
     'supported_features': 0,
     'translation_key': 'status_heatpump',
-    'unique_id': '1.2.3.4_1_qube_status_full',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_status_full',
     'unit_of_measurement': None,
   })
 # ---
@@ -2740,7 +2740,7 @@
     'suggested_object_id': 'qube_1_tapw_timeprogram_dhws',
     'supported_features': 0,
     'translation_key': 'tapw_timeprogram_dhws',
-    'unique_id': '1.2.3.4_1_tapw_timeprogram_dhws',
+    'unique_id': '01JQUBEHEATPUMP00000000000_tapw_timeprogram_dhws',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2798,7 +2798,7 @@
     'suggested_object_id': 'qube_1_tapw_timeprogram_dhws_prog',
     'supported_features': 0,
     'translation_key': 'tapw_timeprogram_dhws_prog',
-    'unique_id': '1.2.3.4_1_tapw_timeprogram_dhws_prog',
+    'unique_id': '01JQUBEHEATPUMP00000000000_tapw_timeprogram_dhws_prog',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2856,7 +2856,7 @@
     'suggested_object_id': 'qube_1_tapw_timeprogram_dhwsetp_nolinq',
     'supported_features': 0,
     'translation_key': 'tapw_timeprogram_dhwsetp_nolinq',
-    'unique_id': '1.2.3.4_1_tapw_timeprogram_dhwsetp_nolinq',
+    'unique_id': '01JQUBEHEATPUMP00000000000_tapw_timeprogram_dhwsetp_nolinq',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2914,7 +2914,7 @@
     'suggested_object_id': 'qube_1_tapw_timeprogram_dt_bms',
     'supported_features': 0,
     'translation_key': 'tapw_timeprogram_dt_bms',
-    'unique_id': '1.2.3.4_1_tapw_timeprogram_dt_bms',
+    'unique_id': '01JQUBEHEATPUMP00000000000_tapw_timeprogram_dt_bms',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -2972,7 +2972,7 @@
     'suggested_object_id': 'qube_1_temp_dhw',
     'supported_features': 0,
     'translation_key': 'temp_dhw',
-    'unique_id': '1.2.3.4_1_temp_dhw',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_dhw',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3030,7 +3030,7 @@
     'suggested_object_id': 'qube_1_temp_outside',
     'supported_features': 0,
     'translation_key': 'temp_outside',
-    'unique_id': '1.2.3.4_1_temp_outside',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_outside',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3088,7 +3088,7 @@
     'suggested_object_id': 'qube_1_temp_return',
     'supported_features': 0,
     'translation_key': 'temp_return',
-    'unique_id': '1.2.3.4_1_temp_return',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_return',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3146,7 +3146,7 @@
     'suggested_object_id': 'qube_1_temp_room',
     'supported_features': 0,
     'translation_key': 'temp_room',
-    'unique_id': '1.2.3.4_1_temp_room',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_room',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3204,7 +3204,7 @@
     'suggested_object_id': 'qube_1_temp_source_in',
     'supported_features': 0,
     'translation_key': 'temp_source_in',
-    'unique_id': '1.2.3.4_1_temp_source_in',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_source_in',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3262,7 +3262,7 @@
     'suggested_object_id': 'qube_1_temp_source_out',
     'supported_features': 0,
     'translation_key': 'temp_source_out',
-    'unique_id': '1.2.3.4_1_temp_source_out',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_source_out',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3320,7 +3320,7 @@
     'suggested_object_id': 'qube_1_temp_supply',
     'supported_features': 0,
     'translation_key': 'temp_supply',
-    'unique_id': '1.2.3.4_1_temp_supply',
+    'unique_id': '01JQUBEHEATPUMP00000000000_temp_supply',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3378,7 +3378,7 @@
     'suggested_object_id': 'qube_1_thermic_yield_ch_day',
     'supported_features': 0,
     'translation_key': 'thermic_yield_ch_day',
-    'unique_id': '1.2.3.4_1_qube_thermic_tariff_daily_ch',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_thermic_tariff_daily_ch',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -3437,7 +3437,7 @@
     'suggested_object_id': 'qube_1_thermic_yield_ch_month',
     'supported_features': 0,
     'translation_key': 'thermic_yield_ch_month',
-    'unique_id': '1.2.3.4_1_qube_thermic_energy_tariff_ch',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_thermic_energy_tariff_ch',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -3496,7 +3496,7 @@
     'suggested_object_id': 'qube_1_thermic_yield_day',
     'supported_features': 0,
     'translation_key': 'thermic_yield_day',
-    'unique_id': '1.2.3.4_1_qube_thermic_energy_daily',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_thermic_energy_daily',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -3555,7 +3555,7 @@
     'suggested_object_id': 'qube_1_thermic_yield_dhw_day',
     'supported_features': 0,
     'translation_key': 'thermic_yield_dhw_day',
-    'unique_id': '1.2.3.4_1_qube_thermic_tariff_daily_dhw',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_thermic_tariff_daily_dhw',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -3614,7 +3614,7 @@
     'suggested_object_id': 'qube_1_thermic_yield_dhw_month',
     'supported_features': 0,
     'translation_key': 'thermic_yield_dhw_month',
-    'unique_id': '1.2.3.4_1_qube_thermic_energy_tariff_dhw',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_thermic_energy_tariff_dhw',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -3673,7 +3673,7 @@
     'suggested_object_id': 'qube_1_thermic_yield_month',
     'supported_features': 0,
     'translation_key': 'thermic_yield_month',
-    'unique_id': '1.2.3.4_1_qube_thermic_energy_monthly',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_thermic_energy_monthly',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -3732,7 +3732,7 @@
     'suggested_object_id': 'qube_1_thermostat_coolsetp_day',
     'supported_features': 0,
     'translation_key': 'thermostat_coolsetp_day',
-    'unique_id': '1.2.3.4_1_thermostat_coolsetp_day',
+    'unique_id': '01JQUBEHEATPUMP00000000000_thermostat_coolsetp_day',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3790,7 +3790,7 @@
     'suggested_object_id': 'qube_1_thermostat_coolsetp_night',
     'supported_features': 0,
     'translation_key': 'thermostat_coolsetp_night',
-    'unique_id': '1.2.3.4_1_thermostat_coolsetp_night',
+    'unique_id': '01JQUBEHEATPUMP00000000000_thermostat_coolsetp_night',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3848,7 +3848,7 @@
     'suggested_object_id': 'qube_1_thermostat_heatsetp_day',
     'supported_features': 0,
     'translation_key': 'thermostat_heatsetp_day',
-    'unique_id': '1.2.3.4_1_thermostat_heatsetp_day',
+    'unique_id': '01JQUBEHEATPUMP00000000000_thermostat_heatsetp_day',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3906,7 +3906,7 @@
     'suggested_object_id': 'qube_1_thermostat_heatsetp_night',
     'supported_features': 0,
     'translation_key': 'thermostat_heatsetp_night',
-    'unique_id': '1.2.3.4_1_thermostat_heatsetp_night',
+    'unique_id': '01JQUBEHEATPUMP00000000000_thermostat_heatsetp_night',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -3964,7 +3964,7 @@
     'suggested_object_id': 'qube_1_threeway_valve_status',
     'supported_features': 0,
     'translation_key': 'threeway_valve_status',
-    'unique_id': '1.2.3.4_1_qube_driewegklep_dhw_cv',
+    'unique_id': '01JQUBEHEATPUMP00000000000_qube_driewegklep_dhw_cv',
     'unit_of_measurement': None,
   })
 # ---
@@ -4024,7 +4024,7 @@
     'suggested_object_id': 'qube_1_total_energy_incl_standby',
     'supported_features': 0,
     'translation_key': 'total_energy_incl_standby',
-    'unique_id': '1.2.3.4_1_energy_total_incl_standby',
+    'unique_id': '01JQUBEHEATPUMP00000000000_energy_total_incl_standby',
     'unit_of_measurement': <UnitOfEnergy.KILO_WATT_HOUR: 'kWh'>,
   })
 # ---
@@ -4082,7 +4082,7 @@
     'suggested_object_id': 'qube_1_usr_pid_coolsetp',
     'supported_features': 0,
     'translation_key': 'usr_pid_coolsetp',
-    'unique_id': '1.2.3.4_1_usr_pid_coolsetp',
+    'unique_id': '01JQUBEHEATPUMP00000000000_usr_pid_coolsetp',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -4140,7 +4140,7 @@
     'suggested_object_id': 'qube_1_usr_pid_heatsetp',
     'supported_features': 0,
     'translation_key': 'usr_pid_heatsetp',
-    'unique_id': '1.2.3.4_1_usr_pid_heatsetp',
+    'unique_id': '01JQUBEHEATPUMP00000000000_usr_pid_heatsetp',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -4198,7 +4198,7 @@
     'suggested_object_id': 'qube_1_workinghours_cool_hrsret',
     'supported_features': 0,
     'translation_key': 'workinghours_cool_hrsret',
-    'unique_id': '1.2.3.4_1_workinghours_cool_hrsret',
+    'unique_id': '01JQUBEHEATPUMP00000000000_workinghours_cool_hrsret',
     'unit_of_measurement': 'h',
   })
 # ---
@@ -4256,7 +4256,7 @@
     'suggested_object_id': 'qube_1_workinghours_dhw_hrsret',
     'supported_features': 0,
     'translation_key': 'workinghours_dhw_hrsret',
-    'unique_id': '1.2.3.4_1_workinghours_dhw_hrsret',
+    'unique_id': '01JQUBEHEATPUMP00000000000_workinghours_dhw_hrsret',
     'unit_of_measurement': 'h',
   })
 # ---
@@ -4314,7 +4314,7 @@
     'suggested_object_id': 'qube_1_workinghours_heat_hrsret',
     'supported_features': 0,
     'translation_key': 'workinghours_heat_hrsret',
-    'unique_id': '1.2.3.4_1_workinghours_heat_hrsret',
+    'unique_id': '01JQUBEHEATPUMP00000000000_workinghours_heat_hrsret',
     'unit_of_measurement': 'h',
   })
 # ---
@@ -4372,7 +4372,7 @@
     'suggested_object_id': 'qube_1_workinghours_heater1_hrs',
     'supported_features': 0,
     'translation_key': 'workinghours_heater1_hrs',
-    'unique_id': '1.2.3.4_1_workinghours_heater1_hrs',
+    'unique_id': '01JQUBEHEATPUMP00000000000_workinghours_heater1_hrs',
     'unit_of_measurement': 'h',
   })
 # ---
@@ -4430,7 +4430,7 @@
     'suggested_object_id': 'qube_1_workinghours_heater2_hrs',
     'supported_features': 0,
     'translation_key': 'workinghours_heater2_hrs',
-    'unique_id': '1.2.3.4_1_workinghours_heater2_hrs',
+    'unique_id': '01JQUBEHEATPUMP00000000000_workinghours_heater2_hrs',
     'unit_of_measurement': 'h',
   })
 # ---
@@ -4488,7 +4488,7 @@
     'suggested_object_id': 'qube_1_workinghours_heater3_hrs',
     'supported_features': 0,
     'translation_key': 'workinghours_heater3_hrs',
-    'unique_id': '1.2.3.4_1_workinghours_heater3_hrs',
+    'unique_id': '01JQUBEHEATPUMP00000000000_workinghours_heater3_hrs',
     'unit_of_measurement': 'h',
   })
 # ---
