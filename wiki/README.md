@@ -18,7 +18,8 @@
 14. [Security Considerations](#security-considerations)
 15. [Troubleshooting](#troubleshooting)
 16. [Diagnostics Toolkit](#diagnostics-toolkit)
-17. [Notes](#notes)
+17. [Removing the Integration](#removing-the-integration)
+18. [Notes](#notes)
 
 ---
 
@@ -49,7 +50,7 @@ The integration is tested with current Qube firmware versions. If you encounter 
 
 ### Polling Interval
 
-The integration polls the heat pump every **10 seconds** by default. This interval provides a good balance between responsiveness and network load.
+The integration polls the heat pump every **15 seconds** by default (`DEFAULT_SCAN_INTERVAL` in `const.py`). This interval provides a good balance between responsiveness and network load.
 
 The polling is handled by Home Assistant's `DataUpdateCoordinator` pattern, which:
 - Polls all Modbus registers in a single coordinated update
@@ -59,7 +60,7 @@ The polling is handled by Home Assistant's `DataUpdateCoordinator` pattern, whic
 ### When Data Updates
 
 - **On startup**: Initial data fetch when the integration loads
-- **Every 10 seconds**: Regular polling interval
+- **Every 15 seconds**: Regular polling interval
 - **After writes**: Immediate refresh when you change a setpoint or switch
 
 ### Manual Refresh
@@ -90,8 +91,8 @@ To force an immediate data refresh:
 | **Electric power at idle** | Modbus register reports ~55W when pumps are in pre/post-run, while true standby is ~17W | The Qube does not measure standby consumption; 0W is reported when all pumps are off |
 | **Standby excluded from totals** | `sensor.qube_power_electric` ("Total electric power (calculated)") and `sensor.qube_energy_total_electric` only count the compressor, pumps and heaters; the ~17W standby draw of the controller is not included | COP/SCOP values based on these registers are therefore slightly optimistic. Use `sensor.qube_total_energy_incl_standby` for a realistic consumption figure |
 | **Compressor hold after power-on** | After a cold power-on (mains restored, controller rebooted) the controller holds the compressor off for roughly two hours while the compressor crankcase heater warms the oil; pumps may run and status may show a demand, but the compressor does not start | Normal behaviour, not a fault. Wait it out; the hold is not exposed as a register |
-| **Entity ID changes** | Changing the entity prefix changes entity IDs | Update automations/dashboards after change |
-| **10-second resolution** | Data is polled every 10 seconds | Sub-second changes may be missed |
+| **Entity ID changes** | Changing the device name changes entity IDs | Update automations/dashboards after change |
+| **15-second resolution** | Data is polled every 15 seconds | Shorter changes may be missed |
 
 ### Not Supported
 
@@ -101,11 +102,11 @@ To force an immediate data refresh:
 
 ---
 
----
-
 ## Entity Reference
 
-All entity IDs include a configurable prefix (default: `qube`) for clear identification. The prefix can be customized via the integration's Options.
+Entity IDs are `<platform>.<device name>_<key>`, where the device name is slugified: the default device name **"qube 1"** gives `sensor.qube_1_temp_supply`, a device named "basement" gives `sensor.basement_temp_supply`. The key is the vendor's Modbus register key (or the computed sensor name). The device name can be changed via the integration's **Configure** dialog (field **Device name**); doing so renames every entity ID.
+
+**Throughout this wiki `qube` stands for your slugified device name** — with the default name, read `sensor.qube_temp_supply` as `sensor.qube_1_temp_supply`.
 
 ### Sensors
 
@@ -128,7 +129,7 @@ The controller display distinguishes three DHW setpoints (**Min**, **User**, **M
 |----------|--------|------|---------|
 | 44 | `sensor.qube_tapw_timeprogram_dhws` | DHW setpoint (user) | The **User** setpoint on the controller display. |
 | 46 | `sensor.qube_tapw_timeprogram_dhws_prog` | DHW setpoint (time program, Linq min.) | The setpoint of the controller's own time program, fed by the LinQ **Min.** value. |
-| 173 | `sensor.qube_tapw_timeprogram_dhwsetp_nolinq` / `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` | DHW setpoint (Modbus) | The **Modbus** setpoint. This is the one used by forced runs started via `switch.qube_tapw_timeprogram_bms_forced` and the only one writable from Home Assistant. |
+| 173 | `sensor.qube_tapw_timeprogram_dhwsetp_nolinq` / `number.qube_tapw_timeprogram_dhwsetp_nolinq` | DHW setpoint (Modbus) | The **Modbus** setpoint. This is the one used by forced runs started via `switch.qube_tapw_timeprogram_bms_forced` and the only one writable from Home Assistant. |
 | 47 | `sensor.qube_dhw_setp` | Active DHW setpoint | The setpoint the controller is currently regulating to (calculated). |
 
 #### Room temperature via Modbus
@@ -159,15 +160,21 @@ The controller display distinguishes three DHW setpoints (**Min**, **User**, **M
 
 ### Number Entities
 
-| Entity | Description | Range |
-|--------|-------------|-------|
-| `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` | DHW setpoint (Modbus), register 173 | 20-65°C |
+Number entities are created for the writable temperature registers:
+
+| Entity | Description |
+|--------|-------------|
+| `number.qube_tapw_timeprogram_dhwsetp_nolinq` | DHW setpoint (Modbus), register 173 — the setpoint used by forced DHW runs |
+| `number.qube_usr_pid_heatsetp` | Heating setpoint (no curve), register 101 — supply setpoint used when the heating curve is disabled |
+| `number.qube_usr_pid_coolsetp` | Cooling setpoint (no curve), register 103 |
+
+Each number entity has a read-only sensor twin with the same key (e.g. `sensor.qube_usr_pid_heatsetp`).
 
 ### Select Entity
 
 | Entity | Options |
 |--------|---------|
-| `select.qube_sgready_mode` | Off, Block, Plus, Max |
+| `select.qube_sg_ready_mode` | Off, Block, Plus, Max |
 
 ### Buttons
 
@@ -180,7 +187,7 @@ The controller display distinguishes three DHW setpoints (**Min**, **User**, **M
 
 ## Computed & Derived Entities
 
-Beyond raw Modbus registers, the integration creates several computed sensors. All entities include the configured prefix (default: `qube`).
+Beyond raw Modbus registers, the integration creates several computed sensors. As everywhere in this wiki, `qube` stands for your slugified device name (`qube_1` by default).
 
 ### Energy Tracking
 
@@ -231,7 +238,7 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 
 | Entity | Values |
 |--------|--------|
-| `sensor.qube_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, unknown |
+| `sensor.qube_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, anti_legionella |
 | `sensor.qube_threeway_valve_status` | dhw, ch |
 | `sensor.qube_fourway_valve_status` | heating, cooling |
 
@@ -239,7 +246,7 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 
 ## SG Ready Signals
 
-The heat pump supports SG Ready signals for smart grid integration. The `select.qube_sgready_mode` entity provides a user-friendly interface:
+The heat pump supports SG Ready signals for smart grid integration. The `select.qube_sg_ready_mode` entity provides a user-friendly interface:
 
 | Mode | SG Ready A | SG Ready B | Behavior |
 |------|------------|------------|----------|
@@ -248,7 +255,7 @@ The heat pump supports SG Ready signals for smart grid integration. The `select.
 | **Plus** | Off | On | Regular heating curve, room +1K, DHW day mode |
 | **Max** | On | On | Anti-legionella once, surplus curve, room +1K |
 
-The underlying SG Ready A and B switches are hidden by default but remain available for advanced automations.
+The two underlying Modbus coils (`bms_sgready_a`, `bms_sgready_b`) are not exposed as separate switch entities; the select writes both coils together. Use the `write_register` service only if you really need per-coil control.
 
 ### Important: LinQ Dependency
 
@@ -320,7 +327,7 @@ Use the native number entity:
 ```yaml
 service: number.set_value
 target:
-  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint
+  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq
 data:
   value: 52
 ```
@@ -334,7 +341,7 @@ The options flow (Settings → Devices & Services → Qube Heat Pump → Configu
 | Option | Default | Effect |
 |--------|---------|--------|
 | Start time / End time | 13:00 / 15:00 | When `switch.qube_tapw_timeprogram_bms_forced` is switched on and off. |
-| Use the controller's Modbus setpoint | **on** | Only the forced coil is toggled. The Modbus DHW setpoint (register 173) stays as set on the controller or via `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint`. |
+| Use the controller's Modbus setpoint | **on** | Only the forced coil is toggled. The Modbus DHW setpoint (register 173) stays as set on the controller or via `number.qube_tapw_timeprogram_dhwsetp_nolinq`. |
 | DHW setpoint | 50°C | Only used when the option above is **off**: the schedule writes this value to register 173 right before switching the forced coil on. |
 
 Before version 2026.9.1 the schedule always wrote its setpoint, silently overriding whatever was configured on the controller. Existing installations keep their stored setpoint value, but it is no longer written unless you turn the controller-setpoint option off.
@@ -353,24 +360,22 @@ Both are diagnostic entities, involve no Modbus traffic, and update the moment t
 
 ## Multi-Device Configuration
 
-All entity IDs include a configurable prefix (default: `qube`), ensuring consistent naming in both single and multi-device setups.
+Each heat pump is a separate integration entry with its own device name, and every entity ID is prefixed with the slugified device name. Give each entry a distinct name and the entity IDs never collide.
 
-### Customizing the Entity ID Prefix
-
-To customize the entity prefix for a heat pump:
+### Changing the Device Name
 
 1. Go to **Settings → Devices & Services → Integrations**
 2. Find your Qube Heat Pump entry and click **Configure**
-3. Change the **Entity ID prefix** (e.g., "basement", "main")
-4. The integration will reload with the new prefix
+3. Change the **Device name** (e.g., "basement", "main")
+4. The integration reloads and renames all entity IDs to the new prefix; update automations and dashboards afterwards
 
 ### Example Entity IDs
 
-| Heat Pump 1 (qube) | Heat Pump 2 (basement) |
+| Heat Pump 1 ("qube 1", default) | Heat Pump 2 ("basement") |
 |---------------------|------------------------|
-| `sensor.qube_temp_outside` | `sensor.basement_temp_outside` |
-| `switch.qube_modbus_demand` | `switch.basement_modbus_demand` |
-| `sensor.qube_scop_day` | `sensor.basement_scop_day` |
+| `sensor.qube_1_temp_outside` | `sensor.basement_temp_outside` |
+| `switch.qube_1_modbus_demand` | `switch.basement_modbus_demand` |
+| `sensor.qube_1_scop_day` | `sensor.basement_scop_day` |
 
 ---
 
@@ -409,7 +414,7 @@ automation:
     action:
       - service: select.select_option
         target:
-          entity_id: select.qube_sgready_mode
+          entity_id: select.qube_sg_ready_mode
         data:
           option: "Plus"
 
@@ -421,7 +426,7 @@ automation:
     action:
       - service: select.select_option
         target:
-          entity_id: select.qube_sgready_mode
+          entity_id: select.qube_sg_ready_mode
         data:
           option: "Off"
 ```
@@ -665,13 +670,13 @@ All communication is local:
 **Solutions**:
 1. Verify entity IDs haven't changed (check Developer Tools → States)
 2. Check entity state history to confirm state changes
-3. For multi-device setups, ensure correct entity prefix
+3. For multi-device setups, ensure the entity ID uses the right device-name prefix
 
 #### Slow Response to Commands
 
 **Symptoms**: Switches/setpoints take time to reflect changes
 
-**Explanation**: The 10-second polling interval means changes may take up to 10 seconds to appear.
+**Explanation**: The 15-second polling interval means changes may take up to 15 seconds to appear.
 
 **Solutions**:
 1. Commands trigger an immediate refresh, so delays should be minimal
@@ -704,10 +709,22 @@ logger:
 1. Go to **Settings → Devices & Services → Qube Heat Pump**
 2. Click the three-dot menu → **Download diagnostics**
 3. The JSON file includes:
-   - Hub configuration
-   - Resolved IP address
-   - Error counters
-   - Entity counts
+   - The config entry data and options (host, port and IP redacted)
+   - The heat pump firmware version
+   - Hub information: label, multi-device flag, connect and read error counters
+   - The full entity list (name, unique_id, platform, register address)
+   - The current coordinator data (the last values read from every register)
+
+---
+
+## Removing the Integration
+
+1. Go to **Settings → Devices & Services → Qube Heat Pump**
+2. Open the three-dot menu of the entry and choose **Delete**
+
+Home Assistant removes the device and all its entities. The `group.qube_alarms_<device name>` helper group that the integration maintains is removed when the entry unloads.
+
+The monotonic-clamping cache in `.storage/qube_heatpump_monotonic_<entry_id>` is **not** deleted automatically. It is a small JSON file and harmless if left behind; to remove it, either press `button.qube_clear_monotonic_cache` before deleting the entry, or stop Home Assistant and delete the file from the `.storage` folder afterwards.
 
 ---
 
@@ -722,7 +739,7 @@ Use the native number entity to set the DHW setpoint:
 ```yaml
 service: number.set_value
 target:
-  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint
+  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq
 data:
   value: 52
 ```
@@ -731,7 +748,7 @@ data:
 
 To manually start DHW heating via `switch.qube_tapw_timeprogram_bms_forced`:
 
-1. **Set the DHW setpoint first** using `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` — the Qube uses this setpoint, **not** the LinQ thermostat setpoint
+1. **Set the DHW setpoint first** using `number.qube_tapw_timeprogram_dhwsetp_nolinq` — the Qube uses this setpoint, **not** the LinQ thermostat setpoint
 2. The Qube will only start DHW heating when the current DHW temperature is below the setpoint minus 5°C hysteresis (e.g., below 47°C for a 52°C setpoint)
 3. Once started, DHW heating continues until the setpoint is reached and cannot be stopped mid-cycle
 4. Turning the switch off while a request is pending is acknowledged by the controller, but the coil **stays on** until the run completes and then clears by itself. The switch shows the coil's real state and sets its `pending_request` attribute to `true` in the meantime
@@ -739,8 +756,8 @@ To manually start DHW heating via `switch.qube_tapw_timeprogram_bms_forced`:
 ### Entity ID Naming Convention
 
 All entity IDs follow this pattern:
-- Prefix: Configurable via Options (default: `qube`)
-- Base: Vendor-defined key from the Modbus register (e.g., `temp_supply`, `bms_summerwinter`)
+- Prefix: the slugified device name, set in the config or options flow (default "qube 1" → `qube_1`)
+- Base: Vendor-defined key from the Modbus register (e.g., `temp_supply`, `bms_summerwinter`), or the computed sensor name
 
 This aligns entity IDs with the vendor's Modbus documentation for easy cross-referencing.
 
