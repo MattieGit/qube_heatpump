@@ -20,7 +20,9 @@ from homeassistant.helpers import entity_registry as er
 
 from . import async_poll, setup_integration
 
-MANIFEST = Path(__file__).parent.parent / "custom_components/qube_heatpump/manifest.json"
+MANIFEST = (
+    Path(__file__).parent.parent / "custom_components/qube_heatpump/manifest.json"
+)
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
@@ -82,7 +84,11 @@ async def test_info_sensor_exposes_hub_metadata(
     ("alias", "primary", "primary_name"),
     [
         ("flow_rate", "flow", "Measured PVT flow"),
-        ("setpoint_room_heat_day", "thermostat_heatsetp_day", "LinQ setpoint heating (day)"),
+        (
+            "setpoint_room_heat_day",
+            "thermostat_heatsetp_day",
+            "LinQ setpoint heating (day)",
+        ),
         ("setpoint_room_heat_night", "thermostat_heatsetp_night", None),
         ("setpoint_room_cool_day", "thermostat_coolsetp_day", None),
         ("setpoint_room_cool_night", "thermostat_coolsetp_night", None),

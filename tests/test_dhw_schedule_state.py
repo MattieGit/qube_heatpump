@@ -114,7 +114,11 @@ def test_state_from_options_fixed_setpoint_and_overnight_window() -> None:
 def test_record_start_end_toggle_window_and_advance_next() -> None:
     """Callbacks flip window_active, stamp last_*, and roll next_* forward."""
     state = DhwScheduleState.from_options(
-        {CONF_DHW_SCHEDULE_ENABLED: True, CONF_DHW_START_TIME: "13:00", CONF_DHW_END_TIME: "15:00"},
+        {
+            CONF_DHW_SCHEDULE_ENABLED: True,
+            CONF_DHW_START_TIME: "13:00",
+            CONF_DHW_END_TIME: "15:00",
+        },
         now=datetime(2026, 9, 16, 8, 0, tzinfo=AMS),
     )
     assert state.window_active is False
@@ -216,7 +220,9 @@ async def test_entities_render_enabled_schedule(
     assert ts.state != "unknown"
     parsed = datetime.fromisoformat(ts.state)
     assert parsed.tzinfo is not None
-    assert "DHW schedule enabled 13:00-15:00, setpoint source: fixed 52.0" in caplog.text
+    assert (
+        "DHW schedule enabled 13:00-15:00, setpoint source: fixed 52.0" in caplog.text
+    )
 
 
 async def test_scheduler_callbacks_update_entities_immediately(
@@ -245,9 +251,10 @@ async def test_scheduler_callbacks_update_entities_immediately(
     start_cb = next(c["action"] for c in calls if c["hour"] == 13)
     end_cb = next(c["action"] for c in calls if c["hour"] == 15)
 
-
     fired = datetime(2026, 9, 16, 13, 0, tzinfo=AMS)
-    with patch("custom_components.qube_heatpump.dhw_scheduler.dt_util.now", return_value=fired):
+    with patch(
+        "custom_components.qube_heatpump.dhw_scheduler.dt_util.now", return_value=fired
+    ):
         await start_cb(None)
     await hass.async_block_till_done()
 
@@ -256,10 +263,14 @@ async def test_scheduler_callbacks_update_entities_immediately(
     assert binary.attributes["last_start"] == fired.isoformat()
     assert binary.attributes["icon"] == "mdi:water-boiler"
     after_next = hass.states.get(NEXT_START_ID).state
-    assert datetime.fromisoformat(after_next) == datetime(2026, 9, 17, 13, 0, tzinfo=AMS)
+    assert datetime.fromisoformat(after_next) == datetime(
+        2026, 9, 17, 13, 0, tzinfo=AMS
+    )
 
     ended = datetime(2026, 9, 16, 15, 0, tzinfo=AMS)
-    with patch("custom_components.qube_heatpump.dhw_scheduler.dt_util.now", return_value=ended):
+    with patch(
+        "custom_components.qube_heatpump.dhw_scheduler.dt_util.now", return_value=ended
+    ):
         await end_cb(None)
     await hass.async_block_till_done()
 
@@ -285,7 +296,11 @@ async def test_state_recorded_even_when_write_fails(
     ):
         entry = await _setup(
             hass,
-            {CONF_DHW_SCHEDULE_ENABLED: True, CONF_DHW_START_TIME: "13:00", CONF_DHW_END_TIME: "15:00"},
+            {
+                CONF_DHW_SCHEDULE_ENABLED: True,
+                CONF_DHW_START_TIME: "13:00",
+                CONF_DHW_END_TIME: "15:00",
+            },
         )
     mock_qube_client.write_switch.side_effect = ConnectionError("boom")
     start_cb = next(c["action"] for c in calls if c["hour"] == 13)
@@ -309,13 +324,16 @@ async def test_schedule_switch_reflects_option_and_updates_entry(
     assert state is not None
     assert state.state == "off"
 
-    with patch.object(
-        hass.config_entries, "async_reload", new=AsyncMock(return_value=True)
-    ) as reload, patch.object(
-        hass.config_entries,
-        "async_update_entry",
-        wraps=hass.config_entries.async_update_entry,
-    ) as update:
+    with (
+        patch.object(
+            hass.config_entries, "async_reload", new=AsyncMock(return_value=True)
+        ) as reload,
+        patch.object(
+            hass.config_entries,
+            "async_update_entry",
+            wraps=hass.config_entries.async_update_entry,
+        ) as update,
+    ):
         # Already off: turning off must not write anything
         await hass.services.async_call(
             "switch", "turn_off", {"entity_id": SWITCH_ID}, blocking=True
@@ -352,7 +370,9 @@ async def test_schedule_switch_turn_off_when_enabled(
         )
     assert hass.states.get(SWITCH_ID).state == "on"
 
-    with patch.object(hass.config_entries, "async_reload", new=AsyncMock(return_value=True)) as reload:
+    with patch.object(
+        hass.config_entries, "async_reload", new=AsyncMock(return_value=True)
+    ) as reload:
         await hass.services.async_call(
             "switch", "turn_off", {"entity_id": SWITCH_ID}, blocking=True
         )

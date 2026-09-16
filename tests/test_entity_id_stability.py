@@ -155,8 +155,7 @@ async def test_entity_id_snapshot_thermostat_enabled(
 
     entity_ids = {row["entity_id"] for row in actual}
     assert any(
-        "thermostat" in eid and eid.startswith("binary_sensor.")
-        for eid in entity_ids
+        "thermostat" in eid and eid.startswith("binary_sensor.") for eid in entity_ids
     ), "Thermostat sensor-timeout binary sensor was not created"
 
     _check_snapshot("thermostat_enabled", actual)

@@ -26,7 +26,9 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-def _install_track_time_change_recorder() -> tuple[MagicMock, list[dict], list[MagicMock]]:
+def _install_track_time_change_recorder() -> tuple[
+    MagicMock, list[dict], list[MagicMock]
+]:
     """Build a fake async_track_time_change that records callbacks instead of scheduling.
 
     Returns (fake_function, calls, cancels). `calls` records the hour/minute/
@@ -37,7 +39,9 @@ def _install_track_time_change_recorder() -> tuple[MagicMock, list[dict], list[M
     cancels: list[MagicMock] = []
 
     def _fake_track_time_change(hass, action, *, hour=None, minute=None, second=None):
-        calls.append({"action": action, "hour": hour, "minute": minute, "second": second})
+        calls.append(
+            {"action": action, "hour": hour, "minute": minute, "second": second}
+        )
         cancel = MagicMock(name=f"cancel_{len(cancels)}")
         cancels.append(cancel)
         return cancel
