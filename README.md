@@ -90,7 +90,7 @@ The integration implements **monotonic clamping** for `total_increasing` sensors
 
 ## Removing the Integration
 
-Delete the entry via **Settings → Devices & Services → Qube heat pump → ⋮ → Delete**. Home Assistant removes the device and its entities, and the `group.qube_alarms_<device name>` helper group is removed when the entry unloads. The monotonic-clamping cache file `.storage/qube_heatpump_monotonic_<entry_id>` is not deleted automatically; press the "Clear energy counter cache" button before deleting the entry, or remove the file while Home Assistant is stopped. See the [wiki](./wiki/README.md#removing-the-integration) for details.
+Delete the entry via **Settings → Devices & Services → Qube heat pump → ⋮ → Delete**. Home Assistant removes the device and its entities, the `group.qube_alarms_<device name>` helper group is removed when the entry unloads, and the monotonic-clamping cache file `.storage/qube_heatpump_monotonic_<entry_id>` is deleted with the entry. Nothing is left behind. See the [wiki](./wiki/README.md#removing-the-integration) for details.
 
 ## Documentation
 

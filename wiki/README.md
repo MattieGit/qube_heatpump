@@ -724,7 +724,7 @@ logger:
 
 Home Assistant removes the device and all its entities. The `group.qube_alarms_<device name>` helper group that the integration maintains is removed when the entry unloads.
 
-The monotonic-clamping cache in `.storage/qube_heatpump_monotonic_<entry_id>` is **not** deleted automatically. It is a small JSON file and harmless if left behind; to remove it, either press `button.qube_clear_monotonic_cache` before deleting the entry, or stop Home Assistant and delete the file from the `.storage` folder afterwards.
+The monotonic-clamping cache in `.storage/qube_heatpump_monotonic_<entry_id>` is deleted together with the entry, so nothing is left behind. To clear the cached counter maximums *without* removing the integration (for example after a deliberate counter reset on the controller), press `button.qube_clear_monotonic_cache` instead.
 
 ---
 
