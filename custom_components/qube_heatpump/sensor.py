@@ -71,6 +71,9 @@ SCOP_TOTAL_DAILY_UNIQUE_BASE = "qube_scop_daily"
 SCOP_CH_DAILY_UNIQUE_BASE = "qube_scop_ch_daily"
 SCOP_DHW_DAILY_UNIQUE_BASE = "qube_scop_dhw_daily"
 SCOP_MAX_EXPECTED = 10.0
+# Minimum electric consumption in a cycle before a SCOP is reported; a few
+# Wh right after a cycle start would otherwise produce wild ratios.
+SCOP_MIN_ELECTRIC_KWH = 0.1
 
 
 async def async_setup_entry(
@@ -1244,33 +1247,26 @@ class QubeSCOPSensor(QubeEntity, SensorEntity):
         self._attr_unique_id = self._scoped_uid(unique_base)
         self._attr_suggested_display_precision = 1
         self._attr_native_unit_of_measurement = "CoP"
-        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_state_class = SensorStateClass.MEASUREMENT
 
-    def _current_totals(self) -> tuple[float | None, float | None]:
+    def _current_totals(self) -> tuple[float, float]:
         if self._scope == "total":
             elec = sum(self._electric.get_total(t) for t in self._electric.tariffs)
             therm = sum(self._thermic.get_total(t) for t in self._thermic.tariffs)
             return elec, therm
-        elec = self._electric.get_total(self._scope)
-        therm = self._thermic.get_total(self._scope)
-        return elec, therm
+        return self._electric.get_total(self._scope), self._thermic.get_total(
+            self._scope
+        )
 
     @property
-    def native_value(self) -> float:
-        """Return value."""
+    def native_value(self) -> float | None:
+        """Return the cycle SCOP, or None while it cannot be computed sensibly."""
         elec, therm = self._current_totals()
-        if elec is None or therm is None:
-            return 0.0
-        try:
-            elec_f = float(elec)
-            therm_f = float(therm)
-        except (TypeError, ValueError):
-            return 0.0
-        if elec_f <= 0:
-            return 0.0
-        scop = therm_f / elec_f
+        if elec < SCOP_MIN_ELECTRIC_KWH:
+            return None
+        scop = therm / elec
         if scop < 0 or scop > SCOP_MAX_EXPECTED:
-            return 0.0
+            return None
         return round(scop, 1)
 
     def _handle_coordinator_update(self) -> None:

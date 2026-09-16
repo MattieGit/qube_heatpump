@@ -508,188 +508,88 @@ class TestQubeInfoSensorCountsFallback:
         assert attrs["count_switches"] == 1
 
 
-class TestQubeSCOPSensorEdgeCases:
-    """Tests for QubeSCOPSensor edge cases."""
+def _make_scop_sensor(
+    electric: dict[str, float], thermic: dict[str, float], scope: str = "total"
+) -> Any:
+    from custom_components.qube_heatpump.sensor import QubeSCOPSensor
 
-    async def test_scop_zero_electric(self, hass: HomeAssistant) -> None:
-        """Test SCOP returns 0 when electric is zero (no data yet)."""
-        from custom_components.qube_heatpump.sensor import QubeSCOPSensor
+    hub = MagicMock()
+    hub.host = "1.2.3.4"
+    hub.unit = 1
+    hub.label = "qube1"
+    hub.entry_id = "test_entry"
 
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
+    electric_tracker = MagicMock()
+    electric_tracker.tariffs = ["CH", "DHW"]
+    electric_tracker.get_total = MagicMock(side_effect=electric.__getitem__)
 
-        coordinator = MagicMock()
-        coordinator.data = {}
+    thermic_tracker = MagicMock()
+    thermic_tracker.tariffs = ["CH", "DHW"]
+    thermic_tracker.get_total = MagicMock(side_effect=thermic.__getitem__)
 
-        electric_tracker = MagicMock()
-        electric_tracker.tariffs = ["CH", "DHW"]
-        electric_tracker.get_total = MagicMock(return_value=0.0)
+    return QubeSCOPSensor(
+        coordinator=MagicMock(),
+        hub=hub,
+        electric_tracker=electric_tracker,
+        thermic_tracker=thermic_tracker,
+        scope=scope,
+        translation_key="scop_month",
+        unique_base="qube_scop_monthly",
+        version="1.0",
+    )
 
-        thermic_tracker = MagicMock()
-        thermic_tracker.tariffs = ["CH", "DHW"]
-        thermic_tracker.get_total = MagicMock(return_value=100.0)
 
-        sensor = QubeSCOPSensor(
-            coordinator=coordinator,
-            hub=hub,
-            electric_tracker=electric_tracker,
-            thermic_tracker=thermic_tracker,
-            scope="total",
-            translation_key="scop_month",
-            unique_base="qube_scop_monthly",
-            version="1.0",
-        )
+class TestQubeSCOPSensor:
+    """Tests for QubeSCOPSensor."""
 
-        assert sensor.native_value == 0.0
+    def test_state_class_is_measurement(self) -> None:
+        """A ratio is a measurement, not a total."""
+        from homeassistant.components.sensor import SensorStateClass
 
-    async def test_scop_exceeds_max(self, hass: HomeAssistant) -> None:
-        """Test SCOP returns 0 when value exceeds max expected."""
-        from custom_components.qube_heatpump.sensor import QubeSCOPSensor
+        sensor = _make_scop_sensor({"CH": 5.0, "DHW": 5.0}, {"CH": 15.0, "DHW": 15.0})
+        assert sensor.state_class == SensorStateClass.MEASUREMENT
 
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
+    @pytest.mark.parametrize(
+        ("electric", "thermic"),
+        [
+            # No electric consumption yet: nothing to divide by.
+            ({"CH": 0.0, "DHW": 0.0}, {"CH": 100.0, "DHW": 100.0}),
+            # Below the minimum consumption: a few Wh would produce spikes.
+            ({"CH": 0.02, "DHW": 0.02}, {"CH": 0.3, "DHW": 0.3}),
+            # Implausibly high (40).
+            ({"CH": 1.0, "DHW": 1.0}, {"CH": 40.0, "DHW": 40.0}),
+            # Negative thermic yield.
+            ({"CH": 10.0, "DHW": 10.0}, {"CH": -5.0, "DHW": -5.0}),
+        ],
+    )
+    def test_scop_unknown_when_not_computable(
+        self, electric: dict[str, float], thermic: dict[str, float]
+    ) -> None:
+        """SCOP is unknown (None), not 0, when it cannot be computed sensibly."""
+        assert _make_scop_sensor(electric, thermic).native_value is None
 
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        electric_tracker = MagicMock()
-        electric_tracker.tariffs = ["CH", "DHW"]
-        electric_tracker.get_total = MagicMock(return_value=1.0)
-
-        thermic_tracker = MagicMock()
-        thermic_tracker.tariffs = ["CH", "DHW"]
-        # SCOP of 20 exceeds max of 10
-        thermic_tracker.get_total = MagicMock(return_value=20.0)
-
-        sensor = QubeSCOPSensor(
-            coordinator=coordinator,
-            hub=hub,
-            electric_tracker=electric_tracker,
-            thermic_tracker=thermic_tracker,
-            scope="total",
-            translation_key="scop_month",
-            unique_base="qube_scop_monthly",
-            version="1.0",
-        )
-
-        # SCOP would be 40 (20/0.5 per tariff * 2 tariffs) which exceeds max
-        assert sensor.native_value == 0.0
-
-    async def test_scop_negative(self, hass: HomeAssistant) -> None:
-        """Test SCOP returns 0 when value is negative."""
-        from custom_components.qube_heatpump.sensor import QubeSCOPSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        electric_tracker = MagicMock()
-        electric_tracker.tariffs = ["CH", "DHW"]
-        electric_tracker.get_total = MagicMock(return_value=10.0)
-
-        thermic_tracker = MagicMock()
-        thermic_tracker.tariffs = ["CH", "DHW"]
-        thermic_tracker.get_total = MagicMock(return_value=-5.0)
-
-        sensor = QubeSCOPSensor(
-            coordinator=coordinator,
-            hub=hub,
-            electric_tracker=electric_tracker,
-            thermic_tracker=thermic_tracker,
-            scope="total",
-            translation_key="scop_month",
-            unique_base="qube_scop_monthly",
-            version="1.0",
-        )
-
-        assert sensor.native_value == 0.0
-
-    async def test_scop_valid_calculation(self, hass: HomeAssistant) -> None:
-        """Test SCOP calculates correctly."""
-        from custom_components.qube_heatpump.sensor import QubeSCOPSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        electric_tracker = MagicMock()
-        electric_tracker.tariffs = ["CH", "DHW"]
-        # 5 + 5 = 10 total electric
-        electric_tracker.get_total = MagicMock(return_value=5.0)
-
-        thermic_tracker = MagicMock()
-        thermic_tracker.tariffs = ["CH", "DHW"]
-        # 15 + 15 = 30 total thermic
-        thermic_tracker.get_total = MagicMock(return_value=15.0)
-
-        sensor = QubeSCOPSensor(
-            coordinator=coordinator,
-            hub=hub,
-            electric_tracker=electric_tracker,
-            thermic_tracker=thermic_tracker,
-            scope="total",
-            translation_key="scop_month",
-            unique_base="qube_scop_monthly",
-            version="1.0",
-        )
-
-        # SCOP = 30/10 = 3.0
+    def test_scop_valid_calculation(self) -> None:
+        """SCOP = thermic / electric over both tariffs."""
+        sensor = _make_scop_sensor({"CH": 5.0, "DHW": 5.0}, {"CH": 15.0, "DHW": 15.0})
         assert sensor.native_value == 3.0
 
-    async def test_scop_single_tariff(self, hass: HomeAssistant) -> None:
-        """Test SCOP with single tariff scope."""
-        from custom_components.qube_heatpump.sensor import QubeSCOPSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        electric_tracker = MagicMock()
-        electric_tracker.tariffs = ["CH", "DHW"]
-        electric_tracker.get_total = MagicMock(
-            side_effect=lambda t: 5.0 if t == "CH" else 3.0
+    def test_scop_single_tariff(self) -> None:
+        """A tariff scope only uses that tariff's totals."""
+        sensor = _make_scop_sensor(
+            {"CH": 5.0, "DHW": 3.0}, {"CH": 20.0, "DHW": 12.0}, scope="CH"
         )
-
-        thermic_tracker = MagicMock()
-        thermic_tracker.tariffs = ["CH", "DHW"]
-        thermic_tracker.get_total = MagicMock(
-            side_effect=lambda t: 20.0 if t == "CH" else 12.0
-        )
-
-        sensor = QubeSCOPSensor(
-            coordinator=coordinator,
-            hub=hub,
-            electric_tracker=electric_tracker,
-            thermic_tracker=thermic_tracker,
-            scope="CH",  # Single tariff
-            translation_key="scop_ch_month",
-            unique_base="qube_scop_ch_monthly",
-            version="1.0",
-        )
-
-        # SCOP = 20/5 = 4.0
         assert sensor.native_value == 4.0
+
+    def test_scop_at_minimum_electric(self) -> None:
+        """Exactly the minimum consumption is enough to compute."""
+        from custom_components.qube_heatpump.sensor import SCOP_MIN_ELECTRIC_KWH
+
+        sensor = _make_scop_sensor(
+            {"CH": SCOP_MIN_ELECTRIC_KWH, "DHW": 0.0},
+            {"CH": SCOP_MIN_ELECTRIC_KWH * 3.5, "DHW": 0.0},
+            scope="CH",
+        )
+        assert sensor.native_value == 3.5
 
 
 class TestQubeComputedSensorStatusMappings:
