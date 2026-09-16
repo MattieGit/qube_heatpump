@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.9.2 — unreleased
+- feat: DHW schedule visibility. `binary_sensor.<label>_dhw_schedule` (diagnostic) is on when the schedule option is enabled and carries start, end, setpoint source, fixed setpoint, window state and last start/end as attributes; `sensor.<label>_dhw_schedule_next_start` (timestamp) shows the next scheduled start. Both update when the scheduler fires.
+- feat: One INFO line at setup states whether the DHW schedule is enabled, its window and its setpoint source.
+- feat: `switch.<label>_dhw_schedule_enabled` (configuration) toggles the schedule option at runtime; the integration reloads to apply it.
+- chore: `runtime_data.dhw_schedule` holds the scheduler state; the scheduler itself is unchanged apart from recording it.
+
 ## 2026.9.1 — 2026-09-16
 - feat: Monotonic clamp now detects counter resets (library 1.14.0): a drop of more than 1 kWh that persists for 3 consecutive polls becomes the new baseline and logs "Counter reset detected"; sub-threshold jitter is still clamped.
 - feat: Add `button.<label>_clear_monotonic_cache` to forget the cached maximums (memory and `.storage/qube_heatpump_monotonic_<entry_id>`).

@@ -10,5 +10,5 @@
   "loggers": ["python_qube_heatpump"],
   "quality_scale": "bronze",
   "requirements": ["python-qube-heatpump>=1.14.0"],
-  "version": "2026.9.1"
+  "version": "2026.9.2"
 }

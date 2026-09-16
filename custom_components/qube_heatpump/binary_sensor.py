@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
+    from .dhw_scheduler import DhwScheduleState
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
@@ -118,6 +119,7 @@ async def async_setup_entry(
         )
 
     entities.append(QubeEnergyTotalsStaleSensor(coordinator, hub, version))
+    entities.append(QubeDhwScheduleBinarySensor(coordinator, hub, entry, version))
 
     # Add thermostat sensor timeout binary sensor if thermostat is enabled
     if entry.options.get(CONF_THERMOSTAT_ENABLED):
@@ -237,6 +239,72 @@ class QubeEnergyTotalsStaleSensor(QubeEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return True if the energy totals are not advancing."""
         return bool(getattr(self.coordinator, "energy_totals_stale", False))
+
+
+class QubeDhwScheduleBinarySensor(QubeEntity, BinarySensorEntity):
+    """Shows whether the DHW schedule is enabled, with its configuration as attributes.
+
+    Reads ``runtime_data.dhw_schedule`` only; no Modbus traffic is involved.
+    Refreshes on coordinator updates and whenever the scheduler fires.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: Any,
+        hub: QubeHub,
+        entry: QubeConfigEntry,
+        version: str = "unknown",
+    ) -> None:
+        """Initialize the schedule sensor."""
+        super().__init__(coordinator, hub, version)
+        self._entry = entry
+        self._attr_translation_key = "dhw_schedule"
+        self._attr_unique_id = self._scoped_uid("dhw_schedule")
+        self.entity_id = f"binary_sensor.{self._label}_dhw_schedule"
+
+    @property
+    def _state(self) -> DhwScheduleState | None:
+        return self._entry.runtime_data.dhw_schedule
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to scheduler state changes."""
+        await super().async_added_to_hass()
+        if (state := self._state) is not None:
+            self.async_on_remove(state.async_add_listener(self.async_write_ha_state))
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the DHW schedule option is enabled."""
+        state = self._state
+        return bool(state is not None and state.enabled)
+
+    @property
+    def icon(self) -> str:
+        """Water boiler while the window is active, calendar otherwise."""
+        state = self._state
+        if state is not None and state.window_active:
+            return "mdi:water-boiler"
+        return "mdi:calendar-clock"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the schedule configuration and run history."""
+        state = self._state
+        if state is None or not state.enabled:
+            return {"window_active": False}
+        attrs: dict[str, Any] = {
+            "start": state.start_time,
+            "end": state.end_time,
+            "setpoint_source": state.setpoint_source,
+            "window_active": state.window_active,
+            "last_start": state.last_start.isoformat() if state.last_start else None,
+            "last_end": state.last_end.isoformat() if state.last_end else None,
+        }
+        if state.setpoint_source == "fixed":
+            attrs["fixed_setpoint"] = state.fixed_setpoint
+        return attrs
 
 
 class QubeThermostatTimeoutSensor(QubeEntity, BinarySensorEntity):

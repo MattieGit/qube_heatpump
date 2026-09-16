@@ -339,6 +339,16 @@ The options flow (Settings → Devices & Services → Qube Heat Pump → Configu
 
 Before version 2026.9.1 the schedule always wrote its setpoint, silently overriding whatever was configured on the controller. Existing installations keep their stored setpoint value, but it is no longer written unless you turn the controller-setpoint option off.
 
+### Schedule visibility
+
+| Entity | Shows |
+|--------|-------|
+| `binary_sensor.qube_dhw_schedule` | **on** while the schedule option is enabled. Attributes: `start`, `end`, `setpoint_source` (`controller` or `fixed`), `fixed_setpoint` (only for `fixed`), `window_active`, `last_start`, `last_end`. The icon switches from a calendar to a water boiler while the daily window is active. |
+| `sensor.qube_dhw_schedule_next_start` | Timestamp of the next scheduled start; *unknown* while the schedule is off. |
+| `switch.qube_dhw_schedule_enabled` | Configuration switch that turns the schedule option on or off without opening the options dialog. Flipping it reloads the integration (a few seconds of *unavailable* entities). |
+
+Both are diagnostic entities, involve no Modbus traffic, and update the moment the scheduler fires. The startup log line `DHW schedule enabled HH:MM-HH:MM, setpoint source: …` (or `DHW schedule disabled`) confirms what the scheduler loaded. `window_active` describes the configured time window; whether the heat pump is actually running a forced DHW cycle is shown by `switch.qube_tapw_timeprogram_bms_forced`.
+
 ---
 
 ## Multi-Device Configuration

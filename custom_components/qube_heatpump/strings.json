@@ -375,6 +375,9 @@
       "info": {
         "name": "Info"
       },
+      "dhw_schedule_next_start": {
+        "name": "DHW schedule next start"
+      },
       "ip_address": {
         "name": "IP address"
       },
@@ -514,6 +517,24 @@
       },
       "energy_totals_stale": {
         "name": "Energy totals not advancing"
+      },
+      "dhw_schedule": {
+        "name": "DHW schedule",
+        "state_attributes": {
+          "start": { "name": "Start" },
+          "end": { "name": "End" },
+          "setpoint_source": {
+            "name": "Setpoint source",
+            "state": {
+              "controller": "Controller Modbus setpoint",
+              "fixed": "Fixed setpoint from options"
+            }
+          },
+          "fixed_setpoint": { "name": "Fixed setpoint" },
+          "window_active": { "name": "Window active" },
+          "last_start": { "name": "Last start" },
+          "last_end": { "name": "Last end" }
+        }
       }
     },
     "climate": {
@@ -522,6 +543,9 @@
       }
     },
     "switch": {
+      "dhw_schedule_enabled": {
+        "name": "DHW schedule enabled"
+      },
       "bms_summerwinter": {
         "name": "Activate summer mode (cooling)"
       },
