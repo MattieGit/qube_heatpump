@@ -371,41 +371,60 @@ def test_translation_files_in_sync() -> None:
     assert not value_drift, f"strings vs en value drift: {value_drift}"
 
 
-# QubeMetricSensor builds its key as f"metric_{kind}" for the kinds in
-# sensor.async_setup_entry; a literal grep cannot see those.
-DYNAMIC_TRANSLATION_KEYS = {"metric_errors_connect", "metric_errors_read"}
+async def _registered_translation_keys(hass) -> set[tuple[str, str]]:
+    """Set up the integration with every optional feature and collect (platform, translation_key).
 
-
-def _code_translation_keys() -> set[str]:
-    """Collect every translation_key literal assigned in the component code."""
-    pattern = re.compile(r"translation_key\s*=\s*\"([a-z0-9_]+)\"")
-    keys: set[str] = set(DYNAMIC_TRANSLATION_KEYS)
-    for py_file in COMPONENT_DIR.glob("*.py"):
-        keys.update(pattern.findall(py_file.read_text()))
-    return keys
-
-
-def test_entity_translation_keys_are_used() -> None:
-    """Every entity.<platform>.<key> must be a library key or a code translation_key.
-
-    Library entities use their library key as translation_key; computed and
-    diagnostic entities set translation_key explicitly in the component code.
-    Anything else is an orphan left over from a removed entity.
+    Reading the entity registry (rather than grepping the source) makes the
+    orphan check follow whatever the platforms actually create.
     """
-    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-    allowed = set(SENSORS) | set(BINARY_SENSORS) | set(SWITCHES)
-    allowed |= _code_translation_keys()
+    from custom_components.qube_heatpump.const import (
+        CONF_DHW_SCHEDULE_ENABLED,
+        CONF_HOST,
+        CONF_THERMOSTAT_ENABLED,
+        CONF_THERMOSTAT_SENSOR,
+        DOMAIN,
+    )
+    from homeassistant.helpers import entity_registry as er
+
+    hass.states.async_set("sensor.room_temp", "20.0", {"device_class": "temperature"})
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+        title="Qube Heat Pump",
+        options={
+            CONF_THERMOSTAT_ENABLED: True,
+            CONF_THERMOSTAT_SENSOR: "sensor.room_temp",
+            CONF_DHW_SCHEDULE_ENABLED: True,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    return {
+        (entity.domain, entity.translation_key)
+        for entity in registry.entities.values()
+        if entity.config_entry_id == entry.entry_id and entity.translation_key
+    }
+
+
+async def test_entity_translation_keys_are_used(hass, mock_qube_client) -> None:
+    """Every entity.<platform>.<key> in strings.json must belong to a created entity.
+
+    Anything else is an orphan left over from a removed or renamed entity.
+    """
+    used = await _registered_translation_keys(hass)
 
     strings = json.loads((COMPONENT_DIR / "strings.json").read_text())
     orphans = [
         f"{platform}.{key}"
         for platform, entries in strings["entity"].items()
         for key in entries
-        if key not in allowed
-        # The metric_count_* diagnostic sensors are removed by a parallel
-        # change together with their translations; ignore them until then.
-        and not key.startswith("metric_count_")
+        if (platform, key) not in used
     ]
     assert not orphans, f"translation keys without an entity: {orphans}"
 
