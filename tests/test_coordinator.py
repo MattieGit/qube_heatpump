@@ -575,3 +575,71 @@ async def test_repair_issue_cleared_by_entry_lifecycle(
     await hass.async_block_till_done()
 
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+
+async def test_clamp_holding_a_dipped_counter_is_not_stale(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A small backward step keeps HA at the old maximum, but the raw register
+    is still advancing: that is the clamp doing its job, not a stalled device.
+    """
+    from custom_components.qube_heatpump.coordinator import (
+        ENERGY_STALE_TIMEOUT_SECONDS,
+    )
+
+    client_values.update(
+        {
+            "energy_total_electric": 1000.0,
+            "energy_total_thermic": 4000.0,
+            "power_electric": 1500.0,
+        }
+    )
+    await setup_integration(hass, mock_config_entry)
+    coordinator = mock_config_entry.runtime_data.coordinator
+    # The controller steps back by 0.19 kWh and then climbs slowly
+    client_values["energy_total_thermic"] = 3999.81
+    client_values["energy_total_electric"] = 999.9
+    for _ in range(7):
+        client_values["energy_total_thermic"] += 0.02
+        client_values["energy_total_electric"] += 0.01
+        freezer.tick(timedelta(seconds=ENERGY_STALE_TIMEOUT_SECONDS / 4))
+        await async_poll(hass, freezer)
+
+    # HA still shows the held maximums...
+    assert hass.states.get("sensor.qube_1_energy_total_thermic").state == "4000.0"
+    assert coordinator.raw_data["energy_total_thermic"] < 4000.0
+    # ...but nothing is stale, because the raw registers keep moving
+    assert coordinator.energy_totals_stale is False
+    assert hass.states.get(ENERGY_STALE).state == "off"
+
+
+async def test_frozen_raw_counters_are_stale_even_if_clamped_value_is_stable(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Raw registers frozen under load -> stale, and raw_data shows it."""
+    from custom_components.qube_heatpump.coordinator import (
+        ENERGY_STALE_TIMEOUT_SECONDS,
+    )
+
+    client_values.update(
+        {
+            "energy_total_electric": 1000.0,
+            "energy_total_thermic": 4000.0,
+            "power_electric": 1500.0,
+        }
+    )
+    await setup_integration(hass, mock_config_entry)
+    for _ in range(5):
+        freezer.tick(timedelta(seconds=ENERGY_STALE_TIMEOUT_SECONDS / 4))
+        await async_poll(hass, freezer)
+    coordinator = mock_config_entry.runtime_data.coordinator
+    assert coordinator.energy_totals_stale is True
+    assert coordinator.raw_data["energy_total_electric"] == 1000.0

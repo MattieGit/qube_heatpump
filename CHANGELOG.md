@@ -2,7 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2026.9.4 — unreleased
+## 2026.9.5 — unreleased
+- fix: `binary_sensor.<label>_energy_totals_stale` now watches the controller's raw counters instead of the clamped values, so a counter that stepped back slightly and is climbing again (the clamp holding the old maximum for Home Assistant) is no longer reported as stalled.
+- feat: The diagnostics download shows `raw_data`, `coordinator_data` and `monotonic_cache` side by side, plus the stale flag, so a frozen controller counter can be told apart from the clamp without guessing.
+
+## 2026.9.4 — 2026-09-17
 - fix: Device and entity identifiers are keyed on the config entry instead of `host:unit`. Changing the host (options or reconfigure) now keeps the device, its area, custom names, disabled flags and long-term statistics; previously the device was deleted and re-created. Existing installs are migrated in place on first start (config entry version 2): unique ids are rewritten, the device keeps its id, entity ids do not change. Downgrading to an older release after the migration is not supported (Home Assistant refuses to load a newer entry version).
 - chore: The legacy SG Ready switch registry rows are removed during the migration instead of on every setup.
 

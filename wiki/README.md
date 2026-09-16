@@ -643,9 +643,10 @@ All communication is local:
 **Explanation**: The coordinator flags this when neither `sensor.qube_energy_total_electric` (register 69) nor `sensor.qube_energy_total_thermic` (register 71) has changed for 15 minutes while `sensor.qube_power_electric` stays above 300 W. All derived day/month/SCOP sensors depend on those two totals, so they are stale as well. Seen in the field after a controller firmware hiccup.
 
 **Solutions**:
-1. Check whether the totals on the controller display are advancing. If they are, the Modbus values are stuck: try a reload of the integration, then a controller restart
-2. If the totals on the display are stuck as well, contact HR Energy support
-3. If the totals resumed at a lower value, press `button.qube_clear_monotonic_cache` so the new baseline is accepted immediately
+1. Download the diagnostics (device page → ⋮ → Download diagnostics) and compare `raw_data`, `coordinator_data` and `monotonic_cache` for `energy_total_electric` / `energy_total_thermic`. Raw advancing while `coordinator_data` sits at the `monotonic_cache` value means the controller stepped back slightly and the clamp is holding the old maximum: press `button.qube_clear_monotonic_cache`. Raw frozen while `power_electric` shows real draw means the controller's own counter has stalled (`binary_sensor.qube_energy_totals_stale` turns on): power-cycle the heat pump.
+2. Check whether the totals on the controller display are advancing. If they are, the Modbus values are stuck: try a reload of the integration, then a controller restart
+3. If the totals on the display are stuck as well, contact HR Energy support
+4. If the totals resumed at a lower value, press `button.qube_clear_monotonic_cache` so the new baseline is accepted immediately
 
 #### Compressor Does Not Start After Power-On
 

@@ -49,6 +49,11 @@ async def async_get_config_entry_diagnostics(
             }
             for ent in hub.entities
         ],
+        # Three views of the same registers: what the controller reported this
+        # poll, what Home Assistant shows, and the maximum the clamp is holding.
+        "raw_data": coordinator.raw_data,
         "coordinator_data": coordinator.data,
+        "monotonic_cache": dict(hub.client.monotonic_cache),
+        "energy_totals_stale": coordinator.energy_totals_stale,
     }
     return async_redact_data(summary, TO_REDACT)
