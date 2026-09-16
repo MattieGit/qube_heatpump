@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -21,23 +22,36 @@ from custom_components.qube_heatpump.sensor import (
 from homeassistant.util import dt as dt_util
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from freezegun.api import FrozenDateTimeFactory
 
     from homeassistant.core import HomeAssistant
 
 
-def test_start_of_month() -> None:
-    """Test _start_of_month function."""
-    dt = datetime(2025, 1, 15, 14, 30, 45, 123456)
-    result = _start_of_month(dt)
-    assert result == datetime(2025, 1, 1, 0, 0, 0, 0)
+@pytest.fixture
+def amsterdam_tz() -> Generator[None]:
+    """Run with a non-UTC default time zone (CET/CEST, UTC+1/+2)."""
+    original = dt_util.get_default_time_zone()
+    dt_util.set_default_time_zone(ZoneInfo("Europe/Amsterdam"))
+    yield
+    dt_util.set_default_time_zone(original)
 
 
-def test_start_of_day() -> None:
-    """Test _start_of_day function."""
-    dt = datetime(2025, 1, 15, 14, 30, 45, 123456)
-    result = _start_of_day(dt)
-    assert result == datetime(2025, 1, 15, 0, 0, 0, 0)
+def test_start_of_month_is_local_midnight(amsterdam_tz: None) -> None:
+    """The month starts at 00:00 local time, expressed in UTC."""
+    # 2025-01-31 23:30 UTC is already 2025-02-01 00:30 in Amsterdam (CET).
+    result = _start_of_month(datetime(2025, 1, 31, 23, 30, tzinfo=UTC))
+    assert result == datetime(2025, 1, 31, 23, 0, tzinfo=UTC)
+    assert result.tzinfo == UTC
+
+
+def test_start_of_day_is_local_midnight(amsterdam_tz: None) -> None:
+    """The day starts at 00:00 local time, expressed in UTC (DST-aware)."""
+    # 2025-07-15 22:30 UTC is 2025-07-16 00:30 in Amsterdam (CEST, UTC+2).
+    result = _start_of_day(datetime(2025, 7, 15, 22, 30, tzinfo=UTC))
+    assert result == datetime(2025, 7, 15, 22, 0, tzinfo=UTC)
+    assert result.tzinfo == UTC
 
 
 def test_find_status_source_fallback_enum() -> None:
@@ -144,6 +158,25 @@ class TestTariffEnergyTracker:
         assert tracker._totals["CH"] == 50.0
         assert tracker._last_reset == new_reset
 
+    def test_restore_total_discards_previous_cycle(self) -> None:
+        """A value persisted in an earlier day/month cycle is not carried over."""
+        tracker = TariffEnergyTracker(
+            base_key="energy", binary_key="tariff", tariffs=["CH", "DHW"]
+        )
+        current_reset = tracker.last_reset
+        stale_reset = current_reset - timedelta(days=1)
+        tracker.restore_total("CH", 50.0, stale_reset)
+        assert tracker.get_total("CH") == 0.0
+        assert tracker.last_reset == current_reset
+
+    def test_restore_total_same_cycle(self) -> None:
+        """A value persisted in the current cycle is restored."""
+        tracker = TariffEnergyTracker(
+            base_key="energy", binary_key="tariff", tariffs=["CH", "DHW"]
+        )
+        tracker.restore_total("CH", 50.0, tracker.last_reset)
+        assert tracker.get_total("CH") == 50.0
+
     def test_restore_total_negative_clamped(self) -> None:
         """Test restore_total clamps negative values to 0."""
         tracker = TariffEnergyTracker(
@@ -237,6 +270,94 @@ class TestTariffEnergyTracker:
         tracker.update({"energy": 100.0, "tariff": False}, dt_util.utcnow())
         # After reset, _last_reset should be updated to current day start
         assert tracker._last_reset >= old_start
+
+    def test_reset_applies_while_idle(
+        self, freezer: FrozenDateTimeFactory, amsterdam_tz: None
+    ) -> None:
+        """A cycle boundary resets totals even when no energy was consumed."""
+        # 23:50 local on Sep 15 (CEST, UTC+2).
+        freezer.move_to("2026-09-15 21:50:00+00:00")
+        tracker = TariffEnergyTracker(
+            base_key="energy",
+            binary_key="tariff",
+            tariffs=["CH", "DHW"],
+            reset_period="day",
+        )
+        tracker.update({"energy": 100.0, "tariff": False}, dt_util.utcnow())
+        freezer.tick(timedelta(minutes=5))
+        tracker.update({"energy": 105.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 5.0
+
+        # 00:05 local on Sep 16, the heat pump is idle: base total unchanged.
+        freezer.move_to("2026-09-15 22:05:00+00:00")
+        tracker.update({"energy": 105.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 0.0
+
+    def test_daily_reset_at_local_midnight(
+        self, freezer: FrozenDateTimeFactory, amsterdam_tz: None
+    ) -> None:
+        """The daily cycle rolls over at 00:00 local, not at 00:00 UTC."""
+        # 23:30 local on Sep 15 (CEST, UTC+2).
+        freezer.move_to("2026-09-15 21:30:00+00:00")
+        tracker = TariffEnergyTracker(
+            base_key="energy",
+            binary_key="tariff",
+            tariffs=["CH", "DHW"],
+            reset_period="day",
+        )
+        assert tracker.last_reset == datetime(2026, 9, 14, 22, 0, tzinfo=UTC)
+        tracker.update({"energy": 100.0, "tariff": False}, dt_util.utcnow())
+        freezer.tick(timedelta(minutes=10))
+        tracker.update({"energy": 105.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 5.0
+
+        # 00:10 local on Sep 16 - still Sep 15 in UTC.
+        freezer.move_to("2026-09-15 22:10:00+00:00")
+        tracker.update({"energy": 106.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 1.0
+        assert tracker.last_reset == datetime(2026, 9, 15, 22, 0, tzinfo=UTC)
+
+    def test_no_daily_reset_at_utc_midnight(
+        self, freezer: FrozenDateTimeFactory, amsterdam_tz: None
+    ) -> None:
+        """Crossing 00:00 UTC within the same local day keeps the totals."""
+        # 01:30 local on Sep 16.
+        freezer.move_to("2026-09-15 23:30:00+00:00")
+        tracker = TariffEnergyTracker(
+            base_key="energy",
+            binary_key="tariff",
+            tariffs=["CH", "DHW"],
+            reset_period="day",
+        )
+        tracker.update({"energy": 100.0, "tariff": False}, dt_util.utcnow())
+        freezer.tick(timedelta(minutes=10))
+        tracker.update({"energy": 105.0, "tariff": False}, dt_util.utcnow())
+
+        # 02:10 local on Sep 16 - the UTC date changed, the local one did not.
+        freezer.move_to("2026-09-16 00:10:00+00:00")
+        tracker.update({"energy": 106.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 6.0
+
+    def test_monthly_reset_at_local_midnight(
+        self, freezer: FrozenDateTimeFactory, amsterdam_tz: None
+    ) -> None:
+        """The monthly cycle rolls over at 00:00 local on the 1st."""
+        # 23:30 local on Aug 31.
+        freezer.move_to("2026-08-31 21:30:00+00:00")
+        tracker = TariffEnergyTracker(
+            base_key="energy", binary_key="tariff", tariffs=["CH", "DHW"]
+        )
+        assert tracker.last_reset == datetime(2026, 7, 31, 22, 0, tzinfo=UTC)
+        tracker.update({"energy": 100.0, "tariff": False}, dt_util.utcnow())
+        freezer.tick(timedelta(minutes=10))
+        tracker.update({"energy": 105.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 5.0
+
+        # 00:10 local on Sep 1 - still Aug 31 in UTC.
+        freezer.move_to("2026-08-31 22:10:00+00:00")
+        tracker.update({"energy": 106.0, "tariff": False}, dt_util.utcnow())
+        assert tracker.get_total("CH") == 1.0
+        assert tracker.last_reset == datetime(2026, 8, 31, 22, 0, tzinfo=UTC)
 
 
 class TestQubeSensorUniqueIdFallback:

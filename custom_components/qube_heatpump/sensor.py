@@ -975,11 +975,17 @@ class QubeComputedSensor(QubeEntity, SensorEntity):
 
 
 def _start_of_month(dt_value: datetime) -> datetime:
-    return dt_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    """Return 00:00 local time on the 1st of dt_value's local month, as UTC."""
+    local = dt_util.as_local(dt_value)
+    return dt_util.as_utc(
+        local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    )
 
 
 def _start_of_day(dt_value: datetime) -> datetime:
-    return dt_value.replace(hour=0, minute=0, second=0, microsecond=0)
+    """Return 00:00 local time on dt_value's local date, as UTC."""
+    local = dt_util.as_local(dt_value)
+    return dt_util.as_utc(local.replace(hour=0, minute=0, second=0, microsecond=0))
 
 
 def _thermic_energy_data_key() -> str:
@@ -1026,11 +1032,21 @@ class TariffEnergyTracker:
     def restore_total(
         self, tariff: str, value: float, last_reset: datetime | None
     ) -> None:
-        """Restore total from previous state."""
-        if tariff in self._totals:
-            self._totals[tariff] = max(0.0, value)
-        if last_reset and last_reset > self._last_reset:
-            self._last_reset = last_reset
+        """Restore a tariff total persisted before a restart.
+
+        ``last_reset`` is the cycle start the value was accumulated in. A value
+        from an earlier cycle is discarded so that a restart across a day or
+        month boundary starts the new cycle at zero.
+        """
+        if tariff not in self._totals:
+            return
+        if last_reset is not None:
+            last_reset = dt_util.as_utc(last_reset)
+            if last_reset < self._last_reset:
+                return
+            if last_reset > self._last_reset:
+                self._last_reset = last_reset
+        self._totals[tariff] = max(0.0, value)
 
     def set_initial_total(self, total: float | None) -> None:
         """Set initial total."""
@@ -1046,9 +1062,8 @@ class TariffEnergyTracker:
             return _start_of_day(dt_value)
         return _start_of_month(dt_value)
 
-    def _reset_if_needed(self, reference: datetime | None) -> None:
-        now = reference or dt_util.utcnow()
-        start = self._cycle_start(now)
+    def _reset_if_needed(self, reference: datetime) -> None:
+        start = self._cycle_start(reference)
         if start > self._last_reset:
             self._last_reset = start
             for tariff in self._totals:
@@ -1067,14 +1082,16 @@ class TariffEnergyTracker:
         if token is not None:
             self._last_token = token
 
+        # Roll the cycle over first, so an idle heat pump (no delta) still
+        # starts the new day/month at zero.
+        self._reset_if_needed(token or dt_util.utcnow())
+        self._refresh_current_tariff(coordinator_data)
+
         base_val = coordinator_data.get(self.base_key)
         try:
             base_float = float(base_val) if base_val is not None else None
         except (TypeError, ValueError):
             base_float = None
-
-        self._refresh_current_tariff(coordinator_data)
-
         if base_float is None:
             return
 
@@ -1084,12 +1101,8 @@ class TariffEnergyTracker:
 
         delta = base_float - self._last_total
         self._last_total = base_float
-        if delta <= 0:
-            return
-
-        reference = token or dt_util.utcnow()
-        self._reset_if_needed(reference)
-        self._totals[self._current_tariff] += delta
+        if delta > 0:
+            self._totals[self._current_tariff] += delta
 
     def _refresh_current_tariff(self, coordinator_data: dict[str, Any]) -> None:
         state = coordinator_data.get(self.binary_key)
