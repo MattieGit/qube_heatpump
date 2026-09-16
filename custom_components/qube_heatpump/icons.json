@@ -84,15 +84,6 @@
       "metric_errors_read": {
         "default": "mdi:database-alert"
       },
-      "metric_count_sensors": {
-        "default": "mdi:counter"
-      },
-      "metric_count_binary_sensors": {
-        "default": "mdi:counter"
-      },
-      "metric_count_switches": {
-        "default": "mdi:counter"
-      },
       "flow": {
         "default": "mdi:water-pump"
       }

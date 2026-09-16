@@ -344,15 +344,6 @@
       },
       "metric_errors_read": {
         "name": "Read errors"
-      },
-      "metric_count_sensors": {
-        "name": "Sensor count"
-      },
-      "metric_count_binary_sensors": {
-        "name": "Binary sensor count"
-      },
-      "metric_count_switches": {
-        "name": "Switch count"
       }
     },
     "binary_sensor": {
