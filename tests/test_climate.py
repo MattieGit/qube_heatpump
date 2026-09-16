@@ -17,7 +17,9 @@ from custom_components.qube_heatpump.const import (
     CONF_HOST,
     CONF_THERMOSTAT_ENABLED,
     CONF_THERMOSTAT_SENSOR,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    THERMOSTAT_MAX_TEMP,
     THERMOSTAT_SENSOR_TIMEOUT,
 )
 from homeassistant.components.climate import (
@@ -28,6 +30,7 @@ from homeassistant.components.climate import (
 )
 from homeassistant.const import STATE_ON
 from homeassistant.core import State
+from homeassistant.helpers import entity_registry as er
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
@@ -123,6 +126,13 @@ def _summer_calls(mock_qube_client: MagicMock) -> list[bool]:
     ]
 
 
+async def _poll(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """Advance time past one coordinator interval and let it poll the device."""
+    freezer.tick(timedelta(seconds=DEFAULT_SCAN_INTERVAL + 1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
 async def _set_hvac_mode(
     hass: HomeAssistant, entity_id: str, hvac_mode: HVACMode
 ) -> None:
@@ -140,6 +150,7 @@ async def test_thermostat_supports_turn_on_and_turn_off(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """Required since HA 2024.2 for climate entities exposing HVACMode.OFF."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass)
 
     entity_registry_state = hass.states.get(entity_id)
@@ -155,6 +166,7 @@ async def test_climate_turn_off_service_sets_hvac_off(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """The climate.turn_off service should be usable (not NotImplementedError)."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass)
 
     await hass.services.async_call(
@@ -174,6 +186,7 @@ async def test_climate_turn_on_service_sets_hvac_mode(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """The climate.turn_on service should pick a non-OFF mode."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass)
 
     # Start from OFF so turn_on has an observable effect.
@@ -248,6 +261,7 @@ async def test_heat_mode_hysteresis(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """HEAT mode: demand flips on/off at the hysteresis edges and holds in the deadband."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
     assert entity_id == CLIMATE_ENTITY_ID
     mock_qube_client.write_switch.reset_mock()
@@ -350,6 +364,7 @@ async def test_heat_cool_deadband_keeps_hysteresis(
     heating started), so demand toggled every time the reading crossed
     target - cold_tolerance.
     """
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
     await _set_hvac_mode(hass, entity_id, HVACMode.HEAT_COOL)
 
@@ -380,6 +395,7 @@ async def test_off_mode_turns_off_demand(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """Switching to OFF while heating turns the demand switch off."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
     # Setup itself triggers the initial control pass which starts heating.
     assert True in _demand_calls(mock_qube_client)
@@ -395,6 +411,7 @@ async def test_async_set_temperature_updates_target(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """async_set_temperature should update the reported target temperature."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
 
     await hass.services.async_call(
@@ -424,6 +441,8 @@ async def test_restore_state_restores_mode_and_target(
             )
         ],
     )
+
+    FakeDevice(mock_qube_client)
 
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
     assert entity_id == CLIMATE_ENTITY_ID
@@ -482,6 +501,7 @@ async def test_sensor_timeout_recovery_reenables_heating_when_still_cold(
     resetting `_is_heating`, so `_async_control_heating`'s HEAT guard
     (`too_cold and not self._is_heating`) stayed False forever after recovery.
     """
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
     # Setup itself triggers the initial control pass which starts heating.
     assert True in _demand_calls(mock_qube_client)
@@ -629,3 +649,84 @@ async def test_sensor_timeout_fires_when_sensor_never_valid(
     await hass.async_block_till_done()
     assert entry.runtime_data.thermostat_sensor_timed_out is False
     assert _demand_calls(mock_qube_client) == [True]
+
+
+async def test_climate_entity_id_and_unique_id_are_stable(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Entity id, unique id and device link must survive the QubeEntity refactor."""
+    FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass)
+    assert entity_id == CLIMATE_ENTITY_ID
+
+    registry = er.async_get(hass)
+    entry = registry.async_get(entity_id)
+    assert entry is not None
+    assert entry.unique_id == "1.2.3.4_1_thermostat"
+    assert entry.device_id is not None
+    # Same device as the coordinator entities (shared DeviceInfo).
+    assert (
+        entry.device_id == registry.async_get("switch.qube_1_modbus_demand").device_id
+    )
+
+
+async def test_manual_demand_off_is_reconciled_from_coil(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """If a user turns switch.modbus_demand off, the thermostat notices and re-asserts."""
+    device = FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
+    assert device.coils["modbus_demand"] is True
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+
+    # User (or controller) turns the demand coil off behind our back.
+    device.coils["modbus_demand"] = False
+    await _poll(hass, freezer)
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE
+
+    # Still too cold: the next evaluation turns demand back on.
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.0")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [True]
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+
+
+async def test_manual_demand_on_is_adopted_and_turned_off_when_too_hot(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A demand coil switched on manually is adopted so hysteresis ends it."""
+    device = FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE
+
+    device.coils["modbus_demand"] = True
+    await _poll(hass, freezer)
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.9")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [False]
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE
+
+
+async def test_climate_stays_available_when_poll_fails(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The thermostat keeps its own state (mode/setpoint) while Modbus is down."""
+    FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
+
+    mock_qube_client.get_all_entities = AsyncMock(side_effect=ConnectionError("down"))
+    await _poll(hass, freezer)
+
+    state = hass.states.get(entity_id)
+    assert state.state == HVACMode.HEAT
+    assert state.attributes[ATTR_TEMPERATURE] == 20.5

@@ -16,7 +16,6 @@ from homeassistant.components.climate import (
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import Event, EventStateChangedData, callback
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
@@ -26,7 +25,6 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .const import (
     CONF_THERMOSTAT_ENABLED,
     CONF_THERMOSTAT_SENSOR,
-    DOMAIN,
     THERMOSTAT_COLD_TOLERANCE,
     THERMOSTAT_HOT_TOLERANCE,
     THERMOSTAT_MAX_TEMP,
@@ -34,6 +32,7 @@ from .const import (
     THERMOSTAT_SENSOR_TIMEOUT,
     THERMOSTAT_STEP,
 )
+from .entity import QubeEntity
 from .helpers import entity_data_key
 
 if TYPE_CHECKING:
@@ -41,6 +40,7 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
+    from .coordinator import QubeCoordinator
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
@@ -99,10 +99,15 @@ async def async_setup_entry(
     )
 
 
-class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
-    """Virtual thermostat that controls Qube via modbus_demand and bms_summerwinter."""
+class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
+    """Virtual thermostat that controls Qube via modbus_demand and bms_summerwinter.
 
-    _attr_has_entity_name = True
+    The thermostat is driven by an external temperature sensor, not by the
+    coordinator; the coordinator link is used to keep ``_is_heating`` /
+    ``_is_cooling`` in step with the real ``modbus_demand`` coil (e.g. after a
+    user toggles the switch manually) and to share the device info.
+    """
+
     _attr_translation_key = "thermostat"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes: ClassVar[list[HVACMode]] = [
@@ -119,26 +124,23 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
     _attr_target_temperature_step = THERMOSTAT_STEP
     _attr_min_temp = THERMOSTAT_MIN_TEMP
     _attr_max_temp = THERMOSTAT_MAX_TEMP
-    _attr_should_poll = False
 
     def __init__(
         self,
         entry: QubeConfigEntry,
         hub: QubeHub,
-        coordinator: Any,
+        coordinator: QubeCoordinator,
         sensor_entity_id: str,
         demand_switch: EntityDef,
         summer_switch: EntityDef,
         version: str,
     ) -> None:
         """Initialize the virtual thermostat."""
-        self._hub = hub
+        super().__init__(coordinator, hub, version)
         self._entry = entry
-        self._coordinator = coordinator
         self._sensor_entity_id = sensor_entity_id
         self._demand_switch = demand_switch
         self._summer_switch = summer_switch
-        self._version = version
 
         self._current_temp: float | None = None
         self._target_temp: float = 20.5
@@ -155,15 +157,20 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         self._cancel_state_listener: Any = None
         self._cancel_timeout_check: Any = None
 
-        self.entity_id = f"climate.{hub.label}_thermostat"
-        self._attr_unique_id = f"{hub.host}_{hub.unit}_thermostat"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{hub.host}:{hub.unit}")},
-            name=hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
-            sw_version=self._version,
-        )
+        self.entity_id = f"climate.{self._label}_thermostat"
+        self._attr_unique_id = self._scoped_uid("thermostat")
+
+    @property
+    def available(self) -> bool:
+        """Always available.
+
+        The thermostat's own state (mode, setpoint, external temperature) is
+        meaningful while the heat pump is unreachable, and its writes fail
+        gracefully and are retried. Following the coordinator would also make
+        RestoreEntity dump "unavailable" on a restart during an outage and
+        lose the mode and setpoint.
+        """
+        return True
 
     @property
     def current_temperature(self) -> float | None:
@@ -223,7 +230,8 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
                 with contextlib.suppress(TypeError, ValueError):
                     self._target_temp = float(temp)
 
-        self._summer_mode_known = self._coil_value(self._summer_switch)
+        # Seed the coil-derived state from the last poll
+        self._reconcile_with_coils()
 
         # Read initial sensor state
         self._update_temp_from_state(self.hass.states.get(self._sensor_entity_id))
@@ -255,6 +263,52 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
 
         # Turn off demand to be safe
         await self._async_set_demand(False)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Reconcile with the polled coils, then publish state."""
+        self._reconcile_with_coils()
+        super()._handle_coordinator_update()
+
+    def _coil_value(self, ent: EntityDef) -> bool | None:
+        """Return the last polled value of a switch coil, or None if unknown."""
+        data = self.coordinator.data or {}
+        value = data.get(entity_data_key(ent))
+        return None if value is None else bool(value)
+
+    @callback
+    def _reconcile_with_coils(self) -> None:
+        """Bring the action flags in line with the real modbus_demand coil.
+
+        A coil that reads off while we believe we are heating/cooling means
+        someone (user, controller) switched demand off behind our back: drop
+        the flag so the next evaluation can re-assert it. A coil that reads on
+        while we are idle in an active mode is adopted, so hysteresis ends it
+        and ``hvac_action`` reflects what the heat pump is doing. In OFF mode
+        the thermostat does not own the coil and leaves it alone.
+        """
+        summer = self._coil_value(self._summer_switch)
+        if summer is not None:
+            self._summer_mode_known = summer
+
+        demand = self._coil_value(self._demand_switch)
+        if demand is None or self._hvac_mode == HVACMode.OFF:
+            return
+        active = self._is_heating or self._is_cooling
+        if not demand and active:
+            _LOGGER.debug("modbus_demand reads off; thermostat action reset to idle")
+            self._is_heating = False
+            self._is_cooling = False
+        elif demand and not active:
+            cooling = self._hvac_mode == HVACMode.COOL or (
+                self._hvac_mode == HVACMode.HEAT_COOL and summer is True
+            )
+            _LOGGER.debug(
+                "modbus_demand reads on; thermostat adopts %s",
+                "cooling" if cooling else "heating",
+            )
+            self._is_cooling = cooling
+            self._is_heating = not cooling
 
     @callback
     def _update_temp_from_state(self, state: Any) -> None:
@@ -374,14 +428,8 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         except (ConnectionError, OSError) as exc:
             _LOGGER.warning("Failed to set modbus_demand to %s: %s", on, exc)
             return False
-        await self._coordinator.async_request_refresh()
+        await self.coordinator.async_request_refresh()
         return True
-
-    def _coil_value(self, ent: EntityDef) -> bool | None:
-        """Return the last polled value of a switch coil, or None if unknown."""
-        data = self._coordinator.data or {}
-        value = data.get(entity_data_key(ent))
-        return None if value is None else bool(value)
 
     async def _async_ensure_summer_mode(self, on: bool) -> bool:
         """Ensure bms_summerwinter is in the correct state; True when it is.
@@ -400,5 +448,5 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
             _LOGGER.warning("Failed to set bms_summerwinter to %s: %s", on, exc)
             return False
         self._summer_mode_known = on
-        await self._coordinator.async_request_refresh()
+        await self.coordinator.async_request_refresh()
         return True
