@@ -1,234 +1,133 @@
 """Tests for the Qube Heat Pump binary_sensor platform."""
 
-from __future__ import annotations
+from typing import Any
+from unittest.mock import MagicMock, patch
 
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from freezegun.api import FrozenDateTimeFactory
+import pytest
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    snapshot_platform,
+)
+from syrupy.assertion import SnapshotAssertion
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from . import async_poll, setup_integration
 
-from tests.conftest import add_bulk_read
+SOURCE_PUMP = "binary_sensor.qube_1_dout_srcpmp_val"
+FLOW_ALARM = "binary_sensor.qube_1_alrm_flw"
+ALARM_AGGREGATE = "binary_sensor.qube_1_alarm_sensors_active"
+ENERGY_STALE = "binary_sensor.qube_1_energy_totals_stale"
 
-if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_entities(
+    hass: HomeAssistant,
+    snapshot: SnapshotAssertion,
+    entity_registry: er.EntityRegistry,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Snapshot every binary sensor entity."""
+    with patch("custom_components.qube_heatpump.PLATFORMS", [Platform.BINARY_SENSOR]):
+        await setup_integration(hass, mock_config_entry)
+
+    await snapshot_platform(hass, entity_registry, snapshot, mock_config_entry.entry_id)
 
 
-async def test_binary_sensor_entities_created(
+@pytest.mark.parametrize(
+    ("client_values", "expected_state"),
+    [
+        ({"dout_srcpmp_val": True}, "on"),
+        ({"dout_srcpmp_val": False}, "off"),
+        ({"dout_srcpmp_val": None}, "unknown"),
+    ],
+)
+async def test_binary_sensor_state_follows_input(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    expected_state: str,
 ) -> None:
-    """Test binary sensor entities are created during setup."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    """The binary sensor mirrors the polled discrete input."""
+    await setup_integration(hass, mock_config_entry)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Check binary sensor entities exist
-    states = hass.states.async_all()
-    binary_sensor_states = [
-        s for s in states if s.entity_id.startswith("binary_sensor.")
-    ]
-    assert len(binary_sensor_states) > 0
+    state = hass.states.get(SOURCE_PUMP)
+    assert state.state == expected_state
+    assert state.attributes["device_class"] == "running"
 
 
-async def test_binary_sensor_is_on(
-    hass: HomeAssistant,
-) -> None:
-    """Test binary sensor is_on property."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.close = AsyncMock(return_value=None)
-        # Return True for binary sensors
-        client.read_entity = AsyncMock(return_value=True)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=True)
-        client.read_switch = AsyncMock(return_value=False)
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[True])
-        )
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[True])
-        )
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Check binary sensor states
-        states = hass.states.async_all()
-        binary_sensor_states = [
-            s for s in states if s.entity_id.startswith("binary_sensor.")
-        ]
-        assert len(binary_sensor_states) > 0
-
-
-async def test_binary_sensor_is_off(
-    hass: HomeAssistant,
-) -> None:
-    """Test binary sensor is_on property when off."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.close = AsyncMock(return_value=None)
-        # Return False for binary sensors
-        client.read_entity = AsyncMock(return_value=False)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Check binary sensor states are off
-        states = hass.states.async_all()
-        binary_sensor_states = [
-            s for s in states if s.entity_id.startswith("binary_sensor.")
-        ]
-        off_states = [s for s in binary_sensor_states if s.state == "off"]
-        assert len(off_states) > 0
-
-
-async def test_binary_sensor_device_info(
+async def test_alarm_aggregate_follows_individual_alarms(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    freezer: FrozenDateTimeFactory,
 ) -> None:
-    """Test binary sensor entity device info."""
-    from homeassistant.helpers import device_registry as dr
+    """The aggregate problem sensor is on while any alarm input is active."""
+    client_values["alrm_flw"] = True
+    await setup_integration(hass, mock_config_entry)
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    flow_alarm = hass.states.get(FLOW_ALARM)
+    assert flow_alarm.state == "on"
+    assert flow_alarm.attributes["device_class"] == "problem"
+    assert hass.states.get(ALARM_AGGREGATE).state == "on"
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    client_values["alrm_flw"] = False
+    await async_poll(hass, freezer)
 
-    # Verify device exists
-    device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
-    assert device is not None
-    assert device.manufacturer == "Qube"
+    assert hass.states.get(FLOW_ALARM).state == "off"
+    assert hass.states.get(ALARM_AGGREGATE).state == "off"
 
 
-async def test_binary_sensor_alarm_entities(
+@pytest.mark.parametrize(
+    "entity_id",
+    [
+        "binary_sensor.qube_1_dout_threewayvlv_val",
+        "binary_sensor.qube_1_dout_fourwayvlv_val",
+    ],
+)
+async def test_valve_inputs_registered_disabled_and_hidden(
     hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    entity_id: str,
 ) -> None:
-    """Test alarm binary sensor entities are created."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    """The raw valve inputs stay in the registry but are disabled and hidden.
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    The computed valve status sensors are the user-facing entities.
+    """
+    await setup_integration(hass, mock_config_entry)
 
-    # Check binary sensor entities exist
-    states = hass.states.async_all()
-    binary_sensor_states = [
-        s for s in states if s.entity_id.startswith("binary_sensor.")
-    ]
-    # Some should be alarm entities
-    alarm_states = [
-        s
-        for s in binary_sensor_states
-        if "alarm" in s.entity_id.lower() or "alrm" in s.entity_id.lower()
-    ]
-    assert len(alarm_states) >= 0  # May or may not have alarms
+    registry_entry = entity_registry.async_get(entity_id)
+    assert registry_entry is not None
+    assert registry_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert registry_entry.hidden_by is er.RegistryEntryHider.INTEGRATION
+    assert hass.states.get(entity_id) is None
 
 
 async def test_energy_totals_stale_sensor_reflects_coordinator_flag(
     hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
     """The diagnostic problem sensor mirrors coordinator.energy_totals_stale."""
-    from homeassistant.helpers import entity_registry as er
+    await setup_integration(hass, mock_config_entry)
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    entity_id = "binary_sensor.qube_1_energy_totals_stale"
-    state = hass.states.get(entity_id)
-    assert state is not None
+    state = hass.states.get(ENERGY_STALE)
     assert state.state == "off"
     assert state.attributes["device_class"] == "problem"
-    registry_entry = er.async_get(hass).async_get(entity_id)
-    assert registry_entry is not None
-    assert registry_entry.entity_category == "diagnostic"
+    assert entity_registry.async_get(ENERGY_STALE).entity_category == "diagnostic"
 
-    coordinator = entry.runtime_data.coordinator
+    coordinator = mock_config_entry.runtime_data.coordinator
     coordinator.energy_totals_stale = True
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
-    assert hass.states.get(entity_id).state == "on"
+
+    assert hass.states.get(ENERGY_STALE).state == "on"
