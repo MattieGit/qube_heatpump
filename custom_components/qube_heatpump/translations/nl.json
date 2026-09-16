@@ -543,6 +543,9 @@
             }
         },
         "switch": {
+            "dhw_schedule_enabled": {
+                "name": "SWW schema ingeschakeld"
+            },
             "bms_summerwinter": {
                 "name": "Schakel zomerbedrijf in (koeling)"
             },

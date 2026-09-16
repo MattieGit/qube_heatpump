@@ -543,6 +543,9 @@
       }
     },
     "switch": {
+      "dhw_schedule_enabled": {
+        "name": "DHW schedule enabled"
+      },
       "bms_summerwinter": {
         "name": "Activate summer mode (cooling)"
       },

@@ -9,7 +9,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .const import CONF_DHW_SCHEDULE_ENABLED, DOMAIN
 from .entity import QubeEntity
 from .helpers import entity_data_key
 
@@ -42,6 +42,8 @@ async def async_setup_entry(
         if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
             continue
         entities.append(QubeSwitch(coordinator, hub, ent, version))
+
+    entities.append(QubeDhwScheduleEnabledSwitch(coordinator, hub, entry, version))
 
     async_add_entities(entities)
 
@@ -156,3 +158,50 @@ class QubeSwitch(QubeEntity, SwitchEntity):
                 "keeps it on while a DHW request is pending and clears it itself",
                 self.entity_id,
             )
+
+
+class QubeDhwScheduleEnabledSwitch(QubeEntity, SwitchEntity):
+    """Runtime toggle for the DHW schedule option.
+
+    Writes ``dhw_schedule_enabled`` into the config-entry options; the entry's
+    update listener then reloads the integration, which registers or removes
+    the time-change callbacks. No Modbus traffic is involved.
+    """
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(
+        self,
+        coordinator: Any,
+        hub: QubeHub,
+        entry: QubeConfigEntry,
+        version: str = "unknown",
+    ) -> None:
+        """Initialize the schedule toggle."""
+        super().__init__(coordinator, hub, version)
+        self._entry = entry
+        self._attr_translation_key = "dhw_schedule_enabled"
+        self.entity_id = f"switch.{self._label}_dhw_schedule_enabled"
+        self._attr_unique_id = self._scoped_uid("dhw_schedule_enabled")
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the schedule option is enabled."""
+        return bool(self._entry.options.get(CONF_DHW_SCHEDULE_ENABLED, False))
+
+    def _set_enabled(self, value: bool) -> None:
+        if self.is_on == value:
+            return
+        self.hass.config_entries.async_update_entry(
+            self._entry,
+            options={**self._entry.options, CONF_DHW_SCHEDULE_ENABLED: value},
+        )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Enable the DHW schedule (triggers a reload)."""
+        self._set_enabled(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Disable the DHW schedule (triggers a reload)."""
+        self._set_enabled(False)

@@ -631,6 +631,11 @@
       "unique_id": "1.2.3.4_1_bms_summerwinter"
     },
     {
+      "entity_id": "switch.qube_1_dhw_schedule_enabled",
+      "platform": "switch",
+      "unique_id": "1.2.3.4_1_dhw_schedule_enabled"
+    },
+    {
       "entity_id": "switch.qube_1_en_plantsetp_compens",
       "platform": "switch",
       "unique_id": "1.2.3.4_1_en_plantsetp_compens"
@@ -1286,6 +1291,11 @@
       "entity_id": "switch.qube_1_bms_summerwinter",
       "platform": "switch",
       "unique_id": "5.6.7.8_1_bms_summerwinter"
+    },
+    {
+      "entity_id": "switch.qube_1_dhw_schedule_enabled",
+      "platform": "switch",
+      "unique_id": "5.6.7.8_1_dhw_schedule_enabled"
     },
     {
       "entity_id": "switch.qube_1_en_plantsetp_compens",

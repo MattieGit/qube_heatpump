@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -293,3 +293,71 @@ async def test_state_recorded_even_when_write_fails(
     state = entry.runtime_data.dhw_schedule
     assert state.window_active is True
     assert state.last_start is not None
+
+
+# --- runtime toggle switch -------------------------------------------------------
+
+SWITCH_ID = "switch.qube_1_dhw_schedule_enabled"
+
+
+async def test_schedule_switch_reflects_option_and_updates_entry(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Turning the switch on writes the option and triggers a reload; no-op when unchanged."""
+    entry = await _setup(hass, {})
+    state = hass.states.get(SWITCH_ID)
+    assert state is not None
+    assert state.state == "off"
+
+    with patch.object(
+        hass.config_entries, "async_reload", new=AsyncMock(return_value=True)
+    ) as reload, patch.object(
+        hass.config_entries,
+        "async_update_entry",
+        wraps=hass.config_entries.async_update_entry,
+    ) as update:
+        # Already off: turning off must not write anything
+        await hass.services.async_call(
+            "switch", "turn_off", {"entity_id": SWITCH_ID}, blocking=True
+        )
+        await hass.async_block_till_done()
+        update.assert_not_called()
+        reload.assert_not_awaited()
+
+        await hass.services.async_call(
+            "switch", "turn_on", {"entity_id": SWITCH_ID}, blocking=True
+        )
+        await hass.async_block_till_done()
+
+    assert entry.options[CONF_DHW_SCHEDULE_ENABLED] is True
+    update.assert_called_once()
+    reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_schedule_switch_turn_off_when_enabled(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Turning the switch off clears the option and keeps the other schedule options."""
+    with patch(
+        "custom_components.qube_heatpump.dhw_scheduler.async_track_time_change",
+        return_value=MagicMock(),
+    ):
+        entry = await _setup(
+            hass,
+            {
+                CONF_DHW_SCHEDULE_ENABLED: True,
+                CONF_DHW_START_TIME: "13:00",
+                CONF_DHW_END_TIME: "15:00",
+            },
+        )
+    assert hass.states.get(SWITCH_ID).state == "on"
+
+    with patch.object(hass.config_entries, "async_reload", new=AsyncMock(return_value=True)) as reload:
+        await hass.services.async_call(
+            "switch", "turn_off", {"entity_id": SWITCH_ID}, blocking=True
+        )
+        await hass.async_block_till_done()
+
+    assert entry.options[CONF_DHW_SCHEDULE_ENABLED] is False
+    assert entry.options[CONF_DHW_START_TIME] == "13:00"
+    reload.assert_awaited_once_with(entry.entry_id)
