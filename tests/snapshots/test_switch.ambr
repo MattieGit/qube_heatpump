@@ -1,0 +1,303 @@
+# serializer version: 1
+# name: test_entities[switch.qube_1_antilegionella_frcstart_ant-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': None,
+    'entity_id': 'switch.qube_1_antilegionella_frcstart_ant',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Start anti-legionella',
+    'platform': 'qube_heatpump',
+    'previous_unique_id': None,
+    'suggested_object_id': 'qube_1_antilegionella_frcstart_ant',
+    'supported_features': 0,
+    'translation_key': 'antilegionella_frcstart_ant',
+    'unique_id': '1.2.3.4_1_antilegionella_frcstart_ant',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[switch.qube_1_antilegionella_frcstart_ant-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Start anti-legionella',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.qube_1_antilegionella_frcstart_ant',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---
+# name: test_entities[switch.qube_1_bms_summerwinter-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': None,
+    'entity_id': 'switch.qube_1_bms_summerwinter',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Activate summer mode (cooling)',
+    'platform': 'qube_heatpump',
+    'previous_unique_id': None,
+    'suggested_object_id': 'qube_1_bms_summerwinter',
+    'supported_features': 0,
+    'translation_key': 'bms_summerwinter',
+    'unique_id': '1.2.3.4_1_bms_summerwinter',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[switch.qube_1_bms_summerwinter-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Activate summer mode (cooling)',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.qube_1_bms_summerwinter',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---
+# name: test_entities[switch.qube_1_dhw_schedule_enabled-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.qube_1_dhw_schedule_enabled',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': 'mdi:calendar-clock',
+    'original_name': 'DHW schedule enabled',
+    'platform': 'qube_heatpump',
+    'previous_unique_id': None,
+    'suggested_object_id': 'qube_1_dhw_schedule_enabled',
+    'supported_features': 0,
+    'translation_key': 'dhw_schedule_enabled',
+    'unique_id': '1.2.3.4_1_dhw_schedule_enabled',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[switch.qube_1_dhw_schedule_enabled-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 DHW schedule enabled',
+      <EntityStateAttribute.ICON: 'icon'>: 'mdi:calendar-clock',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.qube_1_dhw_schedule_enabled',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---
+# name: test_entities[switch.qube_1_en_plantsetp_compens-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.qube_1_en_plantsetp_compens',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Enable heating curve',
+    'platform': 'qube_heatpump',
+    'previous_unique_id': None,
+    'suggested_object_id': 'qube_1_en_plantsetp_compens',
+    'supported_features': 0,
+    'translation_key': 'en_plantsetp_compens',
+    'unique_id': '1.2.3.4_1_en_plantsetp_compens',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[switch.qube_1_en_plantsetp_compens-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Enable heating curve',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.qube_1_en_plantsetp_compens',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---
+# name: test_entities[switch.qube_1_modbus_demand-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': None,
+    'entity_id': 'switch.qube_1_modbus_demand',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Activate central heating',
+    'platform': 'qube_heatpump',
+    'previous_unique_id': None,
+    'suggested_object_id': 'qube_1_modbus_demand',
+    'supported_features': 0,
+    'translation_key': 'modbus_demand',
+    'unique_id': '1.2.3.4_1_modbus_demand',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[switch.qube_1_modbus_demand-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Activate central heating',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.qube_1_modbus_demand',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---
+# name: test_entities[switch.qube_1_tapw_timeprogram_bms_forced-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': None,
+    'entity_id': 'switch.qube_1_tapw_timeprogram_bms_forced',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Activate DHW heating',
+    'platform': 'qube_heatpump',
+    'previous_unique_id': None,
+    'suggested_object_id': 'qube_1_tapw_timeprogram_bms_forced',
+    'supported_features': 0,
+    'translation_key': 'tapw_timeprogram_bms_forced',
+    'unique_id': '1.2.3.4_1_tapw_timeprogram_bms_forced',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[switch.qube_1_tapw_timeprogram_bms_forced-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Activate DHW heating',
+      'pending_request': False,
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.qube_1_tapw_timeprogram_bms_forced',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---

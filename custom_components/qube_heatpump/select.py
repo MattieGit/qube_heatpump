@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from homeassistant.components.select import SelectEntity
 
@@ -15,11 +15,15 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
+    from .coordinator import QubeCoordinator
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
 _LOGGER = logging.getLogger(__name__)
 
+PARALLEL_UPDATES = 0
+
+# Option strings are part of the public state; automations depend on them.
 SGREADY_OPTIONS = ["Off", "Block", "Plus", "Max"]
 MODE_TO_BITS = {
     "Off": (False, False),
@@ -28,7 +32,6 @@ MODE_TO_BITS = {
     "Max": (True, True),
 }
 BITS_TO_MODE = {value: key for key, value in MODE_TO_BITS.items()}
-DEFAULT_OPTION = "Off"
 
 
 async def async_setup_entry(
@@ -39,52 +42,38 @@ async def async_setup_entry(
     """Set up the Qube select entities."""
     data = entry.runtime_data
     hub = data.hub
-    coordinator = data.coordinator
-    version = data.version or "unknown"
 
     sg_a = _find_switch(hub, "bms_sgready_a")
     sg_b = _find_switch(hub, "bms_sgready_b")
-
     if not sg_a or not sg_b:
         _LOGGER.debug("SG Ready switches missing; skipping select entity creation")
         return
 
     async_add_entities(
-        [
-            QubeSGReadyModeSelect(
-                coordinator,
-                hub,
-                version,
-                sg_a,
-                sg_b,
-                entry.entry_id,
-            )
-        ]
+        [QubeSGReadyModeSelect(data.coordinator, hub, data.version, sg_a, sg_b)]
     )
 
 
 def _find_switch(hub: QubeHub, vendor_id: str) -> EntityDef | None:
     for ent in hub.entities:
-        if ent.platform != "switch":
-            continue
-        if (ent.vendor_id or "").lower() == vendor_id.lower():
+        if ent.platform == "switch" and (ent.vendor_id or "").lower() == vendor_id:
             return ent
     return None
 
 
 class QubeSGReadyModeSelect(QubeEntity, SelectEntity):
-    """Select entity for SG Ready mode."""
+    """Select entity for the SG Ready mode, composed of two coils."""
 
     _attr_options = SGREADY_OPTIONS
+    _attr_translation_key = "sgready_mode"
 
     def __init__(
         self,
-        coordinator: Any,
+        coordinator: QubeCoordinator,
         hub: QubeHub,
         version: str,
         sgready_a: EntityDef,
         sgready_b: EntityDef,
-        entry_id: str,
     ) -> None:
         """Initialize the select entity."""
         super().__init__(coordinator, hub, version)
@@ -92,56 +81,33 @@ class QubeSGReadyModeSelect(QubeEntity, SelectEntity):
         self._ent_b = sgready_b
         self._key_a = entity_data_key(sgready_a)
         self._key_b = entity_data_key(sgready_b)
-        self._assumed_option = DEFAULT_OPTION
-        self._entry_id = entry_id
 
-        self._attr_translation_key = "sgready_mode"
         self.entity_id = f"select.{self._label}_sg_ready_mode"
         # Always scope unique_id per device for stability
         self._attr_unique_id = self._scoped_uid("sgready_mode")
 
     @property
     def current_option(self) -> str | None:
-        """Return the current selected option."""
-        derived = self._derive_option()
-        return self._assumed_option if derived is None else derived
-
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        derived = self._derive_option()
-        if derived is not None:
-            self._assumed_option = derived
-        super()._handle_coordinator_update()
-
-    async def async_select_option(self, option: str) -> None:
-        """Select a new option."""
-        if option not in MODE_TO_BITS:
-            raise ValueError(f"Unsupported SG Ready mode: {option}")
-        target_a, target_b = MODE_TO_BITS[option]
-        current_a = self._read_bool(self._key_a)
-        current_b = self._read_bool(self._key_b)
-
-        await self._hub.async_connect()
-        if current_a is None or current_a != target_a:
-            await self._hub.async_write_switch(self._ent_a, target_a)
-        if current_b is None or current_b != target_b:
-            await self._hub.async_write_switch(self._ent_b, target_b)
-
-        self._assumed_option = option
-        await self.coordinator.async_request_refresh()
-
-    def _derive_option(self) -> str | None:
+        """Return the mode encoded by the two coils, or None while either is unknown."""
         current_a = self._read_bool(self._key_a)
         current_b = self._read_bool(self._key_b)
         if current_a is None or current_b is None:
             return None
-        return BITS_TO_MODE.get((current_a, current_b), DEFAULT_OPTION)
+        return BITS_TO_MODE[(current_a, current_b)]
+
+    async def async_select_option(self, option: str) -> None:
+        """Write the coils that differ from the requested mode."""
+        target_a, target_b = MODE_TO_BITS[option]
+        current_a = self._read_bool(self._key_a)
+        current_b = self._read_bool(self._key_b)
+
+        await self._async_connect()
+        if current_a != target_a:
+            await self._async_write_switch(self._ent_a, target_a)
+        if current_b != target_b:
+            await self._async_write_switch(self._ent_b, target_b)
+        await self.coordinator.async_request_refresh()
 
     def _read_bool(self, key: str) -> bool | None:
         value = self.coordinator.data.get(key)
-        if value is None:
-            return None
-        try:
-            return bool(value)
-        except (ValueError, TypeError):
-            return None
+        return None if value is None else bool(value)

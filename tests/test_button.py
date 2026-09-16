@@ -1,127 +1,69 @@
 """Tests for the Qube Heat Pump button platform."""
 
-from __future__ import annotations
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    snapshot_platform,
+)
+from syrupy.assertion import SnapshotAssertion
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from . import setup_integration
 
-if TYPE_CHECKING:
-    from unittest.mock import MagicMock
-
-    from homeassistant.core import HomeAssistant
+RELOAD_BUTTON = "button.qube_1_reload"
+CLEAR_CACHE_BUTTON = "button.qube_1_clear_monotonic_cache"
 
 
-async def test_button_entities_created(
+async def test_entities(
+    hass: HomeAssistant,
+    snapshot: SnapshotAssertion,
+    entity_registry: er.EntityRegistry,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Snapshot every button entity."""
+    with patch("custom_components.qube_heatpump.PLATFORMS", [Platform.BUTTON]):
+        await setup_integration(hass, mock_config_entry)
+
+    await snapshot_platform(hass, entity_registry, snapshot, mock_config_entry.entry_id)
+
+
+async def test_reload_button_reloads_entry(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test button entities are created during setup."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    """Pressing the reload button reloads this config entry."""
+    await setup_integration(hass, mock_config_entry)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Check button entities exist
-    states = hass.states.async_all()
-    button_states = [s for s in states if s.entity_id.startswith("button.")]
-    # May have button entities
-    assert isinstance(button_states, list)
-
-
-async def test_button_press(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test pressing a button."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Get button entities
-    states = hass.states.async_all()
-    button_states = [s for s in states if s.entity_id.startswith("button.")]
-
-    if button_states:
-        button_id = button_states[0].entity_id
-
-        # Press button
+    with patch.object(
+        hass.config_entries, "async_reload", new=AsyncMock(return_value=True)
+    ) as reload:
         await hass.services.async_call(
-            "button",
-            "press",
-            {"entity_id": button_id},
-            blocking=True,
+            "button", "press", {"entity_id": RELOAD_BUTTON}, blocking=True
         )
-        await hass.async_block_till_done()
 
-
-async def test_button_device_info(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test button entity device info."""
-    from homeassistant.helpers import device_registry as dr
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Verify device exists
-    device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
-    assert device is not None
-    assert device.manufacturer == "Qube"
+    reload.assert_awaited_once_with(mock_config_entry.entry_id)
 
 
 async def test_clear_monotonic_cache_button_press(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
     """Pressing the clear-cache button delegates to the coordinator."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, mock_config_entry)
+    coordinator = mock_config_entry.runtime_data.coordinator
 
-    assert hass.states.get("button.qube_1_clear_monotonic_cache") is not None
-
-    coordinator = entry.runtime_data.coordinator
     with patch.object(
         coordinator, "async_clear_monotonic_cache", new=AsyncMock()
     ) as clear:
         await hass.services.async_call(
-            "button",
-            "press",
-            {"entity_id": "button.qube_1_clear_monotonic_cache"},
-            blocking=True,
+            "button", "press", {"entity_id": CLEAR_CACHE_BUTTON}, blocking=True
         )
-        await hass.async_block_till_done()
+
     clear.assert_awaited_once()

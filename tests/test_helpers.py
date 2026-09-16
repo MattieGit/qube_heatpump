@@ -2,38 +2,29 @@
 
 from __future__ import annotations
 
+import pytest
+
 from custom_components.qube_heatpump.entity_defs import EntityDef
 from custom_components.qube_heatpump.helpers import is_alarm_entity
 
 
-class TestIsAlarmEntity:
-    """Tests for the is_alarm_entity predicate."""
-
-    def test_matches_vendor_id_starting_with_al(self) -> None:
-        """An alrm_flw-style vendor_id (starts with 'al', no 'alarm' substring,
-        neutral name) should be classified as an alarm entity.
-        """
-        ent = EntityDef(
-            platform="binary_sensor",
-            name="Flow switch",
-            address=100,
-            vendor_id="alrm_flw",
-        )
-        assert is_alarm_entity(ent) is True
-
-    def test_matches_name_containing_alarm(self) -> None:
-        """An entity whose name contains 'alarm' should match regardless of vendor_id."""
-        ent = EntityDef(
-            platform="binary_sensor",
-            name="Some Alarm Sensor",
-            address=101,
-            vendor_id="neutral",
-        )
-        assert is_alarm_entity(ent) is True
-
-    def test_rejects_non_binary_sensor_platform(self) -> None:
-        """Non binary_sensor platforms are never alarm entities, even with an
-        alarm-like name.
-        """
-        ent = EntityDef(platform="sensor", name="Alarm Test", address=102)
-        assert is_alarm_entity(ent) is False
+@pytest.mark.parametrize(
+    ("platform", "name", "vendor_id", "expected"),
+    [
+        # alrm_flw-style key: starts with "al", no "alarm" substring, neutral name
+        ("binary_sensor", "Flow switch", "alrm_flw", True),
+        # name carries "alarm" regardless of the vendor_id
+        ("binary_sensor", "Some Alarm Sensor", "neutral", True),
+        # neither the name nor the vendor_id hints at an alarm
+        ("binary_sensor", "Test", "neutral", False),
+        # other platforms are never alarm entities, even with an alarm-like name
+        ("sensor", "Alarm Test", "al_test", False),
+    ],
+    ids=["vendor_id_prefix", "name_contains_alarm", "neutral", "wrong_platform"],
+)
+def test_is_alarm_entity(
+    platform: str, name: str, vendor_id: str, expected: bool
+) -> None:
+    """The predicate matches binary sensors by vendor_id prefix or by name."""
+    ent = EntityDef(platform=platform, name=name, address=100, vendor_id=vendor_id)
+    assert is_alarm_entity(ent) is expected

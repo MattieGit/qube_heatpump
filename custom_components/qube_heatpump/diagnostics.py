@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
     from . import QubeConfigEntry
 
-TO_REDACT = {"host", "port", "unique_id", "ip_address", "resolved_ip"}
+# Entity unique_ids are the library register keys and stay readable so a
+# diagnostics dump can be matched against the register documentation.
+TO_REDACT = {"host", "port", "ip_address", "resolved_ip"}
 
 
 async def async_get_config_entry_diagnostics(

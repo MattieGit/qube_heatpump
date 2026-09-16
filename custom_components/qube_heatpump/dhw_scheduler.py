@@ -172,7 +172,7 @@ async def async_setup_dhw_schedule(
     hub: QubeHub,
     coordinator: Any,
     state: DhwScheduleState | None = None,
-) -> list[Callable]:
+) -> list[Callable[[], None]]:
     """Set up DHW schedule and return cancel callbacks.
 
     ``state`` is the shared state holder (``runtime_data.dhw_schedule``); it is
@@ -199,11 +199,15 @@ async def async_setup_dhw_schedule(
     for ent in hub.entities:
         if ent.vendor_id == "tapw_timeprogram_dhwsetp_nolinq":
             dhw_setpoint_ent = ent
-        elif ent.vendor_id == "tapw_timeprogram_bms_forced" and ent.platform == "switch":
+        elif (
+            ent.vendor_id == "tapw_timeprogram_bms_forced" and ent.platform == "switch"
+        ):
             dhw_switch_ent = ent
 
     if dhw_switch_ent is None:
-        _LOGGER.error("Cannot find tapw_timeprogram_bms_forced switch; DHW schedule not set up")
+        _LOGGER.error(
+            "Cannot find tapw_timeprogram_bms_forced switch; DHW schedule not set up"
+        )
         return []
 
     async def _dhw_start(_now: Any) -> None:
@@ -218,8 +222,8 @@ async def async_setup_dhw_schedule(
                 await hub.async_write_setpoint(dhw_setpoint_ent, setpoint)
             await hub.async_write_switch(dhw_switch_ent, True)
             await coordinator.async_request_refresh()
-        except Exception:
-            _LOGGER.exception("DHW schedule: failed to start DHW heating")
+        except OSError as exc:  # ConnectionError from the hub is an OSError
+            _LOGGER.warning("DHW schedule: failed to start DHW heating: %s", exc)
         finally:
             state.record_start(dt_util.now())
             state.async_update_listeners()
@@ -231,8 +235,8 @@ async def async_setup_dhw_schedule(
             await hub.async_connect()
             await hub.async_write_switch(dhw_switch_ent, False)
             await coordinator.async_request_refresh()
-        except Exception:
-            _LOGGER.exception("DHW schedule: failed to stop DHW heating")
+        except OSError as exc:
+            _LOGGER.warning("DHW schedule: failed to stop DHW heating: %s", exc)
         finally:
             state.record_end(dt_util.now())
             state.async_update_listeners()
@@ -248,9 +252,7 @@ async def async_setup_dhw_schedule(
         "DHW schedule enabled %s-%s, setpoint source: %s",
         state.start_time,
         state.end_time,
-        "controller Modbus setpoint"
-        if setpoint is None
-        else f"fixed {setpoint:.1f}°C",
+        "controller Modbus setpoint" if setpoint is None else f"fixed {setpoint:.1f}°C",
     )
 
     return [cancel_start, cancel_end]

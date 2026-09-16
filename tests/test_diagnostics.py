@@ -1,147 +1,73 @@
 """Tests for the Qube Heat Pump diagnostics."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from syrupy.assertion import SnapshotAssertion
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from custom_components.qube_heatpump.diagnostics import (
-    TO_REDACT,
     async_get_config_entry_diagnostics,
 )
+from homeassistant.core import HomeAssistant
 
-if TYPE_CHECKING:
-    from unittest.mock import MagicMock
-
-    from homeassistant.core import HomeAssistant
+from . import setup_integration
 
 
-async def test_diagnostics_returns_redacted_data(
+async def test_diagnostics(
+    hass: HomeAssistant,
+    snapshot: SnapshotAssertion,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The whole dump is snapshotted: entry, hub, entities and last values."""
+    await setup_integration(hass, mock_config_entry)
+
+    assert await async_get_config_entry_diagnostics(hass, mock_config_entry) == snapshot
+
+
+async def test_diagnostics_redacts_only_network_identifiers(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test diagnostics returns properly redacted data."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.168.1.100"},
-        title="Qube Heat Pump (test)",
-        unique_id=f"{DOMAIN}-192.168.1.100-502",
-    )
-    entry.add_to_hass(hass)
+    """Host, port and resolved IP are hidden; register keys stay readable.
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    The register keys are the library's names for the modbus registers, so
+    a dump can be matched against the register documentation.
+    """
+    await setup_integration(hass, mock_config_entry)
 
-    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
+    diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
 
-    # Check structure
-    assert "entry" in diagnostics
-    assert "hub" in diagnostics
-    assert "entities" in diagnostics
-
-    # Check entry data is present
-    assert "entry_id" in diagnostics["entry"]
-    assert "data" in diagnostics["entry"]
-    assert "options" in diagnostics["entry"]
-
-    # Check hub data
-    assert "label" in diagnostics["hub"]
-    assert "multi_device" in diagnostics["hub"]
-
-    # Check host/ip is redacted, wherever it appears
     assert diagnostics["hub"]["host"] == "**REDACTED**"
     assert diagnostics["hub"]["port"] == "**REDACTED**"
     assert diagnostics["hub"]["resolved_ip"] == "**REDACTED**"
-    assert diagnostics["entry"]["data"][CONF_HOST] == "**REDACTED**"
+    assert diagnostics["entry"]["data"]["host"] == "**REDACTED**"
 
-    # Check the full entity list is present (not truncated)
-    hub = entry.runtime_data.hub
-    assert isinstance(diagnostics["entities"], list)
-    assert len(diagnostics["entities"]) == len(hub.entities)
+    hub = mock_config_entry.runtime_data.hub
+    assert [entity["unique_id"] for entity in diagnostics["entities"]] == [
+        ent.unique_id for ent in hub.entities
+    ]
+    assert (
+        diagnostics["coordinator_data"]
+        == mock_config_entry.runtime_data.coordinator.data
+    )
+    assert "temp_supply" in diagnostics["coordinator_data"]
 
 
-async def test_diagnostics_includes_firmware_and_error_counters(
+async def test_diagnostics_reports_error_counters(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test diagnostics includes firmware version and error counters."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.168.1.100"},
-        title="Qube Heat Pump",
-    )
-    entry.add_to_hass(hass)
+    """The counters that make an issue report actionable track the hub."""
+    await setup_integration(hass, mock_config_entry)
+    hub = mock_config_entry.runtime_data.hub
+    hub.inc_read_error()
+    hub.inc_read_error()
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
 
-    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
-
-    # Firmware version is surfaced for issue reports
-    assert diagnostics["firmware_version"] == entry.runtime_data.version
-
-    # Error counters are surfaced for issue reports
-    assert diagnostics["hub"]["err_connect"] == entry.runtime_data.hub.err_connect
-    assert diagnostics["hub"]["err_read"] == entry.runtime_data.hub.err_read
-
-
-async def test_diagnostics_includes_coordinator_data(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test diagnostics includes a redacted snapshot of coordinator data."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.168.1.100"},
-        title="Qube Heat Pump",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
-
-    assert "coordinator_data" in diagnostics
-    coordinator_data = entry.runtime_data.coordinator.data
-    assert coordinator_data
-    # Register keys (e.g. "temp_supply") are not sensitive, so they stay.
-    assert diagnostics["coordinator_data"] == coordinator_data
-
-
-async def test_diagnostics_includes_entity_info(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test diagnostics includes entity information."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.168.1.100"},
-        title="Qube Heat Pump",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
-
-    # Check entities have expected fields
-    assert diagnostics["entities"]
-    entity = diagnostics["entities"][0]
-    assert "name" in entity
-    assert "platform" in entity
-    assert "address" in entity
-    # unique_id should be redacted
-    assert entity["unique_id"] == "**REDACTED**"
-
-
-def test_to_redact_fields() -> None:
-    """Test TO_REDACT contains expected fields."""
-    assert "host" in TO_REDACT
-    assert "port" in TO_REDACT
-    assert "unique_id" in TO_REDACT
-    assert "ip_address" in TO_REDACT
-    assert "resolved_ip" in TO_REDACT
+    assert diagnostics["hub"]["err_read"] == 2
+    assert diagnostics["hub"]["err_connect"] == 0
+    assert diagnostics["firmware_version"] == mock_config_entry.runtime_data.version

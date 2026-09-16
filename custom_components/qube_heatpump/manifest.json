@@ -3,6 +3,7 @@
   "name": "Qube heat pump",
   "codeowners": ["@MattieGit"],
   "config_flow": true,
+  "dependencies": ["group"],
   "documentation": "https://github.com/MattieGit/qube_heatpump/blob/main/wiki/README.md",
   "integration_type": "hub",
   "iot_class": "local_polling",
@@ -10,5 +11,5 @@
   "loggers": ["python_qube_heatpump"],
   "quality_scale": "bronze",
   "requirements": ["python-qube-heatpump>=1.14.0"],
-  "version": "2026.9.2"
+  "version": "2026.9.3"
 }

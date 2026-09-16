@@ -1,316 +1,183 @@
 """Tests for the Qube Heat Pump sensor platform."""
 
-from __future__ import annotations
+import json
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
 
-from datetime import timedelta
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
-
+from freezegun.api import FrozenDateTimeFactory
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
-    async_fire_time_changed,
+    snapshot_platform,
+)
+from python_qube_heatpump import StatusCode
+from syrupy.assertion import SnapshotAssertion
+
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+
+from . import async_poll, setup_integration
+
+MANIFEST = (
+    Path(__file__).parent.parent / "custom_components/qube_heatpump/manifest.json"
 )
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
-from homeassistant.helpers import device_registry as dr, entity_registry as er
 
-from tests.conftest import add_bulk_read
-
-if TYPE_CHECKING:
-    from freezegun.api import FrozenDateTimeFactory
-
-    from homeassistant.core import HomeAssistant
-
-
-async def test_sensor_setup(
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_entities(
     hass: HomeAssistant,
+    snapshot: SnapshotAssertion,
+    entity_registry: er.EntityRegistry,
     mock_qube_client: MagicMock,
-) -> None:
-    """Test sensors are created during setup."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Assert entity state via core state machine
-    states = hass.states.async_all()
-    sensor_states = [s for s in states if s.entity_id.startswith("sensor.")]
-    # Should have sensors
-    assert len(sensor_states) >= 10
-
-
-async def test_binary_sensor_setup(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test binary sensors are created during setup."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Assert entity state via core state machine
-    states = hass.states.async_all()
-    binary_sensor_states = [
-        s for s in states if s.entity_id.startswith("binary_sensor.")
-    ]
-    assert len(binary_sensor_states) > 0
-
-
-async def test_switch_setup(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test switches are created during setup."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Assert entity state via core state machine
-    states = hass.states.async_all()
-    switch_states = [s for s in states if s.entity_id.startswith("switch.")]
-    assert len(switch_states) > 0
-
-
-async def test_device_info(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test device info is set correctly."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Assert DeviceEntry state via device registry
-    device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
-
-    assert device is not None
-    assert device.manufacturer == "Qube"
-    assert device.model == "Heat Pump"
-
-
-async def test_sensor_coordinator_refresh_updates_values(
-    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
     freezer: FrozenDateTimeFactory,
 ) -> None:
-    """Test that coordinator refresh updates sensor values."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.close = AsyncMock(return_value=None)
-        # Initial value
-        client.read_entity = AsyncMock(return_value=45.0)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
+    """Snapshot every sensor entity (the cycle_start attributes depend on now)."""
+    freezer.move_to("2026-09-16 12:00:00+00:00")
+    with patch("custom_components.qube_heatpump.PLATFORMS", [Platform.SENSOR]):
+        await setup_integration(hass, mock_config_entry)
 
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Update mock to return new value for next fetch
-        client.read_entity.return_value = 50.0
-        client.read_sensor.return_value = 50.0
-
-        # Trigger coordinator refresh via time advancement
-        freezer.tick(timedelta(seconds=31))
-        async_fire_time_changed(hass)
-        await hass.async_block_till_done()
-
-        # Entity should still be available after refresh
-        states = hass.states.async_all()
-        sensor_states = [s for s in states if s.entity_id.startswith("sensor.")]
-        assert len(sensor_states) > 0
+    await snapshot_platform(hass, entity_registry, snapshot, mock_config_entry.entry_id)
 
 
-async def test_sensor_handles_none_data(hass: HomeAssistant) -> None:
-    """Test sensor handles None data gracefully."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.connect = AsyncMock(return_value=True)
-        client.is_connected = True
-        client.close = AsyncMock(return_value=None)
-        # Return None for some reads
-        client.read_entity = AsyncMock(return_value=None)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=None)
-        client.read_binary_sensor = AsyncMock(return_value=None)
-        client.read_switch = AsyncMock(return_value=None)
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Setup should succeed even with None data
-        states = hass.states.async_all()
-        assert len(states) > 0
-
-
-async def test_sensor_energy_entities(
+async def test_sensor_refresh_updates_value(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    freezer: FrozenDateTimeFactory,
 ) -> None:
-    """Test energy sensor entities are created with correct device class."""
-    from homeassistant.components.sensor import SensorDeviceClass
+    """A changed register value lands on the entity after the next poll."""
+    await setup_integration(hass, mock_config_entry)
+    assert hass.states.get("sensor.qube_1_temp_supply").state == "45.0"
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    client_values["temp_supply"] = 50.0
+    await async_poll(hass, freezer)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    states = hass.states.async_all()
-    energy_sensors = [
-        s
-        for s in states
-        if s.entity_id.startswith("sensor.")
-        and s.attributes.get("device_class") == SensorDeviceClass.ENERGY
-    ]
-    # Should have energy sensors
-    assert len(energy_sensors) > 0
+    assert hass.states.get("sensor.qube_1_temp_supply").state == "50.0"
 
 
-async def test_sensor_temperature_entities(
+@pytest.mark.real_integration_version
+async def test_info_sensor_exposes_hub_metadata(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test temperature sensor entities are created with correct device class."""
-    from homeassistant.components.sensor import SensorDeviceClass
+    """The diagnostic info sensor is 'ok' and carries firmware/integration versions."""
+    await setup_integration(hass, mock_config_entry)
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    states = hass.states.async_all()
-    temp_sensors = [
-        s
-        for s in states
-        if s.entity_id.startswith("sensor.")
-        and s.attributes.get("device_class") == SensorDeviceClass.TEMPERATURE
-    ]
-    # Should have temperature sensors
-    assert len(temp_sensors) > 0
+    state = hass.states.get("sensor.qube_1_info")
+    assert state.state == "ok"
+    attrs = state.attributes
+    assert attrs["firmware_version"] == "4.10"
+    assert attrs["integration_version"] == json.loads(MANIFEST.read_text())["version"]
+    assert attrs["label"] == "qube_1"
+    assert attrs["host"] == "1.2.3.4"
+    assert attrs["ip_address"] == "1.2.3.4"
+    assert attrs["errors_connect"] == 0
+    assert attrs["errors_read"] == 0
 
 
-async def test_sensor_qube_info_entity(
+@pytest.mark.parametrize(
+    ("alias", "primary", "primary_name"),
+    [
+        ("flow_rate", "flow", "Measured PVT flow"),
+        (
+            "setpoint_room_heat_day",
+            "thermostat_heatsetp_day",
+            "LinQ setpoint heating (day)",
+        ),
+        ("setpoint_room_heat_night", "thermostat_heatsetp_night", None),
+        ("setpoint_room_cool_day", "thermostat_coolsetp_day", None),
+        ("setpoint_room_cool_night", "thermostat_coolsetp_night", None),
+        ("setpoint_dhw", "tapw_timeprogram_dhwsetp_nolinq", "DHW setpoint (Modbus)"),
+    ],
+)
+async def test_alias_sensors_registered_but_disabled(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    alias: str,
+    primary: str,
+    primary_name: str | None,
+) -> None:
+    """Library alias keys stay in the registry but are disabled by default."""
+    await setup_integration(hass, mock_config_entry)
+
+    alias_entry = entity_registry.async_get(f"sensor.qube_1_{alias}")
+    assert alias_entry is not None
+    assert alias_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert hass.states.get(f"sensor.qube_1_{alias}") is None
+
+    assert entity_registry.async_get(f"sensor.qube_1_{primary}").disabled_by is None
+    primary_state = hass.states.get(f"sensor.qube_1_{primary}")
+    assert primary_state is not None
+    if primary_name is not None:
+        # Description-driven translation_key still yields the translated name
+        assert primary_state.attributes["friendly_name"] == f"qube 1 {primary_name}"
+
+
+@pytest.mark.parametrize("vendor_id", ["temp_room", "cop_calc"])
+async def test_rarely_used_sensors_registered_but_disabled(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    vendor_id: str,
+) -> None:
+    """The LinQ-superseded room temperature and real-time COP start disabled."""
+    await setup_integration(hass, mock_config_entry)
+
+    registry_entry = entity_registry.async_get(f"sensor.qube_1_{vendor_id}")
+    assert registry_entry is not None
+    assert registry_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+
+
+@pytest.mark.parametrize(
+    ("entity_id", "client_values", "options", "expected_state"),
+    [
+        (
+            "sensor.qube_1_status_heatpump",
+            {"status_code": 16},
+            [status.value for status in StatusCode],
+            "heating",
+        ),
+        (
+            "sensor.qube_1_status_heatpump",
+            {"status_code": 16, "req_antileg_1": True},
+            [status.value for status in StatusCode],
+            "anti_legionella",
+        ),
+        (
+            "sensor.qube_1_threeway_valve_status",
+            {"dout_threewayvlv_val": True},
+            ["dhw", "ch"],
+            "dhw",
+        ),
+        (
+            "sensor.qube_1_fourway_valve_status",
+            {"dout_fourwayvlv_val": False},
+            ["heating", "cooling"],
+            "cooling",
+        ),
+    ],
+)
+async def test_computed_sensors_are_enums(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    entity_id: str,
+    client_values: dict[str, Any],
+    options: list[str],
+    expected_state: str,
 ) -> None:
-    """Test Qube info sensor entity is created with metadata."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    """Status and valve sensors are ENUM sensors decoded from the raw registers."""
+    await setup_integration(hass, mock_config_entry)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Check entity registry for info sensor (more reliable than states)
-    entity_registry = er.async_get(hass)
-    info_entries = [
-        e for e in entity_registry.entities.values() if "info" in e.unique_id
-    ]
-    # Should have info sensor registered
-    assert len(info_entries) > 0, "Info sensor not found in entity registry"
-
-    # Also check state if available
-    states = hass.states.async_all()
-    info_sensors = [s for s in states if "qube_info" in s.entity_id]
-    if info_sensors:
-        attrs = info_sensors[0].attributes
-        assert "version" in attrs or "label" in attrs or "host" in attrs
+    state = hass.states.get(entity_id)
+    assert state.attributes["device_class"] == "enum"
+    assert state.attributes["options"] == options
+    assert state.state == expected_state

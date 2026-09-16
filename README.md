@@ -3,21 +3,21 @@
 [![HACS Integration](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 [![GitHub Release](https://img.shields.io/github/v/release/mattiegit/qube_heatpump)](https://github.com/mattiegit/qube_heatpump/releases)
 
-This Home Assistant integration connects to your Qube heat pump via Modbus/TCP and exposes the full set of registers as native entities (sensors, binary sensors, switches, numbers, buttons). It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library for standardized protocol-level entity definitions.
+This Home Assistant integration connects to your Qube heat pump via Modbus/TCP and exposes the full set of registers as native entities (sensors, binary sensors, switches, numbers, select, buttons). It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library for standardized protocol-level entity definitions.
 
 ## Entity Naming
 
-All entity IDs include a configurable prefix (default: `qube`) for clear identification:
+Entity IDs are `<platform>.<device name>_<key>`. The device name you enter during setup is slugified and used as prefix; the default name "qube 1" gives:
 
 ```
-sensor.qube_temp_supply
-sensor.qube_temp_return
-sensor.qube_energy_total_electric
-switch.qube_bms_summerwinter
-select.qube_sgready_mode
+sensor.qube_1_temp_supply
+sensor.qube_1_temp_return
+sensor.qube_1_energy_total_electric
+switch.qube_1_bms_summerwinter
+select.qube_1_sg_ready_mode
 ```
 
-The prefix can be customized via the integration's Options (Configure button) to match your device name.
+The key is the vendor's Modbus register key, so an entity ID can be looked up directly in the Modbus documentation. The device name can be changed later via the integration's **Configure** dialog; this renames all entity IDs. In the wiki and examples, `qube` stands for your slugified device name.
 
 ## Installation
 
@@ -26,7 +26,7 @@ The prefix can be customized via the integration's Options (Configure button) to
 1. Open HACS in Home Assistant
 2. Click the three dots menu → **Custom repositories**
 3. Add `https://github.com/mattiegit/qube_heatpump` as an **Integration**
-4. Search for **Qube Heat Pump** and click **Download**
+4. Search for **Qube heat pump** and click **Download**
 5. Restart Home Assistant
 
 ### Manual Installation
@@ -38,9 +38,11 @@ The prefix can be customized via the integration's Options (Configure button) to
 ## Configuration
 
 1. Go to **Settings → Devices & Services → Integrations**
-2. Click **Add Integration** and search for **Qube Heat Pump**
-3. Enter the IP address or hostname of your heat pump
-4. The integration auto-discovers all Modbus entities
+2. Click **Add Integration** and search for **Qube heat pump**
+3. Enter the IP address or hostname of your heat pump and a device name
+4. The integration creates all Modbus entities
+
+The optional virtual thermostat and DHW schedule are enabled in the **Configure** dialog of the entry.
 
 ## Features
 
@@ -48,10 +50,11 @@ The prefix can be customized via the integration's Options (Configure button) to
 
 - **Sensors** - Temperatures, power, energy, setpoints, operating hours
 - **Binary sensors** - Alarms, valve states, digital inputs/outputs
-- **Switches** - Summer mode, DHW boost, SG Ready, heating curve
-- **Number entities** - DHW setpoint control
+- **Switches** - Summer mode, DHW boost, anti-legionella, heating curve, heat demand, DHW schedule
+- **Number entities** - DHW setpoint (Modbus, register 173), heating setpoint without curve (register 101), cooling setpoint without curve (register 103)
 - **Select entity** - SG Ready mode selector
 - **Buttons** - Integration reload, clear energy counter cache
+- **Climate** - Optional virtual thermostat driven by an external temperature sensor
 
 ### Computed Sensors
 
@@ -65,10 +68,11 @@ Beyond raw Modbus values, the integration provides:
 
 ### Diagnostics
 
-- **Qube Info sensor** - Version, host, entity counts
+- **Info sensor** - Firmware and integration version, host, label, error counters as attributes
 - **Error counters** - Connection and read error tracking
-- **IP Address sensor** - Resolved IP for hostname setups
+- **IP address sensor** - Resolved IP for hostname setups
 - **Energy totals not advancing** - Problem binary sensor raised when the energy totalisers stop advancing while the heat pump draws power
+- **Download diagnostics** - Entry data and options (host/IP redacted), firmware version, hub info, entity list and the current register data
 
 ## Is my DHW schedule active?
 
@@ -84,14 +88,19 @@ The integration implements **monotonic clamping** for `total_increasing` sensors
 - **Write access**: The `write_register` service allows raw register writes for advanced users. Normal setpoint control should use the `number` entity actions
 - **No external connections**: All communication stays within your local network
 
+## Removing the Integration
+
+Delete the entry via **Settings → Devices & Services → Qube heat pump → ⋮ → Delete**. Home Assistant removes the device and its entities, the `group.qube_alarms_<device name>` helper group is removed when the entry unloads, and the monotonic-clamping cache file `.storage/qube_heatpump_monotonic_<entry_id>` is deleted with the entry. Nothing is left behind. See the [wiki](./wiki/README.md#removing-the-integration) for details.
+
 ## Documentation
 
 See the [project wiki](./wiki/README.md) for detailed documentation on:
 
+- Entity reference and computed sensors
 - SG Ready signal configuration
-- Virtual thermostat setup
+- Virtual thermostat setup and DHW schedule
 - Dashboard examples
-- Troubleshooting
+- Troubleshooting and diagnostics
 
 ## Contributions
 
@@ -101,4 +110,4 @@ If you find this integration useful, consider [buying me a coffee](https://buyme
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the GNU General Public License v3.0; see [LICENSE](LICENSE).

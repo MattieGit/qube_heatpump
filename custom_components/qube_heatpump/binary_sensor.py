@@ -10,7 +10,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.const import EntityCategory
 
-from .const import CONF_THERMOSTAT_ENABLED
+from .const import CONF_THERMOSTAT_ENABLED, CONF_THERMOSTAT_SENSOR
 from .entity import QubeEntity
 from .helpers import entity_data_key, is_alarm_entity
 
@@ -88,6 +88,10 @@ def _derive_entity_category(vendor_id: str | None) -> EntityCategory | None:
     return None
 
 
+# Writes go through the shared hub; no per-platform throttling needed.
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: QubeConfigEntry,
@@ -121,11 +125,13 @@ async def async_setup_entry(
     entities.append(QubeEnergyTotalsStaleSensor(coordinator, hub, version))
     entities.append(QubeDhwScheduleBinarySensor(coordinator, hub, entry, version))
 
-    # Add thermostat sensor timeout binary sensor if thermostat is enabled
-    if entry.options.get(CONF_THERMOSTAT_ENABLED):
-        entities.append(
-            QubeThermostatTimeoutSensor(coordinator, hub, entry, version)
-        )
+    # Add the thermostat sensor-timeout binary sensor under the same condition
+    # the climate platform uses to create the thermostat (enabled AND a source
+    # sensor configured); without a thermostat it would stay off forever.
+    if entry.options.get(CONF_THERMOSTAT_ENABLED) and entry.options.get(
+        CONF_THERMOSTAT_SENSOR
+    ):
+        entities.append(QubeThermostatTimeoutSensor(coordinator, hub, entry, version))
 
     async_add_entities(entities)
 

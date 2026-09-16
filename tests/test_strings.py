@@ -28,8 +28,6 @@ ALLOWED_CAPITALS = {
     "Ready",  # Part of "SG Ready" standard
     "Linq",  # Qube Linq product name
     "Modbus",
-    # Technical terms that are commonly capitalized
-    "Anti-legionella",
     # Category prefixes (word before colon in "Category: description" format)
     "Alarm",
     "Max",  # Used in alarm descriptions
@@ -329,27 +327,33 @@ class TestSentenceCaseHelper:
         assert _is_sentence_case("Anti-legionella enabled") is True
 
 
+COMPONENT_DIR = Path(__file__).parent.parent / "custom_components" / "qube_heatpump"
+
+
+def _flatten(d: dict, prefix: str = "") -> dict[str, str]:
+    """Flatten a nested translation dict into {dotted.path: leaf value}."""
+    leaves: dict[str, str] = {}
+    for k, v in d.items():
+        path = f"{prefix}.{k}" if prefix else k
+        if isinstance(v, dict):
+            leaves.update(_flatten(v, path))
+        else:
+            leaves[path] = v
+    return leaves
+
+
 def test_translation_files_in_sync() -> None:
-    """strings.json, en.json and nl.json must have identical key trees."""
-    import json
-    from pathlib import Path
+    """strings.json, en.json and nl.json must have identical key trees.
 
-    base = Path("custom_components/qube_heatpump")
-    strings = json.loads((base / "strings.json").read_text())
-    en = json.loads((base / "translations/en.json").read_text())
-    nl = json.loads((base / "translations/nl.json").read_text())
+    en.json is the English translation of strings.json, so its values must
+    match as well (Home Assistant core generates en.json from strings.json).
+    """
+    strings = json.loads((COMPONENT_DIR / "strings.json").read_text())
+    en = json.loads((COMPONENT_DIR / "translations/en.json").read_text())
+    nl = json.loads((COMPONENT_DIR / "translations/nl.json").read_text())
 
-    def key_tree(d: dict, prefix: str = "") -> set[str]:
-        keys: set[str] = set()
-        for k, v in d.items():
-            path = f"{prefix}.{k}" if prefix else k
-            if isinstance(v, dict):
-                keys |= key_tree(v, path)
-            else:
-                keys.add(path)
-        return keys
-
-    s_keys, en_keys, nl_keys = key_tree(strings), key_tree(en), key_tree(nl)
+    s_flat, en_flat, nl_flat = _flatten(strings), _flatten(en), _flatten(nl)
+    s_keys, en_keys, nl_keys = set(s_flat), set(en_flat), set(nl_flat)
     assert s_keys == en_keys, (
         f"strings vs en drift: only-strings={sorted(s_keys - en_keys)} "
         f"only-en={sorted(en_keys - s_keys)}"
@@ -359,15 +363,76 @@ def test_translation_files_in_sync() -> None:
         f"only-nl={sorted(nl_keys - s_keys)}"
     )
 
+    value_drift = {
+        path: (s_flat[path], en_flat[path])
+        for path in s_keys
+        if s_flat[path] != en_flat[path]
+    }
+    assert not value_drift, f"strings vs en value drift: {value_drift}"
+
+
+async def _registered_translation_keys(hass) -> set[tuple[str, str]]:
+    """Set up the integration with every optional feature and collect (platform, translation_key).
+
+    Reading the entity registry (rather than grepping the source) makes the
+    orphan check follow whatever the platforms actually create.
+    """
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.qube_heatpump.const import (
+        CONF_DHW_SCHEDULE_ENABLED,
+        CONF_HOST,
+        CONF_THERMOSTAT_ENABLED,
+        CONF_THERMOSTAT_SENSOR,
+        DOMAIN,
+    )
+    from homeassistant.helpers import entity_registry as er
+
+    hass.states.async_set("sensor.room_temp", "20.0", {"device_class": "temperature"})
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+        title="Qube Heat Pump",
+        options={
+            CONF_THERMOSTAT_ENABLED: True,
+            CONF_THERMOSTAT_SENSOR: "sensor.room_temp",
+            CONF_DHW_SCHEDULE_ENABLED: True,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    return {
+        (entity.domain, entity.translation_key)
+        for entity in registry.entities.values()
+        if entity.config_entry_id == entry.entry_id and entity.translation_key
+    }
+
+
+async def test_entity_translation_keys_are_used(hass, mock_qube_client) -> None:
+    """Every entity.<platform>.<key> in strings.json must belong to a created entity.
+
+    Anything else is an orphan left over from a removed or renamed entity.
+    """
+    used = await _registered_translation_keys(hass)
+
+    strings = json.loads((COMPONENT_DIR / "strings.json").read_text())
+    orphans = [
+        f"{platform}.{key}"
+        for platform, entries in strings["entity"].items()
+        for key in entries
+        if (platform, key) not in used
+    ]
+    assert not orphans, f"translation keys without an entity: {orphans}"
+
 
 def test_no_binary_sensor_keys_under_sensor() -> None:
     """Binary-sensor translation keys must not be duplicated under entity.sensor."""
-    import json
-    from pathlib import Path
-
-    base = Path("custom_components/qube_heatpump")
     for fname in ("strings.json", "translations/en.json", "translations/nl.json"):
-        data = json.loads((base / fname).read_text())
+        data = json.loads((COMPONENT_DIR / fname).read_text())
         sensor_keys = set(data.get("entity", {}).get("sensor", {}))
         binary_keys = set(data.get("entity", {}).get("binary_sensor", {}))
         overlap = sensor_keys & binary_keys

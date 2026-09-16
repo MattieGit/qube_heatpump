@@ -1,21 +1,38 @@
 """Tests for the Qube Heat Pump services."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+import logging
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from custom_components.qube_heatpump.const import CONF_HOST, CONF_NAME, DOMAIN
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.setup import async_setup_component
 
-from tests.conftest import add_bulk_read
+from . import setup_integration
 
-if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
+# Writable registers used by the write_register tests; both addresses map to
+# exactly one library entity.
+HEAT_SETPOINT_ADDRESS = 101
+HEAT_SETPOINT_KEY = "usr_pid_heatsetp"
+DEMAND_COIL_ADDRESS = 67
+DEMAND_COIL_KEY = "modbus_demand"
+
+
+def _entry(host: str, name: str | None = None) -> MockConfigEntry:
+    """Return an extra config entry for the multi-entry cases."""
+    data: dict[str, Any] = {CONF_HOST: host}
+    if name is not None:
+        data[CONF_NAME] = name
+    return MockConfigEntry(
+        domain=DOMAIN,
+        data=data,
+        title=name or "Qube Heat Pump",
+        unique_id=f"{DOMAIN}-{host}-502",
+    )
 
 
 async def test_services_registered_by_async_setup_alone(
@@ -23,9 +40,8 @@ async def test_services_registered_by_async_setup_alone(
 ) -> None:
     """Services are registered at component setup, before any config entry exists.
 
-    Registration must live in the module-level async_setup() so the
-    services register once and survive individual config entries being
-    unloaded, instead of being (re-)registered per config entry.
+    Registration lives in the module-level async_setup() so the services
+    register once and survive individual config entries being unloaded.
     """
     assert not hass.services.has_service(DOMAIN, "reconfigure")
     assert not hass.services.has_service(DOMAIN, "write_register")
@@ -40,25 +56,17 @@ async def test_services_registered_by_async_setup_alone(
 async def test_services_survive_last_entry_unload(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
     """Services stay registered after the last config entry unloads.
 
-    Calling write_register afterwards should fail cleanly with a
-    HomeAssistantError (no loaded entry to resolve), not disappear from
-    the service registry.
+    Calling write_register afterwards fails cleanly with a
+    HomeAssistantError (no loaded entry to resolve) instead of the service
+    disappearing from the registry.
     """
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    await setup_integration(hass, mock_config_entry)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    assert await hass.config_entries.async_unload(entry.entry_id)
+    assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
     assert hass.services.has_service(DOMAIN, "reconfigure")
@@ -68,356 +76,230 @@ async def test_services_survive_last_entry_unload(
         await hass.services.async_call(
             DOMAIN,
             "write_register",
-            {"address": 173, "value": 42.0},
+            {"address": HEAT_SETPOINT_ADDRESS, "value": 42.0},
             blocking=True,
         )
 
 
-async def test_write_register_service_unresolvable_entry_id(
+@pytest.mark.parametrize(
+    ("address", "value", "write", "expected_call"),
+    [
+        (
+            HEAT_SETPOINT_ADDRESS,
+            21.5,
+            "write_setpoint",
+            (HEAT_SETPOINT_KEY, 21.5),
+        ),
+        (DEMAND_COIL_ADDRESS, 1, "write_switch", (DEMAND_COIL_KEY, True)),
+    ],
+    ids=["holding_register", "coil"],
+)
+async def test_write_register_dispatches_by_platform(
     hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    address: int,
+    value: float,
+    write: str,
+    expected_call: tuple[str, Any],
 ) -> None:
-    """write_register raises HomeAssistantError when entry_id resolves to nothing.
+    """The address picks the writable entity, which decides the write method."""
+    await setup_integration(hass, mock_config_entry)
 
-    Exercised at the service-call level (via hass.services.async_call),
-    not by calling _resolve_entry directly, to prove the target-is-None
-    guard clause actually raises instead of silently logging and
-    returning. No config entry is set up at all here: services are
-    registered by async_setup alone.
-    """
-    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.services.async_call(
+        DOMAIN,
+        "write_register",
+        {"address": address, "value": value},
+        blocking=True,
+    )
     await hass.async_block_till_done()
 
-    with pytest.raises(
-        HomeAssistantError, match="unable to resolve integration entry"
-    ):
+    getattr(mock_qube_client, write).assert_awaited_once_with(*expected_call)
+    # The controller now reports the written value back
+    assert client_values[expected_call[0]] == expected_call[1]
+
+
+async def test_write_register_resolves_the_entry_by_label(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """With two hubs loaded, the label decides which one is written to."""
+    first = _entry("1.2.3.4", "qube1")
+    second = _entry("1.2.3.5", "qube2")
+    await setup_integration(hass, first)
+    await setup_integration(hass, second)
+
+    await hass.services.async_call(
+        DOMAIN,
+        "write_register",
+        {"address": HEAT_SETPOINT_ADDRESS, "value": 21.5, "label": "qube2"},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    mock_qube_client.write_setpoint.assert_awaited_once_with(HEAT_SETPOINT_KEY, 21.5)
+    # Only the labelled hub's coordinator was asked to re-read
+    assert second.runtime_data.coordinator.data[HEAT_SETPOINT_KEY] == 21.5
+    assert first.runtime_data.coordinator.data[HEAT_SETPOINT_KEY] == 45.0
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        ({"address": 99999, "value": 42.0}, "No writable entity"),
+        (
+            {"address": DEMAND_COIL_ADDRESS, "value": 0.4},
+            "only accepts 0 or 1",
+        ),
+        (
+            {"address": HEAT_SETPOINT_ADDRESS, "value": 42.0, "entry_id": "bogus"},
+            "unable to resolve integration entry",
+        ),
+        (
+            {"address": HEAT_SETPOINT_ADDRESS, "value": 42.0, "label": "nope"},
+            "unable to resolve integration entry",
+        ),
+    ],
+    ids=["unknown_address", "fractional_coil", "unknown_entry_id", "unknown_label"],
+)
+async def test_write_register_rejects_bad_requests(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    data: dict[str, Any],
+    message: str,
+) -> None:
+    """A caller error raises instead of silently doing nothing."""
+    await setup_integration(hass, mock_config_entry)
+
+    with pytest.raises(HomeAssistantError, match=message):
+        await hass.services.async_call(DOMAIN, "write_register", data, blocking=True)
+
+    mock_qube_client.write_setpoint.assert_not_awaited()
+    mock_qube_client.write_switch.assert_not_awaited()
+
+
+async def test_write_register_rejects_an_unloaded_entry(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """An explicit entry_id for an unloaded entry is refused.
+
+    Home Assistant deletes ``runtime_data`` on unload rather than setting it
+    to None, so the guard has to check the entry state. A second, loaded
+    entry rules out the single-entry fallback in _resolve_entry.
+    """
+    await setup_integration(hass, mock_config_entry)
+    await setup_integration(hass, _entry("1.2.3.5"))
+
+    assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert not hasattr(mock_config_entry, "runtime_data")
+
+    with pytest.raises(HomeAssistantError, match="not loaded"):
         await hass.services.async_call(
             DOMAIN,
             "write_register",
-            {"address": 173, "value": 42.0, "entry_id": "bogus_entry_id"},
+            {
+                "address": HEAT_SETPOINT_ADDRESS,
+                "value": 42.0,
+                "entry_id": mock_config_entry.entry_id,
+            },
             blocking=True,
         )
 
 
-async def test_write_register_service_registered(
+async def test_write_register_connect_failure_raises_translated_error(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test write_register service is registered."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    """A connect failure inside write_register is a translated HomeAssistantError."""
+    await setup_integration(hass, mock_config_entry)
+    mock_qube_client.is_connected = False
+    mock_qube_client.connect = AsyncMock(return_value=False)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Check service is registered
-    assert hass.services.has_service(DOMAIN, "write_register")
-
-
-async def test_reconfigure_service_registered(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test reconfigure service is registered."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Check service is registered
-    assert hass.services.has_service(DOMAIN, "reconfigure")
-
-
-async def test_write_register_service_with_writable_entity(
-    hass: HomeAssistant,
-) -> None:
-    """Test calling write_register service with a writable entity address."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.is_connected = False
-        client.connect = AsyncMock(return_value=True)
-        client.close = AsyncMock(return_value=None)
-        client.read_entity = AsyncMock(return_value=45.0)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client.write_setpoint = AsyncMock(return_value=True)
-        client.write_switch = AsyncMock(return_value=True)
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
+    with pytest.raises(HomeAssistantError) as excinfo:
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": HEAT_SETPOINT_ADDRESS, "value": 50.0},
+            blocking=True,
         )
-        entry.add_to_hass(hass)
 
-        await hass.config_entries.async_setup(entry.entry_id)
+    assert excinfo.value.translation_domain == DOMAIN
+    assert excinfo.value.translation_key == "write_register_failed"
+    assert excinfo.value.translation_placeholders == {
+        "address": str(HEAT_SETPOINT_ADDRESS)
+    }
+    mock_qube_client.write_setpoint.assert_not_awaited()
+
+
+async def test_reconfigure_starts_the_flow_for_the_only_entry(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Without an entry_id the single config entry is reconfigured."""
+    await setup_integration(hass, mock_config_entry)
+
+    await hass.services.async_call(DOMAIN, "reconfigure", {}, blocking=True)
+    await hass.async_block_till_done()
+
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert len(flows) == 1
+    assert flows[0]["step_id"] == "reconfigure_confirm"
+    assert flows[0]["context"]["entry_id"] == mock_config_entry.entry_id
+
+
+async def test_reconfigure_needs_an_entry_id_with_several_entries(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """An ambiguous call logs and starts nothing rather than guessing."""
+    await setup_integration(hass, mock_config_entry)
+    second = _entry("1.2.3.5")
+    await setup_integration(hass, second)
+
+    with caplog.at_level(logging.WARNING):
+        await hass.services.async_call(DOMAIN, "reconfigure", {}, blocking=True)
         await hass.async_block_till_done()
 
-        # Get the hub to find a writable entity address
-        hub = entry.runtime_data.hub
-        writable_sensors = [
-            e for e in hub.entities if e.writable and e.platform == "sensor"
-        ]
+    assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert "pass entry_id" in caplog.text
 
-        if writable_sensors:
-            ent = writable_sensors[0]
-            # Call write_register service with actual writable entity address
-            await hass.services.async_call(
-                DOMAIN,
-                "write_register",
-                {"address": ent.address, "value": 21.5},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
-
-            # Verify write_setpoint was called via the hub
-            client.write_setpoint.assert_called()
-
-
-async def test_write_register_service_no_matching_entity(
-    hass: HomeAssistant,
-) -> None:
-    """Test calling write_register service with non-existent address raises error."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.is_connected = False
-        client.connect = AsyncMock(return_value=True)
-        client.close = AsyncMock(return_value=None)
-        client.read_entity = AsyncMock(return_value=45.0)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Call write_register with an address that doesn't match any writable entity
-        # This should raise an error since the hub now requires matching entities
-        with pytest.raises(HomeAssistantError):
-            await hass.services.async_call(
-                DOMAIN,
-                "write_register",
-                {"address": 99999, "value": 42.0},
-                blocking=True,
-            )
-
-
-async def test_reconfigure_service_call(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test calling reconfigure service."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Check service is registered and can be called without entry_id
-    # (entry_id parameter is tested via service call with empty dict)
-    assert hass.services.has_service(DOMAIN, "reconfigure")
-    # Service without entry_id is tested in test_reconfigure_service_no_entry
-
-
-async def test_reconfigure_service_no_entry(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-) -> None:
-    """Test calling reconfigure service with no entry."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Call reconfigure without entry_id - should resolve single entry
     await hass.services.async_call(
-        DOMAIN,
-        "reconfigure",
-        {},
-        blocking=True,
+        DOMAIN, "reconfigure", {"entry_id": second.entry_id}, blocking=True
     )
     await hass.async_block_till_done()
 
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert len(flows) == 1
+    assert flows[0]["context"]["entry_id"] == second.entry_id
 
-async def test_reconfigure_service_invalid_entry_id(
+
+async def test_reconfigure_survives_an_unavailable_flow(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test calling reconfigure service with invalid entry_id."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    """A flow that refuses to start is logged, not raised at the caller."""
+    await setup_integration(hass, mock_config_entry)
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Call reconfigure with invalid entry_id - should log warning but not raise
-    # Using dict() to convert ServiceCall data so voluptuous doesn't fail on ReadOnlyDict
-    await hass.services.async_call(
-        DOMAIN,
-        "reconfigure",
-        {},  # Empty dict - no entry_id - with single entry, resolves OK
-        blocking=True,
-    )
-    await hass.async_block_till_done()
-
-
-def test_resolve_entry_function() -> None:
-    """Test _resolve_entry returns None when multiple entries and no ID."""
-    from custom_components.qube_heatpump import _resolve_entry
-
-    # Function exists and is callable
-    assert callable(_resolve_entry)
-
-
-async def test_write_register_with_label(
-    hass: HomeAssistant,
-) -> None:
-    """Test write_register service resolves entry by label."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.is_connected = False
-        client.connect = AsyncMock(return_value=True)
-        client.close = AsyncMock(return_value=None)
-        client.read_entity = AsyncMock(return_value=45.0)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client.write_setpoint = AsyncMock(return_value=True)
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump (qube1)",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
+    with (
+        patch.object(
+            hass.config_entries.flow,
+            "async_init",
+            side_effect=HomeAssistantError("Flow error"),
+        ),
+        caplog.at_level(logging.WARNING),
+    ):
+        await hass.services.async_call(DOMAIN, "reconfigure", {}, blocking=True)
         await hass.async_block_till_done()
 
-        # Get the hub to find a writable entity address
-        hub = entry.runtime_data.hub
-        writable_sensors = [
-            e for e in hub.entities if e.writable and e.platform == "sensor"
-        ]
-
-        if writable_sensors:
-            ent = writable_sensors[0]
-            # Call write_register with label
-            await hass.services.async_call(
-                DOMAIN,
-                "write_register",
-                {"address": ent.address, "value": 21.5, "label": "qube1"},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
-
-            # Verify write_setpoint was called
-            client.write_setpoint.assert_called()
-
-
-async def test_write_register_switch_entity(
-    hass: HomeAssistant,
-) -> None:
-    """Test calling write_register service with a switch entity address."""
-    with patch(
-        "custom_components.qube_heatpump.hub.QubeClient", autospec=True
-    ) as mock_client_cls:
-        client = mock_client_cls.return_value
-        client.host = "1.2.3.4"
-        client.port = 502
-        client.unit = 1
-        client.is_connected = False
-        client.connect = AsyncMock(return_value=True)
-        client.close = AsyncMock(return_value=None)
-        client.read_entity = AsyncMock(return_value=False)
-        add_bulk_read(client)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client.write_switch = AsyncMock(return_value=True)
-
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump",
-            unique_id=f"{DOMAIN}-1.2.3.4-502",
-        )
-        entry.add_to_hass(hass)
-
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Get the hub to find a writable switch entity address
-        hub = entry.runtime_data.hub
-        writable_switches = [
-            e for e in hub.entities if e.writable and e.platform == "switch"
-        ]
-
-        if writable_switches:
-            ent = writable_switches[0]
-            # Call write_register service with switch address (value as bool)
-            await hass.services.async_call(
-                DOMAIN,
-                "write_register",
-                {"address": ent.address, "value": 1},
-                blocking=True,
-            )
-            await hass.async_block_till_done()
-
-            # Verify write_switch was called via the hub
-            client.write_switch.assert_called()
+    assert "Reconfigure flow not available" in caplog.text

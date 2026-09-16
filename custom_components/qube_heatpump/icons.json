@@ -84,60 +84,12 @@
       "metric_errors_read": {
         "default": "mdi:database-alert"
       },
-      "metric_count_sensors": {
-        "default": "mdi:counter"
-      },
-      "metric_count_binary_sensors": {
-        "default": "mdi:counter"
-      },
-      "metric_count_switches": {
-        "default": "mdi:counter"
-      },
       "flow": {
         "default": "mdi:water-pump"
-      },
-      "supplytemp": {
-        "default": "mdi:thermometer-chevron-up"
-      },
-      "rettemp": {
-        "default": "mdi:thermometer-chevron-down"
-      },
-      "srcintemp": {
-        "default": "mdi:thermometer"
-      },
-      "srcouttemp": {
-        "default": "mdi:thermometer"
-      },
-      "roomtemp": {
-        "default": "mdi:home-thermometer"
-      },
-      "dhw_temp": {
-        "default": "mdi:water-thermometer"
-      },
-      "outtemp": {
-        "default": "mdi:thermometer"
-      },
-      "generalmng_cop": {
-        "default": "mdi:chart-areaspline"
-      },
-      "generalmng_thermic_pwr": {
-        "default": "mdi:fire"
-      },
-      "generalmng_eletricpwr": {
-        "default": "mdi:flash"
-      },
-      "generalmng_acumulatedpwr": {
-        "default": "mdi:lightning-bolt"
-      },
-      "generalmng_acumulatedthermic": {
-        "default": "mdi:fire"
-      },
-      "bldc_evd_powerplus_info_pump": {
-        "default": "mdi:fan"
       }
     },
     "binary_sensor": {
-      "qube_alarm_sensors_active": {
+      "alarm_sensors_active": {
         "default": "mdi:alarm-light"
       },
       "glbal": {

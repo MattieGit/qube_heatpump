@@ -1,48 +1,68 @@
 """Common fixtures for the Qube Heat Pump tests."""
 
 from collections.abc import Generator
-from pathlib import Path
-import sys
+import math
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Add custom_components to path so integration can be found
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.syrupy import (
+    HomeAssistantSnapshotExtension,
+)
+from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+from syrupy.assertion import SnapshotAssertion
 
-from custom_components.qube_heatpump.const import CONF_HOST, CONF_PORT, DOMAIN
+from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 
+LIBRARY_ENTITIES = {**SENSORS, **BINARY_SENSORS, **SWITCHES}
+COIL_KEYS = frozenset(BINARY_SENSORS) | frozenset(SWITCHES)
 
-def add_bulk_read(client: MagicMock) -> None:
-    """Make get_all_entities delegate to the per-entity read_entity mock.
-
-    The coordinator fetches all values through one bulk call; tests
-    control values by configuring client.read_entity, so the bulk call
-    resolves each library entity through that mock.
-    """
-
-    async def _bulk() -> dict:
-        from python_qube_heatpump.entities import (
-            BINARY_SENSORS,
-            SENSORS,
-            SWITCHES,
-        )
-
-        return {
-            key: await client.read_entity(ent)
-            for key, ent in {**SENSORS, **BINARY_SENSORS, **SWITCHES}.items()
-        }
-
-    client.get_all_entities = AsyncMock(side_effect=_bulk)
-    client.async_get_software_version = AsyncMock(return_value="4.10")
+# Value every register reads unless a test says otherwise
+DEFAULT_REGISTER_VALUE = 45.0
+# Deterministic entry id so storage keys and repair issue ids are stable
+MOCK_ENTRY_ID = "01JQUBEHEATPUMP00000000000"
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
+def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Enable custom integrations for all tests."""
-    yield
+
+
+@pytest.fixture(autouse=True)
+def stable_integration_version(request: pytest.FixtureRequest) -> Generator[None]:
+    """Pin the version the info sensor reports.
+
+    It comes from manifest.json, so without this every release bump would
+    rewrite the sensor snapshots. Tests that assert the real wiring carry
+    the ``real_integration_version`` marker.
+    """
+    if "real_integration_version" in request.keywords:
+        yield
+        return
+    integration = MagicMock()
+    integration.version = "0.0.0"
+    with patch(
+        "custom_components.qube_heatpump.sensor.async_get_integration",
+        AsyncMock(return_value=integration),
+    ):
+        yield
+
+
+@pytest.fixture
+def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
+    """Use the Home Assistant serializer; snapshots live in tests/snapshots."""
+    return snapshot.use_extension(HomeAssistantSnapshotExtension)
+
+
+@pytest.fixture
+def entity_registry_enabled_by_default() -> Generator[None]:
+    """Register every entity enabled, including the disabled-by-default ones."""
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        return_value=True,
+    ):
+        yield
 
 
 @pytest.fixture
@@ -55,10 +75,31 @@ def mock_setup_entry() -> Generator[AsyncMock]:
 
 
 @pytest.fixture
-def mock_qube_client() -> Generator[MagicMock]:
-    """Mock the QubeClient to avoid real network calls.
+def client_values() -> dict[str, Any]:
+    """Register values the mocked client returns, by library key.
 
-    Note: This fixture is NOT autouse. Tests that need it should explicitly use it.
+    Keys that are missing fall back to 45.0 for registers and False for coils
+    and discrete inputs. The mock consults the dict on every read, so a test
+    can override a key up front (parametrize ``client_values``) or mutate the
+    dict and trigger a poll to simulate the device changing.
+    """
+    return {}
+
+
+def read_value(client_values: dict[str, Any], key: str) -> Any:
+    """Return the mocked reading for a library key."""
+    if key in client_values:
+        return client_values[key]
+    return False if key in COIL_KEYS else DEFAULT_REGISTER_VALUE
+
+
+@pytest.fixture
+def mock_qube_client(client_values: dict[str, Any]) -> Generator[MagicMock]:
+    """Mock the library client the hub creates.
+
+    Reads come from ``client_values``; successful writes land in the same
+    dict so the next poll reflects them, like a real controller would.
+    Monotonic clamping is a plain dict with the library's jitter rule.
     """
     with patch(
         "custom_components.qube_heatpump.hub.QubeClient", autospec=True
@@ -67,60 +108,66 @@ def mock_qube_client() -> Generator[MagicMock]:
         client.host = "1.2.3.4"
         client.port = 502
         client.unit = 1
-        client.connect = AsyncMock(return_value=True)
         client.is_connected = True
+        client.connect = AsyncMock(return_value=True)
         client.close = AsyncMock(return_value=None)
-        # Mock entity read methods - return appropriate values
-        client.read_entity = AsyncMock(return_value=45.0)
-        client.read_sensor = AsyncMock(return_value=45.0)
-        client.read_binary_sensor = AsyncMock(return_value=False)
-        client.read_switch = AsyncMock(return_value=False)
-        client.write_switch = AsyncMock(return_value=True)
-        client.write_setpoint = AsyncMock(return_value=True)
-        add_bulk_read(client)
-        # Monotonic clamping - use a real dict-backed implementation
-        _mock_cache: dict[str, float] = {}
-        type(client).monotonic_cache = property(
-            lambda self: _mock_cache,
-            lambda self, val: (_mock_cache.clear(), _mock_cache.update(val)),
-        )
+        client.async_get_software_version = AsyncMock(return_value="4.10")
 
-        def _mock_clamp(key, value):
-            if value is None:
+        async def _read_entity(ent: Any) -> Any:
+            return read_value(client_values, ent.key)
+
+        async def _get_all_entities() -> dict[str, Any]:
+            # Resolved through read_entity so a test may replace either one
+            return {
+                key: await client.read_entity(ent)
+                for key, ent in LIBRARY_ENTITIES.items()
+            }
+
+        async def _write(key: str, value: Any) -> bool:
+            client_values[key] = value
+            return True
+
+        client.read_entity = AsyncMock(side_effect=_read_entity)
+        client.get_all_entities = AsyncMock(side_effect=_get_all_entities)
+        client.write_switch = AsyncMock(side_effect=_write)
+        client.write_setpoint = AsyncMock(side_effect=_write)
+
+        client.monotonic_cache = {}
+
+        def _clamp(key: str, value: float | None) -> float | None:
+            if value is None or not math.isfinite(value):
                 return value
-            import math
-            if not math.isfinite(value):
-                return value
-            prev = _mock_cache.get(key)
-            if prev is not None and value < prev:
-                return prev
-            _mock_cache[key] = value
+            previous = client.monotonic_cache.get(key)
+            if previous is not None and value < previous:
+                return previous
+            client.monotonic_cache[key] = value
             return value
 
-        client.clamp_monotonic = _mock_clamp
-        # Mock the underlying pymodbus client for fallback reads
-        client._client = MagicMock()
-        client._client.read_holding_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_input_registers = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, registers=[0, 0])
-        )
-        client._client.read_coils = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
-        )
-        client._client.read_discrete_inputs = AsyncMock(
-            return_value=MagicMock(isError=lambda: False, bits=[False])
+        client.clamp_monotonic = MagicMock(side_effect=_clamp)
+        client.clear_monotonic_cache = MagicMock(
+            side_effect=lambda: client.monotonic_cache.clear()
         )
         yield client
 
 
 @pytest.fixture
-def mock_config_entry() -> MockConfigEntry:
-    """Return a mock config entry."""
+def config_entry_options() -> dict[str, Any]:
+    """Options of the mock config entry; override per module or test."""
+    return {}
+
+
+@pytest.fixture
+def mock_config_entry(config_entry_options: dict[str, Any]) -> MockConfigEntry:
+    """Return a config entry for host 1.2.3.4.
+
+    It carries no name, so setup assigns the default "qube 1" and every
+    entity id starts with ``qube_1_`` (see tests/fixtures/entity_ids.json).
+    """
     return MockConfigEntry(
         domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502},
+        data={CONF_HOST: "1.2.3.4"},
         unique_id=f"{DOMAIN}-1.2.3.4-502",
-        title="Qube Heat Pump (1.2.3.4)",
+        title="Qube Heat Pump",
+        options=config_entry_options,
+        entry_id=MOCK_ENTRY_ID,
     )
