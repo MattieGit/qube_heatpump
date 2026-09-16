@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2026.9.2 — unreleased
+## 2026.9.2 — 2026-09-16
 - feat: DHW schedule visibility. `binary_sensor.<label>_dhw_schedule` (diagnostic) is on when the schedule option is enabled and carries start, end, setpoint source, fixed setpoint, window state and last start/end as attributes; `sensor.<label>_dhw_schedule_next_start` (timestamp) shows the next scheduled start. Both update when the scheduler fires.
 - feat: One INFO line at setup states whether the DHW schedule is enabled, its window and its setpoint source.
 - feat: `switch.<label>_dhw_schedule_enabled` (configuration) toggles the schedule option at runtime; the integration reloads to apply it.
