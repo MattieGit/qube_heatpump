@@ -340,8 +340,8 @@ async def test_write_register_with_label(
 
         entry = MockConfigEntry(
             domain=DOMAIN,
-            data={CONF_HOST: "1.2.3.4"},
-            title="Qube Heat Pump (qube1)",
+            data={CONF_HOST: "1.2.3.4", "name": "qube1"},
+            title="qube1",
             unique_id=f"{DOMAIN}-1.2.3.4-502",
         )
         entry.add_to_hass(hass)
