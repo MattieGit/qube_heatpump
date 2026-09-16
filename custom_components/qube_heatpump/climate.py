@@ -418,8 +418,10 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
             if not await self._async_ensure_summer_mode(False):
                 return
             if too_cold and not self._is_heating:
+                # Set both flags: the refresh inside _async_set_demand may
+                # already have adopted the coil under the other action.
                 if await self._async_set_demand(True):
-                    self._is_heating = True
+                    self._is_heating, self._is_cooling = True, False
             elif too_hot and self._is_heating:
                 await self._async_stop_demand()
         else:
@@ -429,7 +431,7 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
                 return
             if too_hot and not self._is_cooling:
                 if await self._async_set_demand(True):
-                    self._is_cooling = True
+                    self._is_heating, self._is_cooling = False, True
             elif too_cold and self._is_cooling:
                 await self._async_stop_demand()
 
