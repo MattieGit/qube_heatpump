@@ -100,6 +100,10 @@ async def test_entity_id_snapshot_standard(
         data={CONF_HOST: "1.2.3.4"},
         unique_id=f"{DOMAIN}-1.2.3.4-502",
         title="Qube Heat Pump",
+        # Fixed entry ids: unique ids are keyed on them, so they must be
+        # deterministic for the snapshot to be meaningful.
+        entry_id="01JQUBESTABLE0000000000001",
+        version=2,
     )
     entry.add_to_hass(hass)
 
@@ -141,6 +145,8 @@ async def test_entity_id_snapshot_thermostat_enabled(
             CONF_THERMOSTAT_ENABLED: True,
             CONF_THERMOSTAT_SENSOR: "sensor.outdoor_temperature",
         },
+        entry_id="01JQUBESTABLE0000000000002",
+        version=2,
     )
     entry.add_to_hass(hass)
 

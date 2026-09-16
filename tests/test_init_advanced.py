@@ -47,8 +47,10 @@ async def test_unit_id_resolution(
     await setup_integration(hass, entry)
 
     assert entry.runtime_data.hub.unit == expected
+    # The device is keyed on the entry, not on host:unit, so the unit id must
+    # reach the hub (and therefore every Modbus request) without changing it.
     assert device_registry.async_get_device_by_identifier(
-        (DOMAIN, f"1.2.3.4:{expected}"), entry.entry_id
+        (DOMAIN, entry.entry_id), entry.entry_id
     )
 
 

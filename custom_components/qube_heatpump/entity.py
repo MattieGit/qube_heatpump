@@ -29,8 +29,9 @@ class QubeEntity(CoordinatorEntity[QubeCoordinator]):
         self._hub = hub
         self._version = str(version) if version else "unknown"
         self._label = hub.label
+        self._entry_id = coordinator.config_entry.entry_id
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{hub.host}:{hub.unit}")},
+            identifiers={(DOMAIN, self._entry_id)},
             name=hub.device_name,
             manufacturer="Qube",
             model="Heat Pump",
@@ -38,8 +39,8 @@ class QubeEntity(CoordinatorEntity[QubeCoordinator]):
         )
 
     def _scoped_uid(self, base: str) -> str:
-        """Scope a unique_id with host_unit prefix for multi-device stability."""
-        return f"{self._hub.host}_{self._hub.unit}_{base}"
+        """Scope a unique_id to this config entry (stable across host changes)."""
+        return f"{self._entry_id}_{base}"
 
     async def _async_connect(self) -> None:
         """Connect to the device, surfacing a translated error to the caller."""

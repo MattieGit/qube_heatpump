@@ -39,7 +39,7 @@
     'suggested_object_id': 'qube_1_sg_ready_mode',
     'supported_features': 0,
     'translation_key': 'sgready_mode',
-    'unique_id': '1.2.3.4_1_sgready_mode',
+    'unique_id': '01JQUBEHEATPUMP00000000000_sgready_mode',
     'unit_of_measurement': None,
   })
 # ---

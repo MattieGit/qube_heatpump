@@ -345,6 +345,7 @@ class TestQubeSensorDescription:
         from custom_components.qube_heatpump.sensor import QubeSensor
 
         coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "entry-1"
         coordinator.data = data or {}
         return QubeSensor(
             coordinator=coordinator, hub=_mock_hub(), version="1.0", ent=ent
@@ -385,7 +386,7 @@ class TestQubeSensorDescription:
         assert sensor.suggested_display_precision == 1
         assert sensor.entity_registry_enabled_default is True
         assert sensor.entity_id == "sensor.qube1_temp_supply"
-        assert sensor.unique_id == "1.2.3.4_1_temp_supply"
+        assert sensor.unique_id == "entry-1_temp_supply"
 
     def test_no_device_class(self) -> None:
         """A definition without classes yields None, not an error."""
@@ -489,11 +490,13 @@ class TestQubeInfoSensor:
         hub = _mock_hub()
         hub.err_connect = 2
         hub.err_read = 5
-        sensor = QubeInfoSensor(coordinator=MagicMock(), hub=hub, version="4.10")
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "entry-1"
+        sensor = QubeInfoSensor(coordinator=coordinator, hub=hub, version="4.10")
 
         assert sensor.native_value == "ok"
         assert sensor.entity_id == "sensor.qube1_info"
-        assert sensor.unique_id == "1.2.3.4_1_info_sensor"
+        assert sensor.unique_id == "entry-1_info_sensor"
         attrs = sensor.extra_state_attributes
         assert attrs["firmware_version"] == "4.10"
         assert attrs["integration_version"] == "unknown"

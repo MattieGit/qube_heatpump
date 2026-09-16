@@ -37,7 +37,7 @@
     'suggested_object_id': 'qube_1_tapw_timeprogram_dhwsetp_nolinq',
     'supported_features': 0,
     'translation_key': 'tapw_timeprogram_dhwsetp_nolinq',
-    'unique_id': '1.2.3.4_1_tapw_timeprogram_dhwsetp_nolinq_setpoint',
+    'unique_id': '01JQUBEHEATPUMP00000000000_tapw_timeprogram_dhwsetp_nolinq_setpoint',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -98,7 +98,7 @@
     'suggested_object_id': 'qube_1_usr_pid_coolsetp',
     'supported_features': 0,
     'translation_key': 'usr_pid_coolsetp',
-    'unique_id': '1.2.3.4_1_usr_pid_coolsetp_setpoint',
+    'unique_id': '01JQUBEHEATPUMP00000000000_usr_pid_coolsetp_setpoint',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -159,7 +159,7 @@
     'suggested_object_id': 'qube_1_usr_pid_heatsetp',
     'supported_features': 0,
     'translation_key': 'usr_pid_heatsetp',
-    'unique_id': '1.2.3.4_1_usr_pid_heatsetp_setpoint',
+    'unique_id': '01JQUBEHEATPUMP00000000000_usr_pid_heatsetp_setpoint',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---

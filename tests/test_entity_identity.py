@@ -25,8 +25,10 @@ def hub() -> MagicMock:
 
 @pytest.fixture
 def coordinator() -> MagicMock:
-    """Return a coordinator stub holding no values."""
-    return MagicMock(data={})
+    """Return a coordinator stub holding no values, owned by entry "entry-1"."""
+    coordinator = MagicMock(data={})
+    coordinator.config_entry.entry_id = "entry-1"
+    return coordinator
 
 
 def test_switch_identity_comes_from_the_library_key(
@@ -45,7 +47,7 @@ def test_switch_identity_comes_from_the_library_key(
 
     switch = QubeSwitch(coordinator=coordinator, hub=hub, ent=ent)
 
-    assert switch.unique_id == "1.2.3.4_1_my_switch"
+    assert switch.unique_id == "entry-1_my_switch"
     assert switch.entity_id == "switch.qube1_my_switch"
     assert switch.translation_key == "my_switch"
     assert switch.has_entity_name is True
@@ -54,8 +56,8 @@ def test_switch_identity_comes_from_the_library_key(
 @pytest.mark.parametrize(
     ("input_type", "expected_unique_id"),
     [
-        ("discrete", "1.2.3.4_1_qube_binary_discrete_5"),
-        (None, "1.2.3.4_1_qube_binary_input_5"),
+        ("discrete", "entry-1_qube_binary_discrete_5"),
+        (None, "entry-1_qube_binary_input_5"),
     ],
 )
 def test_binary_sensor_unique_id_falls_back_to_address(

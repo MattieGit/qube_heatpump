@@ -666,7 +666,7 @@ async def test_climate_entity_id_and_unique_id_are_stable(
     registry = er.async_get(hass)
     entry = registry.async_get(entity_id)
     assert entry is not None
-    assert entry.unique_id == "1.2.3.4_1_thermostat"
+    assert entry.unique_id == f"{entry.config_entry_id}_thermostat"
     assert entry.device_id is not None
     # Same device as the coordinator entities (shared DeviceInfo).
     assert (

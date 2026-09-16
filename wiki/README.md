@@ -18,8 +18,9 @@
 14. [Security Considerations](#security-considerations)
 15. [Troubleshooting](#troubleshooting)
 16. [Diagnostics Toolkit](#diagnostics-toolkit)
-17. [Removing the Integration](#removing-the-integration)
-18. [Notes](#notes)
+17. [Changing the host or IP](#changing-the-host-or-ip)
+18. [Removing the Integration](#removing-the-integration)
+19. [Notes](#notes)
 
 ---
 
@@ -716,6 +717,10 @@ logger:
    - The current coordinator data (the last values read from every register)
 
 ---
+
+## Changing the host or IP
+
+Use **Reconfigure** (or the host field in the options dialog). Since 2026.9.4 the device and its entities are keyed on the config entry rather than on the host, so a host change keeps the device, its area, custom names, disabled entities and long-term statistics. Installs from before 2026.9.4 are migrated automatically on first start; entity ids do not change. Downgrading to an older release afterwards is not supported.
 
 ## Removing the Integration
 

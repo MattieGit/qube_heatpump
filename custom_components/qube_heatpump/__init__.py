@@ -14,7 +14,12 @@ from homeassistant.config_entries import (
     ConfigEntryState,
 )
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv, issue_registry as ir
+from homeassistant.helpers import (
+    config_validation as cv,
+    device_registry as dr,
+    entity_registry as er,
+    issue_registry as ir,
+)
 from homeassistant.util import slugify
 
 from .const import (
@@ -180,6 +185,59 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         DOMAIN, "write_register", _write_register_wrapper, schema=WRITE_REGISTER_SCHEMA
     )
 
+    return True
+
+
+# Unique ids of the SG Ready switches that early releases created; they were
+# replaced by the sgready_mode select and are dropped during migration.
+_LEGACY_SGREADY_BASES = ("bms_sgready_a", "bms_sgready_b")
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate a config entry to the current version.
+
+    Version 1 keyed the device identifier on ``host:unit`` and every unique id
+    on ``host_unit_``, so a host change tore the device (and its area, names
+    and statistics) down. Version 2 keys both on the entry id. The registry
+    rows are rewritten in place so entity ids, customisations and device
+    links survive.
+    """
+    if entry.version > 2:
+        return False  # downgrade from a newer release: refuse to load
+    if entry.version == 2:
+        return True
+
+    host = str(entry.data.get(CONF_HOST, ""))
+    unit_id = int(entry.options.get(CONF_UNIT_ID, entry.data.get(CONF_UNIT_ID, 1)))
+    old_prefix = f"{host}_{unit_id}_"
+    legacy_uids = {f"{old_prefix}{base}" for base in _LEGACY_SGREADY_BASES} | set(
+        _LEGACY_SGREADY_BASES
+    )
+
+    entity_registry = er.async_get(hass)
+    for reg_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if reg_entry.unique_id in legacy_uids:
+            entity_registry.async_remove(reg_entry.entity_id)
+
+    def _migrate_unique_id(reg_entry: er.RegistryEntry) -> dict[str, Any] | None:
+        if not reg_entry.unique_id.startswith(old_prefix):
+            return None
+        return {
+            "new_unique_id": f"{entry.entry_id}_{reg_entry.unique_id[len(old_prefix) :]}"
+        }
+
+    await er.async_migrate_entries(hass, entry.entry_id, _migrate_unique_id)
+
+    device_registry = dr.async_get(hass)
+    old_identifier = (DOMAIN, f"{host}:{unit_id}")
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        if old_identifier in device.identifiers:
+            device_registry.async_update_device(
+                device.id, new_identifiers={(DOMAIN, entry.entry_id)}
+            )
+
+    hass.config_entries.async_update_entry(entry, version=2)
+    _LOGGER.info("Migrated %s to entry-id keyed identifiers", entry.title)
     return True
 
 

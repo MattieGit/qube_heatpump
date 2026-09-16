@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
-from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_DHW_SCHEDULE_ENABLED, DOMAIN
 from .entity import QubeEntity
@@ -64,14 +63,6 @@ async def async_setup_entry(
     ]
     entities.append(QubeDhwScheduleEnabledSwitch(coordinator, hub, entry, version))
     async_add_entities(entities)
-
-    # Cleanup deprecated SG Ready switch entities from releases that created
-    # them (both the old unscoped and the scoped unique_id formats).
-    registry = er.async_get(hass)
-    for base in SGREADY_VENDOR_IDS:
-        for unique_id in (base, f"{hub.host}_{hub.unit}_{base}"):
-            if entity_id := registry.async_get_entity_id("switch", DOMAIN, unique_id):
-                registry.async_remove(entity_id)
 
 
 class QubeSwitch(QubeEntity, SwitchEntity):

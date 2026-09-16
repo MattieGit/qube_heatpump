@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.9.4 — unreleased
+- fix: Device and entity identifiers are keyed on the config entry instead of `host:unit`. Changing the host (options or reconfigure) now keeps the device, its area, custom names, disabled flags and long-term statistics; previously the device was deleted and re-created. Existing installs are migrated in place on first start (config entry version 2): unique ids are rewritten, the device keeps its id, entity ids do not change. Downgrading to an older release after the migration is not supported (Home Assistant refuses to load a newer entry version).
+- chore: The legacy SG Ready switch registry rows are removed during the migration instead of on every setup.
+
 ## 2026.9.3 — unreleased
 Quality pass based on a full code review against the Home Assistant core integration. No new features; several long-standing bugs fixed.
 - fix: Daily and monthly energy/SCOP cycles reset at **local** midnight and on the 1st (local), not at 00:00 UTC; totals restored after a restart across a cycle boundary are discarded instead of carried into the new cycle; the reset also happens when the heat pump is idle at midnight.
