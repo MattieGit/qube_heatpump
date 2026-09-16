@@ -1,4 +1,8 @@
 pytest>=8.0
-pytest-homeassistant-custom-component>=0.13.0
+# Pinned to the Home Assistant version the suite is developed against
+# (0.13.308 == HA 2026.1.3). Bump deliberately together with a local run.
+pytest-homeassistant-custom-component==0.13.308
 python-qube-heatpump>=1.14.0
+# pycares 5 drops the aiodns API that the pinned Home Assistant release still
+# imports; keep 4.x until the HA pin moves past that.
 pycares<5
