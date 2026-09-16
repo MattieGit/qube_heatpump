@@ -117,6 +117,8 @@ async def async_setup_entry(
             )
         )
 
+    entities.append(QubeEnergyTotalsStaleSensor(coordinator, hub, version))
+
     # Add thermostat sensor timeout binary sensor if thermostat is enabled
     if entry.options.get(CONF_THERMOSTAT_ENABLED):
         entities.append(
@@ -206,6 +208,35 @@ class QubeAlarmStatusBinarySensor(QubeEntity, BinarySensorEntity):
             if isinstance(val, bool) and val:
                 return True
         return False
+
+
+class QubeEnergyTotalsStaleSensor(QubeEntity, BinarySensorEntity):
+    """Binary sensor that is on while the energy totalisers are not advancing.
+
+    The coordinator flags this when registers 69/71 have not changed for
+    15 minutes although the heat pump draws more than a few hundred watts.
+    All derived day/month/SCOP sensors depend on those totals.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: Any,
+        hub: QubeHub,
+        version: str = "unknown",
+    ) -> None:
+        """Initialize the staleness sensor."""
+        super().__init__(coordinator, hub, version)
+        self._attr_translation_key = "energy_totals_stale"
+        self._attr_unique_id = self._scoped_uid("energy_totals_stale")
+        self.entity_id = f"binary_sensor.{self._label}_energy_totals_stale"
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the energy totals are not advancing."""
+        return bool(getattr(self.coordinator, "energy_totals_stale", False))
 
 
 class QubeThermostatTimeoutSensor(QubeEntity, BinarySensorEntity):

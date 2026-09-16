@@ -34,9 +34,14 @@ THERMOSTAT_SENSOR_TIMEOUT = 1800  # 30 minutes in seconds
 
 # DHW schedule
 CONF_DHW_SCHEDULE_ENABLED = "dhw_schedule_enabled"
+CONF_DHW_USE_CONTROLLER_SETPOINT = "dhw_use_controller_setpoint"
 CONF_DHW_SETPOINT = "dhw_setpoint"
 CONF_DHW_START_TIME = "dhw_start_time"
 CONF_DHW_END_TIME = "dhw_end_time"
+# By default the scheduler only toggles the forced-DHW coil and leaves the
+# Modbus DHW setpoint (register 173) as set on the controller.
+DEFAULT_DHW_USE_CONTROLLER_SETPOINT = True
+# Only used when the scheduler is configured to write its own setpoint.
 DEFAULT_DHW_SETPOINT = 50.0
 DEFAULT_DHW_START_TIME = "13:00"
 DEFAULT_DHW_END_TIME = "15:00"

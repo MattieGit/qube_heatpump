@@ -13,6 +13,7 @@ from custom_components.qube_heatpump.const import (
     CONF_DHW_SCHEDULE_ENABLED,
     CONF_DHW_SETPOINT,
     CONF_DHW_START_TIME,
+    CONF_DHW_USE_CONTROLLER_SETPOINT,
     CONF_HOST,
     DOMAIN,
 )
@@ -102,13 +103,14 @@ async def test_dhw_schedule_setup_returns_cancel_callbacks_with_parsed_times(
 async def test_dhw_schedule_start_callback_writes_setpoint_then_switch(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
-    """The start callback should write the setpoint, then flip the force switch on."""
+    """With the controller-setpoint option off, write the setpoint, then the switch."""
     entry, calls, _cancels = await _setup_dhw_entry(
         hass,
         {
             CONF_DHW_SCHEDULE_ENABLED: True,
             CONF_DHW_START_TIME: "08:15",
             CONF_DHW_END_TIME: "21:45",
+            CONF_DHW_USE_CONTROLLER_SETPOINT: False,
             CONF_DHW_SETPOINT: 55.5,
         },
     )
@@ -137,6 +139,62 @@ async def test_dhw_schedule_start_callback_writes_setpoint_then_switch(
         ("switch", "tapw_timeprogram_bms_forced", True),
         ("refresh",),
     ]
+
+
+async def test_dhw_schedule_start_callback_default_leaves_controller_setpoint(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """By default the start callback must not touch register 173 (Modbus setpoint).
+
+    Writing the options value before every forced run silently overrode
+    whatever the user had set on the controller.
+    """
+    entry, calls, _cancels = await _setup_dhw_entry(
+        hass,
+        {
+            CONF_DHW_SCHEDULE_ENABLED: True,
+            CONF_DHW_START_TIME: "08:15",
+            CONF_DHW_END_TIME: "21:45",
+            # A stored setpoint (e.g. from an older version) is ignored while
+            # the controller-setpoint option is on (the default).
+            CONF_DHW_SETPOINT: 55.5,
+        },
+    )
+
+    mock_qube_client.write_setpoint.reset_mock()
+    mock_qube_client.write_switch.reset_mock()
+    entry.runtime_data.coordinator.async_request_refresh = MagicMock()
+
+    await calls[0]["action"](None)
+
+    mock_qube_client.write_setpoint.assert_not_awaited()
+    mock_qube_client.write_switch.assert_awaited_once_with(
+        "tapw_timeprogram_bms_forced", True
+    )
+
+
+async def test_dhw_schedule_start_callback_uses_default_setpoint_when_writing(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """When a write is requested but no value is stored, the 50 °C default applies."""
+    entry, calls, _cancels = await _setup_dhw_entry(
+        hass,
+        {
+            CONF_DHW_SCHEDULE_ENABLED: True,
+            CONF_DHW_START_TIME: "08:15",
+            CONF_DHW_END_TIME: "21:45",
+            CONF_DHW_USE_CONTROLLER_SETPOINT: False,
+        },
+    )
+
+    mock_qube_client.write_setpoint.reset_mock()
+    entry.runtime_data.coordinator.async_request_refresh = MagicMock()
+
+    await calls[0]["action"](None)
+
+    mock_qube_client.write_setpoint.assert_awaited_once_with(
+        "tapw_timeprogram_dhwsetp_nolinq", 50.0
+    )
 
 
 async def test_dhw_schedule_end_callback_turns_switch_off(

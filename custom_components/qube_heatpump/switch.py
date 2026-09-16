@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
     from . import QubeConfigEntry
     from .entity_defs import EntityDef
     from .hub import QubeHub
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -57,6 +60,12 @@ async def async_setup_entry(
             registry.async_remove(entity_id)
 
 
+# Coils the controller keeps on after an acknowledged turn-off while a request
+# is still pending (they clear by themselves when the run completes). These
+# switches expose a ``pending_request`` attribute instead of pretending the
+# write took effect.
+PENDING_STATE_SWITCHES = frozenset({"tapw_timeprogram_bms_forced"})
+
 # Switches that should appear in Controls (no entity_category) instead of Configuration
 CONTROL_SWITCHES = frozenset({
     "modbus_demand",
@@ -79,6 +88,8 @@ class QubeSwitch(QubeEntity, SwitchEntity):
         """Initialize the switch."""
         super().__init__(coordinator, hub, version)
         self._ent = ent
+        # True after an acknowledged turn-off until the coil actually reads off
+        self._turn_off_requested = False
         # Control switches go in Controls section, others in Configuration
         if ent.vendor_id not in CONTROL_SWITCHES:
             self._attr_entity_category = EntityCategory.CONFIG
@@ -106,14 +117,42 @@ class QubeSwitch(QubeEntity, SwitchEntity):
         val = self.coordinator.data.get(entity_data_key(self._ent))
         return None if val is None else bool(val)
 
+    @property
+    def pending_request(self) -> bool:
+        """Return True if a turn-off was acknowledged but the coil still reads on."""
+        return self._turn_off_requested and self.is_on is True
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose the pending state for coils the controller may hold on."""
+        if self._ent.vendor_id not in PENDING_STATE_SWITCHES:
+            return None
+        return {"pending_request": self.pending_request}
+
+    def _handle_coordinator_update(self) -> None:
+        """Forget the pending turn-off once the coil actually reads off."""
+        if self._turn_off_requested and self.is_on is False:
+            self._turn_off_requested = False
+        super()._handle_coordinator_update()
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
+        self._turn_off_requested = False
         await self._hub.async_connect()
         await self._hub.async_write_switch(self._ent, True)
         await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         await self._hub.async_connect()
         await self._hub.async_write_switch(self._ent, False)
+        self._turn_off_requested = self._ent.vendor_id in PENDING_STATE_SWITCHES
         await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+        if self.pending_request:
+            _LOGGER.info(
+                "%s: turn-off acknowledged but the coil is still on; the controller "
+                "keeps it on while a DHW request is pending and clears it itself",
+                self.entity_id,
+            )

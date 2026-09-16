@@ -11,9 +11,11 @@ from .const import (
     CONF_DHW_END_TIME,
     CONF_DHW_SETPOINT,
     CONF_DHW_START_TIME,
+    CONF_DHW_USE_CONTROLLER_SETPOINT,
     DEFAULT_DHW_END_TIME,
     DEFAULT_DHW_SETPOINT,
     DEFAULT_DHW_START_TIME,
+    DEFAULT_DHW_USE_CONTROLLER_SETPOINT,
 )
 
 if TYPE_CHECKING:
@@ -45,7 +47,16 @@ async def async_setup_dhw_schedule(
 
     start_time_str = options.get(CONF_DHW_START_TIME, DEFAULT_DHW_START_TIME)
     end_time_str = options.get(CONF_DHW_END_TIME, DEFAULT_DHW_END_TIME)
-    setpoint = float(options.get(CONF_DHW_SETPOINT, DEFAULT_DHW_SETPOINT))
+    use_controller_setpoint = bool(
+        options.get(CONF_DHW_USE_CONTROLLER_SETPOINT, DEFAULT_DHW_USE_CONTROLLER_SETPOINT)
+    )
+    # None means: leave the Modbus DHW setpoint (register 173) untouched and
+    # let the forced run use whatever is configured on the controller.
+    setpoint: float | None = (
+        None
+        if use_controller_setpoint
+        else float(options.get(CONF_DHW_SETPOINT, DEFAULT_DHW_SETPOINT))
+    )
 
     start_hour, start_minute = _parse_time(start_time_str)
     end_hour, end_minute = _parse_time(end_time_str)
@@ -65,10 +76,13 @@ async def async_setup_dhw_schedule(
 
     async def _dhw_start(_now: Any) -> None:
         """Turn on DHW heating at the scheduled start time."""
-        _LOGGER.info("DHW schedule: starting DHW heating (setpoint=%.1f)", setpoint)
+        if setpoint is None:
+            _LOGGER.info("DHW schedule: starting DHW heating (controller setpoint)")
+        else:
+            _LOGGER.info("DHW schedule: starting DHW heating (setpoint=%.1f)", setpoint)
         try:
             await hub.async_connect()
-            if dhw_setpoint_ent is not None:
+            if setpoint is not None and dhw_setpoint_ent is not None:
                 await hub.async_write_setpoint(dhw_setpoint_ent, setpoint)
             await hub.async_write_switch(dhw_switch_ent, True)
             await coordinator.async_request_refresh()
@@ -93,13 +107,12 @@ async def async_setup_dhw_schedule(
     )
 
     _LOGGER.info(
-        "DHW schedule configured: %02d:%02d-%02d:%02d at %.1f%sC",
+        "DHW schedule configured: %02d:%02d-%02d:%02d, setpoint %s",
         start_hour,
         start_minute,
         end_hour,
         end_minute,
-        setpoint,
-        "\u00b0",
+        "from controller" if setpoint is None else f"{setpoint:.1f}\u00b0C",
     )
 
     return [cancel_start, cancel_end]

@@ -9,15 +9,16 @@
 5. [Computed & Derived Entities](#computed--derived-entities)
 6. [SG Ready Signals](#sg-ready-signals)
 7. [Virtual Thermostat Control](#virtual-thermostat-control)
-8. [Multi-Device Configuration](#multi-device-configuration)
-9. [Use Cases](#use-cases)
-10. [Dashboard Controls](#dashboard-controls)
-11. [Data Integrity & Monotonic Clamping](#data-integrity--monotonic-clamping)
-12. [Error Handling & Recovery](#error-handling--recovery)
-13. [Security Considerations](#security-considerations)
-14. [Troubleshooting](#troubleshooting)
-15. [Diagnostics Toolkit](#diagnostics-toolkit)
-16. [Notes](#notes)
+8. [DHW Schedule](#dhw-schedule)
+9. [Multi-Device Configuration](#multi-device-configuration)
+10. [Use Cases](#use-cases)
+11. [Dashboard Controls](#dashboard-controls)
+12. [Data Integrity & Monotonic Clamping](#data-integrity--monotonic-clamping)
+13. [Error Handling & Recovery](#error-handling--recovery)
+14. [Security Considerations](#security-considerations)
+15. [Troubleshooting](#troubleshooting)
+16. [Diagnostics Toolkit](#diagnostics-toolkit)
+17. [Notes](#notes)
 
 ---
 
@@ -87,6 +88,8 @@ To force an immediate data refresh:
 |------------|-------------|-------|
 | **Energy counter glitches** | Heat pump occasionally reports invalid energy values | Handled by monotonic clamping (see below) |
 | **Electric power at idle** | Modbus register reports ~55W when pumps are in pre/post-run, while true standby is ~17W | The Qube does not measure standby consumption; 0W is reported when all pumps are off |
+| **Standby excluded from totals** | `sensor.qube_power_electric` ("Total electric power (calculated)") and `sensor.qube_energy_total_electric` only count the compressor, pumps and heaters; the ~17W standby draw of the controller is not included | COP/SCOP values based on these registers are therefore slightly optimistic. Use `sensor.qube_total_energy_incl_standby` for a realistic consumption figure |
+| **Compressor hold after power-on** | After a cold power-on (mains restored, controller rebooted) the controller holds the compressor off for roughly two hours while the compressor crankcase heater warms the oil; pumps may run and status may show a demand, but the compressor does not start | Normal behaviour, not a fault. Wait it out; the hold is not exposed as a register |
 | **Entity ID changes** | Changing the entity prefix changes entity IDs | Update automations/dashboards after change |
 | **10-second resolution** | Data is polled every 10 seconds | Sub-second changes may be missed |
 
@@ -117,6 +120,21 @@ The integration exposes all readable Modbus registers as sensors:
 | **Operating hours** | `sensor.qube_workinghours_dhw_hrsret`, `sensor.qube_workinghours_heat_hrsret`, `sensor.qube_workinghours_cool_hrsret` |
 | **Diagnostics** | `sensor.qube_info`, `sensor.qube_ip_address`, `sensor.qube_metric_errors_connect` |
 
+#### DHW setpoints
+
+The controller display distinguishes three DHW setpoints (**Min**, **User**, **Modbus**) plus the one it is actually using. The entity names follow that wording:
+
+| Register | Entity | Name | Meaning |
+|----------|--------|------|---------|
+| 44 | `sensor.qube_tapw_timeprogram_dhws` | DHW setpoint (user) | The **User** setpoint on the controller display. |
+| 46 | `sensor.qube_tapw_timeprogram_dhws_prog` | DHW setpoint (time program, Linq min.) | The setpoint of the controller's own time program, fed by the LinQ **Min.** value. |
+| 173 | `sensor.qube_tapw_timeprogram_dhwsetp_nolinq` / `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` | DHW setpoint (Modbus) | The **Modbus** setpoint. This is the one used by forced runs started via `switch.qube_tapw_timeprogram_bms_forced` and the only one writable from Home Assistant. |
+| 47 | `sensor.qube_dhw_setp` | Active DHW setpoint | The setpoint the controller is currently regulating to (calculated). |
+
+#### Room temperature via Modbus
+
+`sensor.qube_modbus_roomtemp` ("Linq room temperature", register 75) is the room temperature the controller received over Modbus/LinQ. **The controller ignores this value when LinQ room control is disabled**, which is the recommended setting when Home Assistant controls heat demand (see [Virtual Thermostat Control](#virtual-thermostat-control)). In that configuration the sensor is informational only.
+
 ### Binary Sensors
 
 | Category | Examples |
@@ -127,6 +145,7 @@ The integration exposes all readable Modbus registers as sensors:
 | **Heater outputs** | `binary_sensor.qube_dout_heaterstep1_val`, `binary_sensor.qube_dout_heaterstep2_val` |
 | **Digital inputs** | `binary_sensor.qube_dewpoint`, `binary_sensor.qube_srcflw`, `binary_sensor.qube_id_demand` |
 | **Status** | `binary_sensor.qube_bms_demand`, `binary_sensor.qube_surplus_pv`, `binary_sensor.qube_daynightmode` |
+| **Diagnostics** | `binary_sensor.qube_alarm_sensors_active`, `binary_sensor.qube_energy_totals_stale` (on when the energy totalisers stop advancing under load, see [Troubleshooting](#energy-totals-not-advancing)), `binary_sensor.qube_thermostat_sensor_timeout` (virtual thermostat only) |
 
 ### Switches
 
@@ -134,7 +153,7 @@ The integration exposes all readable Modbus registers as sensors:
 |--------|-------------|
 | `switch.qube_modbus_demand` | Trigger heat demand |
 | `switch.qube_bms_summerwinter` | Enable summer/cooling mode |
-| `switch.qube_tapw_timeprogram_bms_forced` | Force DHW heating |
+| `switch.qube_tapw_timeprogram_bms_forced` | Force DHW heating. Exposes a `pending_request` attribute: the controller keeps this coil on while a DHW request is pending, even after a turn-off has been acknowledged, and clears it itself when the run completes |
 | `switch.qube_antilegionella_frcstart_ant` | Start anti-legionella cycle |
 | `switch.qube_en_plantsetp_compens` | Enable heating curve |
 
@@ -142,13 +161,20 @@ The integration exposes all readable Modbus registers as sensors:
 
 | Entity | Description | Range |
 |--------|-------------|-------|
-| `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` | DHW temperature setpoint (manual) | 20-65°C |
+| `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` | DHW setpoint (Modbus), register 173 | 20-65°C |
 
 ### Select Entity
 
 | Entity | Options |
 |--------|---------|
 | `select.qube_sgready_mode` | Off, Block, Plus, Max |
+
+### Buttons
+
+| Entity | Description |
+|--------|-------------|
+| `button.qube_reload` | Reload the integration |
+| `button.qube_clear_monotonic_cache` | Clear the energy counter cache used for monotonic clamping (see [Data Integrity](#data-integrity--monotonic-clamping)) |
 
 ---
 
@@ -170,6 +196,10 @@ Beyond raw Modbus registers, the integration creates several computed sensors. A
 | `sensor.qube_thermic_yield_month` | Monthly total thermal yield |
 | `sensor.qube_thermic_yield_ch_month` | Monthly CH thermal yield |
 | `sensor.qube_thermic_yield_dhw_month` | Monthly DHW thermal yield |
+
+The electric totals from the heat pump (`sensor.qube_energy_total_electric`, register 69) and the calculated power (`sensor.qube_power_electric`, register 61) **exclude standby consumption**. The `standby_*` and `total_energy_incl_standby` sensors add a fixed 17W to compensate. Keep this in mind when comparing COP/SCOP figures with a utility meter.
+
+All day/month/SCOP sensors are derived from the two totalisers (registers 69 and 71). If those stop advancing, every derived sensor freezes with them; `binary_sensor.qube_energy_totals_stale` flags that situation.
 
 #### Daily Energy Sensors
 
@@ -294,6 +324,20 @@ target:
 data:
   value: 52
 ```
+
+---
+
+## DHW Schedule
+
+The options flow (Settings → Devices & Services → Qube Heat Pump → Configure → *Enable DHW schedule*) can start a forced DHW run every day at a fixed time and stop it again.
+
+| Option | Default | Effect |
+|--------|---------|--------|
+| Start time / End time | 13:00 / 15:00 | When `switch.qube_tapw_timeprogram_bms_forced` is switched on and off. |
+| Use the controller's Modbus setpoint | **on** | Only the forced coil is toggled. The Modbus DHW setpoint (register 173) stays as set on the controller or via `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint`. |
+| DHW setpoint | 50°C | Only used when the option above is **off**: the schedule writes this value to register 173 right before switching the forced coil on. |
+
+Before version 2026.9.1 the schedule always wrote its setpoint, silently overriding whatever was configured on the controller. Existing installations keep their stored setpoint value, but it is no longer written unless you turn the controller-setpoint option off.
 
 ---
 
@@ -469,17 +513,19 @@ The sample dashboard in `examples/dashboard_qube_overview.yaml` includes:
 
 The Qube heat pump occasionally reports glitched values for energy counters - values that are lower than the previously reported total. For `total_increasing` sensors, this would corrupt Home Assistant's energy statistics.
 
-The integration implements **monotonic clamping**:
+The integration implements **monotonic clamping** with reset detection (library 1.14.0+):
 
-1. For each `total_increasing` sensor, the coordinator tracks the last valid value
-2. When a new value arrives that is lower than the previous value, it is rejected
-3. The previous valid value is retained
-4. A debug log message is recorded for troubleshooting
+1. For each `total_increasing` sensor the last valid value is cached (in memory and in `.storage/qube_heatpump_monotonic_<entry_id>` so it survives restarts)
+2. A new value slightly below the cached one (less than 1 kWh, or 1 unit for other counters) is treated as float32 jitter or a glitch and the cached value is kept
+3. A value **more than 1 unit below** the cached one is a *counter reset candidate*. It is still clamped until it has been seen on 3 consecutive polls (about 45 s); then it is accepted as the new baseline and a warning `Counter reset detected for <key>` is logged
+4. A single glitched zero read therefore never drops a counter, while a real reset on the controller (or a firmware hiccup that lowers the totals) no longer freezes the Home Assistant totals forever
 
 This applies to:
 - All sensors with `state_class: total_increasing`
 - Working hours counters (`workinghours_*`)
-- Energy accumulation sensors (`generalmng_acumulatedpwr`, `generalmng_acumulatedthermic`)
+- Energy accumulation sensors (`energy_total_electric`, `energy_total_thermic`)
+
+**Clearing the cache manually**: press `button.qube_clear_monotonic_cache` ("Clear energy counter cache"). The cached maximums are forgotten in memory and on disk and the next poll is accepted as-is. Use it after you deliberately reset counters on the controller, or when a total is stuck at a clamped value.
 
 To view clamping events, enable debug logging:
 
@@ -487,6 +533,7 @@ To view clamping events, enable debug logging:
 logger:
   logs:
     custom_components.qube_heatpump.coordinator: debug
+    python_qube_heatpump: debug
 ```
 
 ---
@@ -566,11 +613,31 @@ All communication is local:
 
 **Symptoms**: Energy statistics show unexpected jumps or resets
 
-**Explanation**: The heat pump occasionally reports glitched values. The integration uses monotonic clamping to filter these.
+**Explanation**: The heat pump occasionally reports glitched values. The integration uses monotonic clamping to filter these; a drop of more than 1 kWh that persists for three polls is accepted as a genuine counter reset (see [Data Integrity](#data-integrity--monotonic-clamping)).
 
 **Solutions**:
-1. Check debug logs for "Monotonic clamp" messages
-2. If values are genuinely wrong, use Home Assistant's statistics adjustment tool
+1. Check the log for `Counter reset detected` warnings
+2. If a total is stuck at an old (clamped) value, press `button.qube_clear_monotonic_cache`
+3. If values are genuinely wrong, use Home Assistant's statistics adjustment tool
+
+#### Energy Totals Not Advancing
+
+**Symptoms**: `binary_sensor.qube_energy_totals_stale` is **on**; daily/monthly energy and SCOP sensors stop changing although the heat pump is running
+
+**Explanation**: The coordinator flags this when neither `sensor.qube_energy_total_electric` (register 69) nor `sensor.qube_energy_total_thermic` (register 71) has changed for 15 minutes while `sensor.qube_power_electric` stays above 300 W. All derived day/month/SCOP sensors depend on those two totals, so they are stale as well. Seen in the field after a controller firmware hiccup.
+
+**Solutions**:
+1. Check whether the totals on the controller display are advancing. If they are, the Modbus values are stuck: try a reload of the integration, then a controller restart
+2. If the totals on the display are stuck as well, contact HR Energy support
+3. If the totals resumed at a lower value, press `button.qube_clear_monotonic_cache` so the new baseline is accepted immediately
+
+#### Compressor Does Not Start After Power-On
+
+**Symptoms**: After mains power was restored, pumps run and there is heat demand, but the compressor stays off for up to two hours
+
+**Explanation**: This is the controller's cold-start protection: the compressor is held off while the crankcase heater warms the oil. It is not exposed as a register or alarm.
+
+**Solutions**: None needed; the compressor starts by itself after roughly two hours.
 
 #### Duplicate Entities After Upgrade
 
@@ -657,6 +724,7 @@ To manually start DHW heating via `switch.qube_tapw_timeprogram_bms_forced`:
 1. **Set the DHW setpoint first** using `number.qube_tapw_timeprogram_dhwsetp_nolinq_setpoint` — the Qube uses this setpoint, **not** the LinQ thermostat setpoint
 2. The Qube will only start DHW heating when the current DHW temperature is below the setpoint minus 5°C hysteresis (e.g., below 47°C for a 52°C setpoint)
 3. Once started, DHW heating continues until the setpoint is reached and cannot be stopped mid-cycle
+4. Turning the switch off while a request is pending is acknowledged by the controller, but the coil **stays on** until the run completes and then clears by itself. The switch shows the coil's real state and sets its `pending_request` attribute to `true` in the meantime
 
 ### Entity ID Naming Convention
 
