@@ -34,6 +34,7 @@ from .const import (
     THERMOSTAT_SENSOR_TIMEOUT,
     THERMOSTAT_STEP,
 )
+from .helpers import entity_data_key
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -146,6 +147,10 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         self._is_cooling: bool = False
         self._sensor_last_seen: float = time.monotonic()
         self._sensor_timed_out: bool = False
+        # Last known bms_summerwinter value: seeded from the coordinator and
+        # updated on every successful write, so a write is never skipped on
+        # the strength of a poll that predates our own last write.
+        self._summer_mode_known: bool | None = None
 
         self._cancel_state_listener: Any = None
         self._cancel_timeout_check: Any = None
@@ -217,6 +222,8 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
             if (temp := last_state.attributes.get(ATTR_TEMPERATURE)) is not None:
                 with contextlib.suppress(TypeError, ValueError):
                     self._target_temp = float(temp)
+
+        self._summer_mode_known = self._coil_value(self._summer_switch)
 
         # Read initial sensor state
         self._update_temp_from_state(self.hass.states.get(self._sensor_entity_id))
@@ -364,12 +371,28 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         await self._coordinator.async_request_refresh()
         return True
 
+    def _coil_value(self, ent: EntityDef) -> bool | None:
+        """Return the last polled value of a switch coil, or None if unknown."""
+        data = self._coordinator.data or {}
+        value = data.get(entity_data_key(ent))
+        return None if value is None else bool(value)
+
     async def _async_ensure_summer_mode(self, on: bool) -> bool:
-        """Ensure bms_summerwinter is in the correct state; True when it is."""
+        """Ensure bms_summerwinter is in the correct state; True when it is.
+
+        Skips the Modbus write when the last known coil value (last poll or
+        our own last write, whichever is newer) already matches; this runs
+        on every sensor state-change event. An unknown value is always
+        written.
+        """
+        if self._summer_mode_known is on:
+            return True
         try:
             await self._hub.async_connect()
             await self._hub.async_write_switch(self._summer_switch, on)
         except (ConnectionError, OSError) as exc:
             _LOGGER.warning("Failed to set bms_summerwinter to %s: %s", on, exc)
             return False
+        self._summer_mode_known = on
+        await self._coordinator.async_request_refresh()
         return True

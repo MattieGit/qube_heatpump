@@ -274,6 +274,7 @@ async def test_cool_mode_hysteresis_and_summer_switch(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """COOL mode: summer switch is written True and hysteresis is inverted vs HEAT."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
     mock_qube_client.write_switch.reset_mock()
 
@@ -303,17 +304,20 @@ async def test_heat_cool_mode_switches_summer_mode_and_demand(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """HEAT_COOL: both the summer switch and demand flip at each hysteresis edge."""
+    device = FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
     mock_qube_client.write_switch.reset_mock()
 
     await _set_hvac_mode(hass, entity_id, HVACMode.HEAT_COOL)
 
-    # Too cold -> heating: summer mode off, demand on
+    # Too cold -> heating: demand on; the coil already reads winter, so the
+    # summer switch is not rewritten
     mock_qube_client.write_switch.reset_mock()
     hass.states.async_set(SENSOR_ENTITY_ID, "20.1")
     await hass.async_block_till_done()
     assert _demand_calls(mock_qube_client) == [True]
-    assert False in _summer_calls(mock_qube_client)
+    assert _summer_calls(mock_qube_client) == []
+    assert device.coils["bms_summerwinter"] is False
 
     # Too hot -> switches from heating to cooling in the same control pass
     mock_qube_client.write_switch.reset_mock()
@@ -436,6 +440,7 @@ async def test_sensor_timeout_turns_off_demand_and_sets_flag(
     freezer: FrozenDateTimeFactory,
 ) -> None:
     """A stale temperature sensor is treated as a safety timeout after 30 minutes."""
+    FakeDevice(mock_qube_client)
     entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
     # Setup itself triggers the initial control pass which starts heating.
     assert True in _demand_calls(mock_qube_client)
@@ -552,3 +557,38 @@ async def test_failed_demand_off_write_keeps_flag_and_is_retried(
     assert _demand_calls(mock_qube_client) == [False]
     assert device.coils["modbus_demand"] is False
     assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE
+
+
+async def test_summer_mode_not_rewritten_when_coordinator_agrees(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """bms_summerwinter is only written when the polled coil value differs.
+
+    Regression test: every evaluation (each sensor state-change event) used
+    to write the summer/winter coil unconditionally.
+    """
+    FakeDevice(mock_qube_client)  # bms_summerwinter already off (winter)
+    await _setup_thermostat_entry(hass, initial_temp="20.5")
+    assert _summer_calls(mock_qube_client) == []
+
+    for temp in ("20.1", "20.4", "20.9", "20.3"):
+        hass.states.async_set(SENSOR_ENTITY_ID, temp)
+        await hass.async_block_till_done()
+    assert _summer_calls(mock_qube_client) == []
+    assert _demand_calls(mock_qube_client) == [True, False]
+
+
+async def test_summer_mode_written_once_when_coil_differs(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """A mismatching coil is corrected once, then left alone."""
+    device = FakeDevice(mock_qube_client, bms_summerwinter=True)
+    await _setup_thermostat_entry(hass, initial_temp="20.5")
+    assert _summer_calls(mock_qube_client) == [False]
+    assert device.coils["bms_summerwinter"] is False
+
+    # Further evaluations (no demand write involved) must not repeat the write.
+    for temp in ("20.4", "20.6", "20.5"):
+        hass.states.async_set(SENSOR_ENTITY_ID, temp)
+        await hass.async_block_till_done()
+    assert _summer_calls(mock_qube_client) == [False]
