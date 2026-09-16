@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from datetime import timedelta
 import logging
@@ -9,6 +10,7 @@ import time
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from homeassistant.components.climate import (
+    ATTR_HVAC_ACTION,
     ClimateEntity,
     ClimateEntityFeature,
     HVACAction,
@@ -153,9 +155,10 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
         # updated on every successful write, so a write is never skipped on
         # the strength of a poll that predates our own last write.
         self._summer_mode_known: bool | None = None
-
-        self._cancel_state_listener: Any = None
-        self._cancel_timeout_check: Any = None
+        # Serialises control passes: sensor events, the timeout check and
+        # service calls each await several Modbus writes and must not
+        # interleave.
+        self._control_lock = asyncio.Lock()
 
         self.entity_id = f"climate.{self._label}_thermostat"
         self._attr_unique_id = self._scoped_uid("thermostat")
@@ -228,7 +231,14 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
                 self._hvac_mode = HVACMode(last_state.state)
             if (temp := last_state.attributes.get(ATTR_TEMPERATURE)) is not None:
                 with contextlib.suppress(TypeError, ValueError):
-                    self._target_temp = float(temp)
+                    self._target_temp = min(
+                        max(float(temp), THERMOSTAT_MIN_TEMP), THERMOSTAT_MAX_TEMP
+                    )
+            # Resume the running action so hysteresis holds across a restart;
+            # the coil reconciliation below overrides it if the pump disagrees.
+            action = last_state.attributes.get(ATTR_HVAC_ACTION)
+            self._is_heating = action == HVACAction.HEATING
+            self._is_cooling = action == HVACAction.COOLING
 
         # Seed the coil-derived state from the last poll
         self._reconcile_with_coils()
@@ -238,31 +248,37 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
         self._sensor_last_seen = time.monotonic()
 
         # Listen for sensor state changes
-        self._cancel_state_listener = async_track_state_change_event(
-            self.hass,
-            [self._sensor_entity_id],
-            self._async_sensor_changed,
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass,
+                [self._sensor_entity_id],
+                self._async_sensor_changed,
+            )
         )
 
         # Periodic timeout check
-        self._cancel_timeout_check = async_track_time_interval(
-            self.hass,
-            self._async_check_timeout,
-            timedelta(seconds=_TIMEOUT_CHECK_INTERVAL),
+        self.async_on_remove(
+            async_track_time_interval(
+                self.hass,
+                self._async_check_timeout,
+                timedelta(seconds=_TIMEOUT_CHECK_INTERVAL),
+            )
         )
 
         # Ensure correct switch states for restored mode and run initial control
         await self._async_control_heating()
 
     async def async_will_remove_from_hass(self) -> None:
-        """Run when entity is removed."""
-        if self._cancel_state_listener:
-            self._cancel_state_listener()
-        if self._cancel_timeout_check:
-            self._cancel_timeout_check()
+        """Turn demand off if this thermostat switched it on.
 
-        # Turn off demand to be safe
-        await self._async_set_demand(False)
+        This runs on every removal: options reload, integration unload and
+        Home Assistant shutdown. Leaving demand on without the thermostat
+        would let the heat pump run unattended, so the safety-off is kept
+        for all of them; after a reload the initial control pass switches
+        demand back on within the same second if it is still needed. In OFF
+        mode (or when idle) the coil is not ours and is left alone.
+        """
+        await self._async_stop_demand()
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -358,7 +374,12 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
         self.async_write_ha_state()
 
     async def _async_control_heating(self) -> None:
-        """Evaluate thermostat logic and set switch states.
+        """Evaluate thermostat logic and set switch states (serialised)."""
+        async with self._control_lock:
+            await self._async_control_heating_locked()
+
+    async def _async_control_heating_locked(self) -> None:
+        """Evaluate thermostat logic; caller holds ``_control_lock``.
 
         Flags (``_is_heating`` / ``_is_cooling``) only change after the
         corresponding Modbus write succeeded, so a failed write is retried on

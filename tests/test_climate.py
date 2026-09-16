@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import time
 from typing import TYPE_CHECKING, Any
@@ -730,3 +731,132 @@ async def test_climate_stays_available_when_poll_fails(
     state = hass.states.get(entity_id)
     assert state.state == HVACMode.HEAT
     assert state.attributes[ATTR_TEMPERATURE] == 20.5
+
+
+async def test_restored_target_temperature_is_clamped(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """A stored setpoint outside [min, max] is clamped on restore."""
+    mock_restore_cache(
+        hass,
+        [State(CLIMATE_ENTITY_ID, HVACMode.HEAT, {ATTR_TEMPERATURE: 31.0})],
+    )
+    FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
+
+    assert (
+        hass.states.get(entity_id).attributes[ATTR_TEMPERATURE] == THERMOSTAT_MAX_TEMP
+    )
+
+
+async def test_restore_heating_action_with_coil_on_keeps_heating(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """After a restart mid-cycle the thermostat resumes ownership of demand.
+
+    hvac_action is restored from the last state and confirmed by the coil, so
+    hysteresis holds in the deadband instead of reporting idle while the pump
+    keeps running.
+    """
+    mock_restore_cache(
+        hass,
+        [
+            State(
+                CLIMATE_ENTITY_ID,
+                HVACMode.HEAT,
+                {ATTR_TEMPERATURE: 20.5, "hvac_action": HVACAction.HEATING},
+            )
+        ],
+    )
+    FakeDevice(mock_qube_client, modbus_demand=True)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.4")
+
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+    assert _demand_calls(mock_qube_client) == []
+
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.9")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [False]
+
+
+async def test_restore_heating_action_with_coil_off_resets_to_idle(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """The coil wins over the restored hvac_action when they disagree."""
+    mock_restore_cache(
+        hass,
+        [
+            State(
+                CLIMATE_ENTITY_ID,
+                HVACMode.HEAT,
+                {ATTR_TEMPERATURE: 20.5, "hvac_action": HVACAction.HEATING},
+            )
+        ],
+    )
+    FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.4")
+
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE
+    assert _demand_calls(mock_qube_client) == []
+
+
+async def test_unload_turns_off_demand_when_heating(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Unloading the entry while heating leaves the heat pump without demand."""
+    device = FakeDevice(mock_qube_client)
+    await _setup_thermostat_entry(hass, initial_temp="20.1")
+    assert device.coils["modbus_demand"] is True
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    mock_qube_client.write_switch.reset_mock()
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert _demand_calls(mock_qube_client) == [False]
+    assert device.coils["modbus_demand"] is False
+
+
+async def test_unload_leaves_demand_alone_when_idle(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Unloading while idle must not write the demand coil at all."""
+    FakeDevice(mock_qube_client)
+    await _setup_thermostat_entry(hass, initial_temp="20.5")
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    mock_qube_client.write_switch.reset_mock()
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert _demand_calls(mock_qube_client) == []
+
+
+async def test_control_passes_are_serialised(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Concurrent evaluations must not interleave their Modbus writes.
+
+    The demand write is made slow; three sensor events fired back to back
+    must still produce exactly one demand-on write.
+    """
+    device = FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
+    mock_qube_client.write_switch.reset_mock()
+
+    real_write = device._write
+
+    async def _slow(key: str, on: bool) -> bool:
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        return await real_write(key, on)
+
+    mock_qube_client.write_switch = AsyncMock(side_effect=_slow)
+
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.1")
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.0")
+    hass.states.async_set(SENSOR_ENTITY_ID, "19.9")
+    await hass.async_block_till_done()
+
+    assert _demand_calls(mock_qube_client) == [True]
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
