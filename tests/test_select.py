@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
@@ -13,6 +14,7 @@ from custom_components.qube_heatpump.select import (
     MODE_TO_BITS,
     SGREADY_OPTIONS,
 )
+from homeassistant.exceptions import HomeAssistantError
 
 from tests.conftest import add_bulk_read
 
@@ -226,7 +228,6 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
         version="1.0",
         sgready_a=sgready_a,
         sgready_b=sgready_b,
-        entry_id="test_entry_id",
     )
     assert select_single._attr_unique_id == "192.168.1.100_2_sgready_mode"
 
@@ -237,6 +238,104 @@ async def test_select_unique_id_multi_device(hass: HomeAssistant) -> None:
         version="1.0",
         sgready_a=sgready_a,
         sgready_b=sgready_b,
-        entry_id="test_entry_id",
     )
     assert select_multi._attr_unique_id == "192.168.1.100_2_sgready_mode"
+
+
+async def _setup_with_coils(
+    hass: HomeAssistant, mock_qube_client: MagicMock, coils: dict[str, bool | None]
+) -> None:
+    async def _read_entity(ent):
+        if ent.key in coils:
+            return coils[ent.key]
+        return 45.0
+
+    mock_qube_client.read_entity = AsyncMock(side_effect=_read_entity)
+    add_bulk_read(mock_qube_client)
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+
+@pytest.mark.parametrize(
+    ("coil_a", "coil_b", "option"),
+    [
+        (False, False, "Off"),
+        (True, False, "Block"),
+        (False, True, "Plus"),
+        (True, True, "Max"),
+    ],
+)
+async def test_select_current_option_from_coils(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    coil_a: bool,
+    coil_b: bool,
+    option: str,
+) -> None:
+    """The mode is decoded from the two SG Ready coils."""
+    await _setup_with_coils(
+        hass, mock_qube_client, {"bms_sgready_a": coil_a, "bms_sgready_b": coil_b}
+    )
+    assert hass.states.get("select.qube_1_sg_ready_mode").state == option
+
+
+async def test_select_current_option_unknown_when_coil_missing(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """With one coil unreadable the mode is unknown rather than an assumed default."""
+    await _setup_with_coils(
+        hass, mock_qube_client, {"bms_sgready_a": None, "bms_sgready_b": True}
+    )
+    assert hass.states.get("select.qube_1_sg_ready_mode").state == "unknown"
+
+
+async def test_select_option_writes_only_changed_coils(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Selecting a mode writes just the coil(s) that differ."""
+    await _setup_with_coils(
+        hass, mock_qube_client, {"bms_sgready_a": False, "bms_sgready_b": False}
+    )
+
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": "select.qube_1_sg_ready_mode", "option": "Plus"},
+        blocking=True,
+    )
+
+    mock_qube_client.write_switch.assert_awaited_once_with("bms_sgready_b", True)
+
+
+async def test_select_option_write_failure_raises_translated_error(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """A rejected coil write surfaces as a translated HomeAssistantError."""
+    await _setup_with_coils(
+        hass, mock_qube_client, {"bms_sgready_a": False, "bms_sgready_b": False}
+    )
+    mock_qube_client.write_switch = AsyncMock(return_value=False)
+
+    with pytest.raises(HomeAssistantError) as excinfo:
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": "select.qube_1_sg_ready_mode", "option": "Max"},
+            blocking=True,
+        )
+
+    assert excinfo.value.translation_domain == DOMAIN
+    assert excinfo.value.translation_key == "write_switch_failed"
+    assert excinfo.value.translation_placeholders == {
+        "entity_id": "select.qube_1_sg_ready_mode"
+    }

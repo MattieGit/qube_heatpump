@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
+from homeassistant.exceptions import HomeAssistantError
 
 from tests.conftest import add_bulk_read
 
@@ -298,3 +300,46 @@ async def test_other_switches_have_no_pending_attribute(
     state = hass.states.get("switch.qube_1_modbus_demand")
     assert state is not None
     assert "pending_request" not in state.attributes
+
+
+async def test_switch_write_failure_raises_translated_error(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """A rejected coil write surfaces as a translated HomeAssistantError."""
+    await _setup_with_forced_coil(hass, mock_qube_client, {"modbus_demand": False})
+    mock_qube_client.write_switch = AsyncMock(return_value=False)
+
+    with pytest.raises(HomeAssistantError) as excinfo:
+        await hass.services.async_call(
+            "switch",
+            "turn_on",
+            {"entity_id": "switch.qube_1_modbus_demand"},
+            blocking=True,
+        )
+
+    assert excinfo.value.translation_domain == DOMAIN
+    assert excinfo.value.translation_key == "write_switch_failed"
+    assert excinfo.value.translation_placeholders == {
+        "entity_id": "switch.qube_1_modbus_demand"
+    }
+    assert hass.states.get("switch.qube_1_modbus_demand").state == "off"
+
+
+async def test_switch_connect_failure_raises_translated_error(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """An unreachable device surfaces as a translated connection error."""
+    await _setup_with_forced_coil(hass, mock_qube_client, {"modbus_demand": True})
+    mock_qube_client.is_connected = False
+    mock_qube_client.connect = AsyncMock(side_effect=OSError("down"))
+
+    with pytest.raises(HomeAssistantError) as excinfo:
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.qube_1_modbus_demand"},
+            blocking=True,
+        )
+
+    assert excinfo.value.translation_key == "connection_failed"
+    mock_qube_client.write_switch.assert_not_awaited()

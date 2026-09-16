@@ -2,7 +2,7 @@
     "config": {
         "abort": {
             "already_configured": "Apparaat is al geconfigureerd.",
-            "duplicate_ip": "Een andere Qube warmtepomp is al geconfigureerd met dit IP-adres. Configureer elke hub met een uniek IP."
+            "reconfigure_successful": "Herconfiguratie is geslaagd."
         },
         "error": {
             "cannot_connect": "Kan niet verbinden. Controleer host en poort.",
@@ -630,25 +630,12 @@
     "issues": {
         "connection_failed": {
             "title": "Verbinding met Qube warmtepomp mislukt",
-            "fix_flow": {
-                "step": {
-                    "confirm": {
-                        "title": "Verbinding met Qube warmtepomp mislukt",
-                        "description": "De integratie kon geen verbinding maken met de Qube warmtepomp op **{host}** na meerdere pogingen.\n\nMogelijke oorzaken:\n- De warmtepomp is uitgeschakeld of in standby\n- Netwerkverbindingsproblemen\n- IP-adres is gewijzigd\n\nWilt u de verbindingsinstellingen opnieuw configureren?"
-                    }
-                }
-            }
+            "description": "De integratie kan de Qube warmtepomp op **{host}** al meerdere pollcycli niet bereiken. De entiteiten zijn niet beschikbaar tot de verbinding is hersteld.\n\nMogelijke oorzaken:\n- De warmtepomp is uitgeschakeld of in standby\n- Netwerkverbindingsproblemen\n- Het IP-adres is gewijzigd\n\nGebruik bij een gewijzigd adres **Opnieuw configureren** op de Qube warmtepomp-integratie om het aan te passen. Dit probleem verdwijnt automatisch zodra de verbinding is hersteld."
         }
     },
     "exceptions": {
         "connection_failed": {
             "message": "Kan geen verbinding maken met de Qube warmtepomp op {host}."
-        },
-        "connection_timeout": {
-            "message": "Verbinding met de Qube warmtepomp is verlopen."
-        },
-        "write_failed": {
-            "message": "Kan waarde niet schrijven naar de Qube warmtepomp."
         },
         "write_register_failed": {
             "message": "Kan register op adres {address} niet schrijven."
@@ -658,12 +645,6 @@
         },
         "write_setpoint_failed": {
             "message": "Kan setpoint {entity_id} niet schrijven."
-        },
-        "not_connected": {
-            "message": "Niet verbonden met de Qube warmtepomp. Probeer opnieuw te verbinden."
-        },
-        "read_failed": {
-            "message": "Kan geen data lezen van de Qube warmtepomp."
         }
     }
 }

@@ -421,3 +421,64 @@ async def test_write_register_switch_entity(
 
             # Verify write_switch was called via the hub
             client.write_switch.assert_called()
+
+
+async def test_write_register_connect_failure_raises_translated_error(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """A connect failure inside write_register is a translated HomeAssistantError."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    mock_qube_client.is_connected = False
+    mock_qube_client.connect = AsyncMock(return_value=False)
+
+    with pytest.raises(HomeAssistantError) as excinfo:
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": 173, "value": 50.0},
+            blocking=True,
+        )
+
+    assert excinfo.value.translation_domain == DOMAIN
+    assert excinfo.value.translation_key == "write_register_failed"
+    assert excinfo.value.translation_placeholders == {"address": "173"}
+    mock_qube_client.write_setpoint.assert_not_awaited()
+
+
+async def test_write_register_rejects_non_boolean_coil_value(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """A fractional value for a coil is rejected instead of coerced to True."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coil = next(
+        e for e in entry.runtime_data.hub.entities
+        if e.platform == "switch" and e.writable
+    )
+    with pytest.raises(HomeAssistantError, match="only accepts 0 or 1"):
+        await hass.services.async_call(
+            DOMAIN,
+            "write_register",
+            {"address": coil.address, "value": 0.4},
+            blocking=True,
+        )
+    mock_qube_client.write_switch.assert_not_awaited()

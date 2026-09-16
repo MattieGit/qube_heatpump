@@ -2,7 +2,7 @@
   "config": {
     "abort": {
       "already_configured": "Device is already configured.",
-      "duplicate_ip": "Another Qube heat pump is already configured with this IP address. Configure each hub with a unique IP."
+      "reconfigure_successful": "Re-configuration was successful."
     },
     "error": {
       "cannot_connect": "Failed to connect. Check host and port.",
@@ -630,25 +630,12 @@
   "issues": {
     "connection_failed": {
       "title": "Connection to Qube heat pump failed",
-      "fix_flow": {
-        "step": {
-          "confirm": {
-            "title": "Connection to Qube heat pump failed",
-            "description": "The integration has been unable to connect to the Qube heat pump at **{host}** after multiple attempts.\n\nPossible causes:\n- The heat pump is powered off or in standby\n- Network connectivity issues\n- IP address has changed\n\nWould you like to reconfigure the connection settings?"
-          }
-        }
-      }
+      "description": "The integration has been unable to reach the Qube heat pump at **{host}** for several polling cycles. Its entities are unavailable until the connection recovers.\n\nPossible causes:\n- The heat pump is powered off or in standby\n- Network connectivity issues\n- The IP address has changed\n\nIf the address changed, use **Reconfigure** on the Qube heat pump integration entry to update it. This issue clears automatically once the connection is restored."
     }
   },
   "exceptions": {
     "connection_failed": {
       "message": "Failed to connect to the Qube heat pump at {host}."
-    },
-    "connection_timeout": {
-      "message": "Connection to the Qube heat pump timed out."
-    },
-    "write_failed": {
-      "message": "Failed to write value to the Qube heat pump."
     },
     "write_register_failed": {
       "message": "Failed to write register at address {address}."
@@ -658,12 +645,6 @@
     },
     "write_setpoint_failed": {
       "message": "Failed to write setpoint {entity_id}."
-    },
-    "not_connected": {
-      "message": "Not connected to the Qube heat pump. Try reconnecting."
-    },
-    "read_failed": {
-      "message": "Failed to read data from the Qube heat pump."
     }
   }
 }
