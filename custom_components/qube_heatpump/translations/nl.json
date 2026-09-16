@@ -46,18 +46,18 @@
         "step": {
             "init": {
                 "title": "Opties",
-                "description": "Werk de host bij als het IP-adres van de warmtepomp is gewijzigd.\nHulp nodig? Bekijk de [documentatie]({docs_url}).\n\nHuidig IP: {resolved_ip}.",
+                "description": "Werk de host of apparaatnaam bij.\nHulp nodig? Bekijk de [documentatie]({docs_url}).\n\nHuidig IP: {resolved_ip}.",
                 "data": {
                     "host": "Host/IP",
                     "name": "Apparaatnaam",
                     "thermostat_enabled": "Virtuele thermostaat inschakelen",
-                    "dhw_schedule_enabled": "SWW schema inschakelen"
+                    "dhw_schedule_enabled": "SWW-schema inschakelen"
                 },
                 "data_description": {
                     "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
-                    "name": "Naam voor deze warmtepomp. Wijzigen zal entiteit ID's bijwerken.",
+                    "name": "Naam voor deze warmtepomp. Wijzigen werkt de entiteit-ID's bij.",
                     "thermostat_enabled": "Gebruik een externe temperatuursensor om warmte/koelvraag te regelen.",
-                    "dhw_schedule_enabled": "Plan dagelijks SWW (warm water) verwarmen op een vast tijdstip."
+                    "dhw_schedule_enabled": "Plan dagelijks SWW (warm tapwater) verwarmen op een vast tijdstip."
                 }
             },
             "thermostat": {
@@ -71,19 +71,19 @@
                 }
             },
             "dhw_schedule": {
-                "title": "SWW schema",
-                "description": "Configureer het dagelijkse SWW (warm water) verwarmingsschema.",
+                "title": "SWW-schema",
+                "description": "Configureer het dagelijkse SWW-verwarmingsschema (warm tapwater).",
                 "data": {
                     "dhw_use_controller_setpoint": "Gebruik het Modbus instelpunt van de regelaar",
-                    "dhw_setpoint": "SWW instelpunt",
+                    "dhw_setpoint": "SWW-instelpunt",
                     "dhw_start_time": "Starttijd",
                     "dhw_end_time": "Eindtijd"
                 },
                 "data_description": {
-                    "dhw_use_controller_setpoint": "Laat het Modbus SWW instelpunt (register 173) zoals ingesteld op de regelaar en start alleen de geforceerde run. Zet uit om het schema eerst het onderstaande instelpunt te laten schrijven.",
-                    "dhw_setpoint": "Doeltemperatuur voor SWW verwarming (40-65°C). Wordt alleen geschreven als de optie hierboven uit staat.",
-                    "dhw_start_time": "Tijdstip om SWW verwarming te starten elke dag.",
-                    "dhw_end_time": "Tijdstip om SWW verwarming te stoppen elke dag."
+                    "dhw_use_controller_setpoint": "Laat het Modbus SWW-instelpunt (register 173) zoals ingesteld op de regelaar en start alleen de geforceerde run. Zet uit om het schema eerst het onderstaande instelpunt te laten schrijven.",
+                    "dhw_setpoint": "Doeltemperatuur voor SWW-verwarming (40-65°C). Wordt alleen geschreven als de optie hierboven uit staat.",
+                    "dhw_start_time": "Tijdstip waarop de SWW-verwarming elke dag start.",
+                    "dhw_end_time": "Tijdstip waarop de SWW-verwarming elke dag stopt."
                 }
             }
         }
@@ -91,7 +91,7 @@
     "entity": {
         "sensor": {
             "status_heatpump": {
-                "name": "Warmtepomp status",
+                "name": "Warmtepompstatus",
                 "state": {
                     "standby": "Standby",
                     "alarm": "Alarm",
@@ -102,14 +102,14 @@
                     "heating": "Verwarmen",
                     "start_fail": "Start mislukt",
                     "heating_dhw": "Verwarmen SWW",
-                    "anti_legionella": "Antilegionella",
+                    "anti_legionella": "Anti-legionella",
                     "unknown": "Onbekend"
                 }
             },
             "threeway_valve_status": {
                 "name": "Driewegklep status",
                 "state": {
-                    "dhw": "Tapwater",
+                    "dhw": "SWW",
                     "ch": "CV"
                 }
             },
@@ -184,10 +184,10 @@
                 "name": "Info"
             },
             "dhw_schedule_next_start": {
-                "name": "SWW schema volgende start"
+                "name": "SWW-schema volgende start"
             },
             "ip_address": {
-                "name": "IP adres"
+                "name": "IP-adres"
             },
             "metric_errors_connect": {
                 "name": "Verbindingsfouten"
@@ -202,106 +202,73 @@
                 "name": "Aantal binaire sensoren"
             },
             "thermostat_heatsetp_day": {
-                "name": "LinQ setpoint CV dag"
+                "name": "LinQ instelpunt verwarmen (dag)"
             },
             "thermostat_heatsetp_night": {
-                "name": "LinQ setpoint CV nacht"
+                "name": "LinQ instelpunt verwarmen (nacht)"
             },
             "thermostat_coolsetp_day": {
-                "name": "LinQ setpoint koelen dag"
+                "name": "LinQ instelpunt koelen (dag)"
             },
             "thermostat_coolsetp_night": {
-                "name": "LinQ setpoint koelen nacht"
+                "name": "LinQ instelpunt koelen (nacht)"
             },
             "tapw_timeprogram_dt_bms": {
-                "name": "dT aanvoertemperatuur tapwater"
+                "name": "dT aanvoertemperatuur SWW"
             },
             "tapw_timeprogram_dhws": {
-                "name": "SWW setpoint (gebruiker)"
+                "name": "SWW-instelpunt (gebruiker)"
             },
             "tapw_timeprogram_dhws_prog": {
-                "name": "SWW setpoint (tijdprogramma, Linq min.)"
+                "name": "SWW-instelpunt (tijdprogramma, Linq min.)"
             },
             "regulation_buffersetp_min": {
-                "name": "Minimum setpoint bufferregeling"
+                "name": "Minimum instelpunt bufferregeling"
             },
             "usr_pid_heatsetp": {
-                "name": "Heat setpoint (zonder stooklijn)"
+                "name": "Verwarming instelpunt (zonder stooklijn)"
             },
             "usr_pid_coolsetp": {
-                "name": "Koel setpoint (zonder stooklijn)"
+                "name": "Koeling instelpunt (zonder stooklijn)"
             },
             "regulation_buffersetp_max": {
-                "name": "Maximaalwaarde buffer setpoint (koelbedrijf)"
+                "name": "Maximum instelpunt buffer (koelbedrijf)"
             },
             "tapw_timeprogram_dhwsetp_nolinq": {
-                "name": "SWW setpoint (Modbus)"
+                "name": "SWW-instelpunt (Modbus)"
             },
             "aout_usrpmp_val": {
-                "name": "Percentage sturing User (CV) pomp"
+                "name": "Sturing gebruikerspomp (CV) %"
             },
             "aout_srcpmp_val": {
-                "name": "Percentage sturing bron pomp"
+                "name": "Sturing bronpomp %"
             },
             "aout_srcvalve_val": {
-                "name": "Percentage sturing bron afsluiter"
+                "name": "Sturing bronafsluiter %"
             },
             "dhw_regreq": {
-                "name": "Stuurvraag regeling tapwater"
+                "name": "Stuurvraag SWW-regeling %"
             },
             "comppwrreq": {
-                "name": "Stuurvraag compressor"
+                "name": "Stuurvraag compressor %"
             },
             "flow": {
-                "name": "Gemeten flow"
-            },
-            "supplytemp": {
-                "name": "Aanvoertemperatuur CV"
-            },
-            "rettemp": {
-                "name": "Retourtemperatuur CV"
-            },
-            "srcintemp": {
-                "name": "Temperatuur bron vanaf dak"
-            },
-            "srcouttemp": {
-                "name": "Temperatuur bron naar dak"
-            },
-            "roomtemp": {
-                "name": "Ruimtetemperatuur"
-            },
-            "dhw_temp": {
-                "name": "Tapwatertemperatuur"
-            },
-            "outtemp": {
-                "name": "Buitentemperatuur"
-            },
-            "generalmng_cop": {
-                "name": "COP (berekend)"
-            },
-            "generalmng_thermic_pwr": {
-                "name": "Actueel vermogen"
-            },
-            "unitstatus": {
-                "name": "Status code"
+                "name": "Gemeten PVT-flow"
             },
             "regsetp": {
-                "name": "Berekend setpoint warmtepomp"
+                "name": "Berekend instelpunt warmtepomp"
             },
             "coolsetp_1": {
-                "name": "Koel setpoint"
+                "name": "Koeling instelpunt"
             },
             "heatsetp_1": {
-                "name": "Heat setpoint"
-            },
-            "bldc_evd_powerplus_info_pump": {
-                "name": "Actuele snelheid compressor"
+                "name": "Verwarming instelpunt"
             },
             "dhw_setp": {
-                "name": "Actief SWW setpoint"
+                "name": "Actief SWW-instelpunt"
             },
             "workinghours_dhw_hrsret": {
-                "name": "Bedrijfsuren tapwaterbedrijf"
+                "name": "Bedrijfsuren SWW-bedrijf"
             },
             "workinghours_heat_hrsret": {
                 "name": "Bedrijfsuren CV-bedrijf"
@@ -310,25 +277,16 @@
                 "name": "Bedrijfsuren koelbedrijf"
             },
             "workinghours_heater1_hrs": {
-                "name": "Bedrijfsuren Heater 1"
+                "name": "Bedrijfsuren heater 1"
             },
             "workinghours_heater2_hrs": {
-                "name": "Bedrijfsuren Heater 2"
+                "name": "Bedrijfsuren heater 2"
             },
             "workinghours_heater3_hrs": {
-                "name": "Bedrijfsuren Heater 3"
-            },
-            "generalmng_eletricpwr": {
-                "name": "Totaal elektrisch vermogen (berekend)"
+                "name": "Bedrijfsuren heater 3"
             },
             "plantsetp": {
-                "name": "Setpoint plantregeling"
-            },
-            "generalmng_acumulatedpwr": {
-                "name": "Elektriciteitsverbruik totaal (excl. standby)"
-            },
-            "generalmng_acumulatedthermic": {
-                "name": "Thermische opbrengst totaal"
+                "name": "Instelpunt plantregeling"
             },
             "modbus_roomtemp": {
                 "name": "Linq ruimtetemperatuur"
@@ -358,7 +316,7 @@
                 "name": "Ruimtetemperatuur"
             },
             "temp_dhw": {
-                "name": "Tapwatertemperatuur"
+                "name": "SWW-temperatuur"
             },
             "temp_outside": {
                 "name": "Buitentemperatuur"
@@ -367,7 +325,7 @@
                 "name": "COP (berekend)"
             },
             "status_code": {
-                "name": "Status code"
+                "name": "Statuscode"
             },
             "power_thermic": {
                 "name": "Actueel thermisch vermogen"
@@ -379,41 +337,41 @@
                 "name": "Actuele snelheid compressor"
             },
             "flow_rate": {
-                "name": "Debiet"
+                "name": "Gemeten PVT-flow"
             },
             "setpoint_room_heat_day": {
-                "name": "Setpoint ruimte (geen LinQ) CV (dag)"
+                "name": "Ruimte-instelpunt (geen LinQ) verwarmen (dag)"
             },
             "setpoint_room_heat_night": {
-                "name": "Setpoint ruimte (geen LinQ) CV (nacht)"
+                "name": "Ruimte-instelpunt (geen LinQ) verwarmen (nacht)"
             },
             "setpoint_room_cool_day": {
-                "name": "Setpoint ruimte (geen LinQ) Koel (dag)"
+                "name": "Ruimte-instelpunt (geen LinQ) koelen (dag)"
             },
             "setpoint_room_cool_night": {
-                "name": "Setpoint ruimte (geen LinQ) Koel (nacht)"
+                "name": "Ruimte-instelpunt (geen LinQ) koelen (nacht)"
             },
             "setpoint_dhw": {
-                "name": "Ingesteld setpoint tapwater"
+                "name": "Ingesteld SWW-instelpunt"
             }
         },
         "binary_sensor": {
             "alarm_sensors_active": {
-                "name": "Alarm sensoren actief"
+                "name": "Alarmsensoren actief"
             },
             "thermostat_sensor_timeout": {
-                "name": "Thermostaat sensor timeout"
+                "name": "Thermostaatsensor time-out"
             },
             "energy_totals_stale": {
                 "name": "Energietotalen lopen niet op"
             },
             "dhw_schedule": {
-                "name": "SWW schema",
+                "name": "SWW-schema",
                 "state_attributes": {
                     "start": { "name": "Start" },
                     "end": { "name": "Einde" },
                     "setpoint_source": {
-                        "name": "Bron instelpunt",
+                        "name": "Bron van instelpunt",
                         "state": {
                             "controller": "Modbus instelpunt van de regelaar",
                             "fixed": "Vast instelpunt uit opties"
@@ -426,85 +384,85 @@
                 }
             },
             "dout_srcpmp_val": {
-                "name": "Voeding Bron pomp"
+                "name": "Voeding bronpomp"
             },
             "dout_usrpmp_val": {
-                "name": "Voeding User pomp"
+                "name": "Voeding gebruikerspomp"
             },
             "dout_fourwayvlv_val": {
-                "name": "Sturing Vierwegafsluiter"
+                "name": "Sturing vierwegklep"
             },
             "dout_cooling_val": {
-                "name": "Uitgang Koeling Actief"
+                "name": "Uitgang koeling actief"
             },
             "dout_threewayvlv_val": {
-                "name": "Uitgang driewegafsluiter CV-Tapwater"
+                "name": "Uitgang driewegklep (CV/SWW)"
             },
             "dout_bufferpmp_val": {
-                "name": "Uitgang Bufferpomp"
+                "name": "Uitgang bufferpomp"
             },
             "dout_heaterstep1_val": {
-                "name": "Uitgang Heater 1"
+                "name": "Uitgang heater 1"
             },
             "dout_heaterstep2_val": {
-                "name": "Uitgang Heater 2"
+                "name": "Uitgang heater 2"
             },
             "dout_heaterstep3_val": {
-                "name": "Uitgang Heater 3"
+                "name": "Uitgang heater 3"
             },
             "keybonoff": {
-                "name": "Status warmtepomp bediening"
+                "name": "Status warmtepompbediening"
             },
             "al_maxtime_antileg_active": {
-                "name": "Alarm Max Tijd Legionella overschreden"
+                "name": "Alarm: Max tijd anti-legionella overschreden"
             },
             "al_maxtime_dhw_active": {
-                "name": "Alarm Max Tijd Tapwater overschreden"
+                "name": "Alarm: Max tijd SWW overschreden"
             },
             "al_dewpoint_active": {
-                "name": "Alarm dauwpunt (ingang) geactiveerd"
+                "name": "Alarm: Dauwpunt geactiveerd"
             },
             "al_underfloorsafety_active": {
-                "name": "Alarm aanvoer te warm CV"
+                "name": "Alarm: Aanvoer te warm (CV)"
             },
             "alrm_flw": {
-                "name": "Alarm Flow CV"
+                "name": "Alarm: Flow CV"
             },
             "usralrms": {
-                "name": "Alarm verzamelalarm CV"
+                "name": "Alarm: Verzamelalarm CV"
             },
             "coolingalrms": {
-                "name": "Alarm verzamelalarm koelbedrijf"
+                "name": "Alarm: Verzamelalarm koelen"
             },
             "heatingalrms": {
-                "name": "Alarm verzamelalarm CV-bedrijf"
+                "name": "Alarm: Verzamelalarm verwarmen"
             },
             "alarmmng_al_workinghour": {
-                "name": "Alarm Bedrijfsuren"
+                "name": "Alarm: Bedrijfsuren"
             },
             "srsalrm": {
-                "name": "Alarm Verzamelalarm Bron"
+                "name": "Alarm: Verzamelalarm bron"
             },
             "glbal": {
                 "name": "Alarm: Globaal"
             },
             "alarmmng_al_pwrplus": {
-                "name": "Alarm verzamelalarm compressor"
+                "name": "Alarm: Verzamelalarm compressor"
             },
             "roomprb_en": {
                 "name": "Ruimteopnemer geactiveerd"
             },
             "plantdemand": {
-                "name": "Vraag Plant sensor"
+                "name": "Vraag plantsensor"
             },
             "en_dhwpid": {
-                "name": "Tapwater regelaar vrijgegeven"
+                "name": "SWW-regelaar vrijgegeven"
             },
             "plantprb_en": {
-                "name": "Plantopnemer is geactiveerd"
+                "name": "Plantopnemer geactiveerd"
             },
             "bufferprb_en": {
-                "name": "Bufferopnemer is geactiveerd"
+                "name": "Bufferopnemer geactiveerd"
             },
             "id_demand": {
                 "name": "Vraag op digitale ingang"
@@ -522,19 +480,19 @@
                 "name": "Digitale ingang flow bronzijde geactiveerd"
             },
             "daynightmode": {
-                "name": "Status dag/nacht modus"
+                "name": "Status dag/nachtmodus"
             },
             "thermostatdemand": {
-                "name": "Vraag van thermostaat intern"
+                "name": "Vraag interne thermostaat"
             },
             "req_antileg_1": {
-                "name": "Antilegionella is vrijgegeven"
+                "name": "Anti-legionella vrijgegeven"
             },
             "bms_demand": {
                 "name": "Warmtevraag actief"
             },
             "surplus_pv": {
-                "name": "Surplus PV actief"
+                "name": "PV-overschot actief"
             }
         },
         "climate": {
@@ -544,25 +502,19 @@
         },
         "switch": {
             "dhw_schedule_enabled": {
-                "name": "SWW schema ingeschakeld"
+                "name": "SWW-schema ingeschakeld"
             },
             "bms_summerwinter": {
                 "name": "Schakel zomerbedrijf in (koeling)"
             },
             "tapw_timeprogram_bms_forced": {
-                "name": "Activeer Tapwater verwarmen"
+                "name": "Activeer SWW verwarmen"
             },
             "antilegionella_frcstart_ant": {
-                "name": "Start Antilegionella"
+                "name": "Start anti-legionella"
             },
             "en_plantsetp_compens": {
                 "name": "Stooklijn vrijgeven"
-            },
-            "bms_sgready_a": {
-                "name": "SG Ready A"
-            },
-            "bms_sgready_b": {
-                "name": "SG Ready B"
             },
             "modbus_demand": {
                 "name": "Activeer warmtevraag"
@@ -583,7 +535,7 @@
         },
         "number": {
             "tapw_timeprogram_dhwsetp_nolinq": {
-                "name": "SWW instelpunt (Modbus)"
+                "name": "SWW-instelpunt (Modbus)"
             },
             "usr_pid_heatsetp": {
                 "name": "Verwarming instelpunt (zonder stooklijn)"
@@ -596,33 +548,33 @@
     "services": {
         "reconfigure": {
             "name": "Herconfigureer integratie",
-            "description": "Open de herconfiguratie flow om de Modbus host of poort bij te werken via de Home Assistant UI.",
+            "description": "Open de herconfiguratieflow van de integratie om de Modbus-host of -poort bij te werken via de Home Assistant-interface.",
             "fields": {
                 "entry_id": {
-                    "name": "Config entry ID",
+                    "name": "Configuratie-item-ID",
                     "description": "Optioneel entry_id om te herconfigureren. Indien leeg, wordt geprobeerd de enkele geconfigureerde entry automatisch te vinden."
                 }
             }
         },
         "write_register": {
-            "name": "Schrijf holding register",
+            "name": "Schrijf holdingregister",
             "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp, met het datatype van de bijbehorende schrijfbare entiteit.",
             "fields": {
                 "address": {
-                    "name": "Register adres",
-                    "description": "Het Modbus holding register adres om naar te schrijven (0-based adressering)."
+                    "name": "Registeradres",
+                    "description": "Het adres van het Modbus-holdingregister om naar te schrijven (adressering vanaf 0)."
                 },
                 "value": {
                     "name": "Waarde",
                     "description": "De waarde om in het register op te slaan."
                 },
                 "entry_id": {
-                    "name": "Config entry ID",
-                    "description": "Optioneel entry_id van de doel integratie instantie. Nodig wanneer meerdere Qube warmtepompen zijn geconfigureerd."
+                    "name": "Configuratie-item-ID",
+                    "description": "Optioneel entry_id van de doelinstantie van de integratie. Nodig wanneer meerdere Qube warmtepompen zijn geconfigureerd."
                 },
                 "label": {
-                    "name": "Hub label",
-                    "description": "Optioneel hub label (bijv. qube1) om een specifiek apparaat te kiezen wanneer er meerdere hubs zijn. Genegeerd als entry_id is opgegeven."
+                    "name": "Hublabel",
+                    "description": "Optioneel hublabel om een specifiek apparaat te kiezen wanneer er meerdere hubs zijn. Het label wordt afgeleid van de titel van het configuratie-item (bijv. 'Qube Heat Pump (qube.local)' → 'qube_local'). Genegeerd als entry_id is opgegeven."
                 }
             }
         }

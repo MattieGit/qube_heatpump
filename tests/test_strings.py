@@ -28,8 +28,6 @@ ALLOWED_CAPITALS = {
     "Ready",  # Part of "SG Ready" standard
     "Linq",  # Qube Linq product name
     "Modbus",
-    # Technical terms that are commonly capitalized
-    "Anti-legionella",
     # Category prefixes (word before colon in "Category: description" format)
     "Alarm",
     "Max",  # Used in alarm descriptions
@@ -329,27 +327,33 @@ class TestSentenceCaseHelper:
         assert _is_sentence_case("Anti-legionella enabled") is True
 
 
+COMPONENT_DIR = Path(__file__).parent.parent / "custom_components" / "qube_heatpump"
+
+
+def _flatten(d: dict, prefix: str = "") -> dict[str, str]:
+    """Flatten a nested translation dict into {dotted.path: leaf value}."""
+    leaves: dict[str, str] = {}
+    for k, v in d.items():
+        path = f"{prefix}.{k}" if prefix else k
+        if isinstance(v, dict):
+            leaves.update(_flatten(v, path))
+        else:
+            leaves[path] = v
+    return leaves
+
+
 def test_translation_files_in_sync() -> None:
-    """strings.json, en.json and nl.json must have identical key trees."""
-    import json
-    from pathlib import Path
+    """strings.json, en.json and nl.json must have identical key trees.
 
-    base = Path("custom_components/qube_heatpump")
-    strings = json.loads((base / "strings.json").read_text())
-    en = json.loads((base / "translations/en.json").read_text())
-    nl = json.loads((base / "translations/nl.json").read_text())
+    en.json is the English translation of strings.json, so its values must
+    match as well (Home Assistant core generates en.json from strings.json).
+    """
+    strings = json.loads((COMPONENT_DIR / "strings.json").read_text())
+    en = json.loads((COMPONENT_DIR / "translations/en.json").read_text())
+    nl = json.loads((COMPONENT_DIR / "translations/nl.json").read_text())
 
-    def key_tree(d: dict, prefix: str = "") -> set[str]:
-        keys: set[str] = set()
-        for k, v in d.items():
-            path = f"{prefix}.{k}" if prefix else k
-            if isinstance(v, dict):
-                keys |= key_tree(v, path)
-            else:
-                keys.add(path)
-        return keys
-
-    s_keys, en_keys, nl_keys = key_tree(strings), key_tree(en), key_tree(nl)
+    s_flat, en_flat, nl_flat = _flatten(strings), _flatten(en), _flatten(nl)
+    s_keys, en_keys, nl_keys = set(s_flat), set(en_flat), set(nl_flat)
     assert s_keys == en_keys, (
         f"strings vs en drift: only-strings={sorted(s_keys - en_keys)} "
         f"only-en={sorted(en_keys - s_keys)}"
@@ -359,15 +363,57 @@ def test_translation_files_in_sync() -> None:
         f"only-nl={sorted(nl_keys - s_keys)}"
     )
 
+    value_drift = {
+        path: (s_flat[path], en_flat[path])
+        for path in s_keys
+        if s_flat[path] != en_flat[path]
+    }
+    assert not value_drift, f"strings vs en value drift: {value_drift}"
+
+
+# QubeMetricSensor builds its key as f"metric_{kind}" for the kinds in
+# sensor.async_setup_entry; a literal grep cannot see those.
+DYNAMIC_TRANSLATION_KEYS = {"metric_errors_connect", "metric_errors_read"}
+
+
+def _code_translation_keys() -> set[str]:
+    """Collect every translation_key literal assigned in the component code."""
+    pattern = re.compile(r"translation_key\s*=\s*\"([a-z0-9_]+)\"")
+    keys: set[str] = set(DYNAMIC_TRANSLATION_KEYS)
+    for py_file in COMPONENT_DIR.glob("*.py"):
+        keys.update(pattern.findall(py_file.read_text()))
+    return keys
+
+
+def test_entity_translation_keys_are_used() -> None:
+    """Every entity.<platform>.<key> must be a library key or a code translation_key.
+
+    Library entities use their library key as translation_key; computed and
+    diagnostic entities set translation_key explicitly in the component code.
+    Anything else is an orphan left over from a removed entity.
+    """
+    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+
+    allowed = set(SENSORS) | set(BINARY_SENSORS) | set(SWITCHES)
+    allowed |= _code_translation_keys()
+
+    strings = json.loads((COMPONENT_DIR / "strings.json").read_text())
+    orphans = [
+        f"{platform}.{key}"
+        for platform, entries in strings["entity"].items()
+        for key in entries
+        if key not in allowed
+        # The metric_count_* diagnostic sensors are removed by a parallel
+        # change together with their translations; ignore them until then.
+        and not key.startswith("metric_count_")
+    ]
+    assert not orphans, f"translation keys without an entity: {orphans}"
+
 
 def test_no_binary_sensor_keys_under_sensor() -> None:
     """Binary-sensor translation keys must not be duplicated under entity.sensor."""
-    import json
-    from pathlib import Path
-
-    base = Path("custom_components/qube_heatpump")
     for fname in ("strings.json", "translations/en.json", "translations/nl.json"):
-        data = json.loads((base / fname).read_text())
+        data = json.loads((COMPONENT_DIR / fname).read_text())
         sensor_keys = set(data.get("entity", {}).get("sensor", {}))
         binary_keys = set(data.get("entity", {}).get("binary_sensor", {}))
         overlap = sensor_keys & binary_keys

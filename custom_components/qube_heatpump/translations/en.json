@@ -144,36 +144,6 @@
       "flow": {
         "name": "Measured PVT flow"
       },
-      "supplytemp": {
-        "name": "Supply temperature CH"
-      },
-      "rettemp": {
-        "name": "Return temperature CH"
-      },
-      "srcintemp": {
-        "name": "Source temperature from roof"
-      },
-      "srcouttemp": {
-        "name": "Source temperature to roof"
-      },
-      "roomtemp": {
-        "name": "Room temperature"
-      },
-      "dhw_temp": {
-        "name": "DHW temperature"
-      },
-      "outtemp": {
-        "name": "Outside temperature"
-      },
-      "generalmng_cop": {
-        "name": "COP (calculated)"
-      },
-      "generalmng_thermic_pwr": {
-        "name": "Current power"
-      },
-      "unitstatus": {
-        "name": "Status code"
-      },
       "regsetp": {
         "name": "Calculated heat pump setpoint"
       },
@@ -182,9 +152,6 @@
       },
       "heatsetp_1": {
         "name": "Heating setpoint"
-      },
-      "bldc_evd_powerplus_info_pump": {
-        "name": "Current compressor speed"
       },
       "dhw_setp": {
         "name": "Active DHW setpoint"
@@ -207,17 +174,8 @@
       "workinghours_heater3_hrs": {
         "name": "Working hours heater 3"
       },
-      "generalmng_eletricpwr": {
-        "name": "Total electric power (calculated)"
-      },
       "plantsetp": {
         "name": "Plant regulation setpoint"
-      },
-      "generalmng_acumulatedpwr": {
-        "name": "Electric consumption total (excl. standby)"
-      },
-      "generalmng_acumulatedthermic": {
-        "name": "Thermic yield total"
       },
       "modbus_roomtemp": {
         "name": "Linq room temperature"
@@ -553,16 +511,10 @@
         "name": "Activate DHW heating"
       },
       "antilegionella_frcstart_ant": {
-        "name": "Start Anti-legionella"
+        "name": "Start anti-legionella"
       },
       "en_plantsetp_compens": {
         "name": "Enable heating curve"
-      },
-      "bms_sgready_a": {
-        "name": "SG Ready A"
-      },
-      "bms_sgready_b": {
-        "name": "SG Ready B"
       },
       "modbus_demand": {
         "name": "Activate central heating"

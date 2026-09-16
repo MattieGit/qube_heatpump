@@ -1,24 +1,14 @@
+# Service names and descriptions are translated via strings.json ("services").
 reconfigure:
-  name: Reconfigure
-  description: Open the reconfigure dialog for the Qube Heat Pump integration.
   fields:
     entry_id:
-      name: Entry ID
-      description: The config entry ID to reconfigure. If not specified and only one entry exists, that entry will be used.
       required: false
       example: "1234567890abcdef1234567890abcdef"
       selector:
         text:
 write_register:
-  name: Write Register (Advanced)
-  description: >-
-    Write a raw value to a Modbus register. This is an advanced service for
-    debugging and custom automations. For normal use, prefer entity-based
-    actions like switch.turn_on or number.set_value.
   fields:
     address:
-      name: Register Address
-      description: The Modbus register address to write to.
       required: true
       example: 173
       selector:
@@ -27,22 +17,16 @@ write_register:
           max: 65535
           mode: box
     value:
-      name: Value
-      description: The value to write to the register.
       required: true
       example: 55.0
       selector:
         number:
           mode: box
     entry_id:
-      name: Entry ID
-      description: Target a specific Qube Heat Pump entry by ID.
       required: false
       selector:
         text:
     label:
-      name: Label
-      description: Target a specific Qube Heat Pump entry by label.
       required: false
       selector:
         text:
