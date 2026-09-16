@@ -47,8 +47,8 @@ async def test_unit_id_resolution(
     await setup_integration(hass, entry)
 
     assert entry.runtime_data.hub.unit == expected
-    assert device_registry.async_get_device(
-        identifiers={(DOMAIN, f"1.2.3.4:{expected}")}
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"1.2.3.4:{expected}"), entry.entry_id
     )
 
 

@@ -1,8 +1,9 @@
 # serializer version: 1
 # name: test_entities[binary_sensor.qube_1_al_dewpoint_active-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -20,6 +21,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -37,8 +39,8 @@
 # name: test_entities[binary_sensor.qube_1_al_dewpoint_active-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Dewpoint activated',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Dewpoint activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_al_dewpoint_active',
@@ -50,8 +52,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_al_maxtime_antileg_active-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -69,6 +72,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -86,8 +90,8 @@
 # name: test_entities[binary_sensor.qube_1_al_maxtime_antileg_active-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Max time anti-legionella exceeded',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Max time anti-legionella exceeded',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_al_maxtime_antileg_active',
@@ -99,8 +103,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_al_maxtime_dhw_active-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -118,6 +123,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -135,8 +141,8 @@
 # name: test_entities[binary_sensor.qube_1_al_maxtime_dhw_active-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Max time DHW exceeded',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Max time DHW exceeded',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_al_maxtime_dhw_active',
@@ -148,8 +154,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_al_underfloorsafety_active-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -167,6 +174,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -184,8 +192,8 @@
 # name: test_entities[binary_sensor.qube_1_al_underfloorsafety_active-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Supply too hot (CH)',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Supply too hot (CH)',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_al_underfloorsafety_active',
@@ -197,8 +205,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_alarm_sensors_active-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -216,6 +225,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -233,9 +243,9 @@
 # name: test_entities[binary_sensor.qube_1_alarm_sensors_active-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm sensors active',
-      'icon': 'mdi:alarm-light',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm sensors active',
+      <EntityStateAttribute.ICON: 'icon'>: 'mdi:alarm-light',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_alarm_sensors_active',
@@ -247,8 +257,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_alarmmng_al_pwrplus-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -266,6 +277,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -283,8 +295,8 @@
 # name: test_entities[binary_sensor.qube_1_alarmmng_al_pwrplus-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Collective alarm compressor',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Collective alarm compressor',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_alarmmng_al_pwrplus',
@@ -296,8 +308,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_alarmmng_al_workinghour-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -315,6 +328,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -332,8 +346,8 @@
 # name: test_entities[binary_sensor.qube_1_alarmmng_al_workinghour-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Working hours',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Working hours',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_alarmmng_al_workinghour',
@@ -345,8 +359,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_alrm_flw-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -364,6 +379,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -381,8 +397,8 @@
 # name: test_entities[binary_sensor.qube_1_alrm_flw-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Flow CH',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Flow CH',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_alrm_flw',
@@ -394,8 +410,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_bms_demand-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -413,6 +430,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -430,7 +448,7 @@
 # name: test_entities[binary_sensor.qube_1_bms_demand-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Heat demand active',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Heat demand active',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_bms_demand',
@@ -442,8 +460,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_boostersecurity-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -461,6 +480,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -478,7 +498,7 @@
 # name: test_entities[binary_sensor.qube_1_boostersecurity-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Digital input booster activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Digital input booster activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_boostersecurity',
@@ -490,8 +510,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_bufferprb_en-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -509,6 +530,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -526,7 +548,7 @@
 # name: test_entities[binary_sensor.qube_1_bufferprb_en-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Buffer sensor activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Buffer sensor activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_bufferprb_en',
@@ -538,8 +560,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_coolingalrms-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -557,6 +580,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -574,8 +598,8 @@
 # name: test_entities[binary_sensor.qube_1_coolingalrms-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Collective alarm cooling',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Collective alarm cooling',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_coolingalrms',
@@ -587,8 +611,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_daynightmode-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -606,6 +631,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -623,7 +649,7 @@
 # name: test_entities[binary_sensor.qube_1_daynightmode-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Day/night mode status',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Day/night mode status',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_daynightmode',
@@ -635,8 +661,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dewpoint-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -654,6 +681,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -671,7 +699,7 @@
 # name: test_entities[binary_sensor.qube_1_dewpoint-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Digital input dewpoint activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Digital input dewpoint activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dewpoint',
@@ -683,8 +711,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dhw_schedule-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -702,6 +731,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -719,8 +749,8 @@
 # name: test_entities[binary_sensor.qube_1_dhw_schedule-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 DHW schedule',
-      'icon': 'mdi:calendar-clock',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 DHW schedule',
+      <EntityStateAttribute.ICON: 'icon'>: 'mdi:calendar-clock',
       'window_active': False,
     }),
     'context': <ANY>,
@@ -733,8 +763,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_bufferpmp_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -752,6 +783,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -769,8 +801,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_bufferpmp_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Buffer pump output',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Buffer pump output',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_bufferpmp_val',
@@ -782,8 +814,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_cooling_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -801,6 +834,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -818,8 +852,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_cooling_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Cooling active output',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Cooling active output',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_cooling_val',
@@ -831,8 +865,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_fourwayvlv_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -850,6 +885,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -867,7 +903,7 @@
 # name: test_entities[binary_sensor.qube_1_dout_fourwayvlv_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Four-way valve control',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Four-way valve control',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_fourwayvlv_val',
@@ -879,8 +915,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_heaterstep1_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -898,6 +935,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -915,8 +953,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_heaterstep1_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Heater 1 output',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Heater 1 output',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_heaterstep1_val',
@@ -928,8 +966,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_heaterstep2_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -947,6 +986,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -964,8 +1004,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_heaterstep2_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Heater 2 output',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Heater 2 output',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_heaterstep2_val',
@@ -977,8 +1017,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_heaterstep3_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -996,6 +1037,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -1013,8 +1055,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_heaterstep3_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Heater 3 output',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Heater 3 output',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_heaterstep3_val',
@@ -1026,8 +1068,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_srcpmp_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1045,6 +1088,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -1062,8 +1106,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_srcpmp_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Source pump power supply',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Source pump power supply',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_srcpmp_val',
@@ -1075,8 +1119,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_threewayvlv_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1094,6 +1139,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1111,7 +1157,7 @@
 # name: test_entities[binary_sensor.qube_1_dout_threewayvlv_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Three-way valve output (CH/DHW)',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Three-way valve output (CH/DHW)',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_threewayvlv_val',
@@ -1123,8 +1169,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_dout_usrpmp_val-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1142,6 +1189,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -1159,8 +1207,8 @@
 # name: test_entities[binary_sensor.qube_1_dout_usrpmp_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 User pump power supply',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 User pump power supply',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_dout_usrpmp_val',
@@ -1172,8 +1220,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_en_dhwpid-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1191,6 +1240,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1208,7 +1258,7 @@
 # name: test_entities[binary_sensor.qube_1_en_dhwpid-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 DHW controller enabled',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 DHW controller enabled',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_en_dhwpid',
@@ -1220,8 +1270,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_energy_totals_stale-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1239,6 +1290,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -1256,8 +1308,8 @@
 # name: test_entities[binary_sensor.qube_1_energy_totals_stale-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Energy totals not advancing',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Energy totals not advancing',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_energy_totals_stale',
@@ -1269,8 +1321,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_glbal-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1288,6 +1341,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -1305,8 +1359,8 @@
 # name: test_entities[binary_sensor.qube_1_glbal-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Global',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Global',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_glbal',
@@ -1318,8 +1372,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_heatingalrms-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1337,6 +1392,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -1354,8 +1410,8 @@
 # name: test_entities[binary_sensor.qube_1_heatingalrms-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Collective alarm heating',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Collective alarm heating',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_heatingalrms',
@@ -1367,8 +1423,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_id_demand-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1386,6 +1443,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1403,7 +1461,7 @@
 # name: test_entities[binary_sensor.qube_1_id_demand-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Digital input demand',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Digital input demand',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_id_demand',
@@ -1415,8 +1473,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_id_summerwinter-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1434,6 +1493,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1451,7 +1511,7 @@
 # name: test_entities[binary_sensor.qube_1_id_summerwinter-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Digital input summer mode activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Digital input summer mode activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_id_summerwinter',
@@ -1463,8 +1523,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_keybonoff-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1482,6 +1543,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.RUNNING: 'running'>,
@@ -1499,8 +1561,8 @@
 # name: test_entities[binary_sensor.qube_1_keybonoff-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'running',
-      'friendly_name': 'qube 1 Heat pump keypad status',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'running',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Heat pump keypad status',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_keybonoff',
@@ -1512,8 +1574,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_plantdemand-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1531,6 +1594,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1548,7 +1612,7 @@
 # name: test_entities[binary_sensor.qube_1_plantdemand-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Plant sensor demand',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Plant sensor demand',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_plantdemand',
@@ -1560,8 +1624,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_plantprb_en-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1579,6 +1644,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1596,7 +1662,7 @@
 # name: test_entities[binary_sensor.qube_1_plantprb_en-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Plant sensor activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Plant sensor activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_plantprb_en',
@@ -1608,8 +1674,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_req_antileg_1-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1627,6 +1694,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1644,7 +1712,7 @@
 # name: test_entities[binary_sensor.qube_1_req_antileg_1-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Anti-legionella enabled',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Anti-legionella enabled',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_req_antileg_1',
@@ -1656,8 +1724,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_roomprb_en-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1675,6 +1744,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1692,7 +1762,7 @@
 # name: test_entities[binary_sensor.qube_1_roomprb_en-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Room sensor activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Room sensor activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_roomprb_en',
@@ -1704,8 +1774,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_srcflw-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1723,6 +1794,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1740,7 +1812,7 @@
 # name: test_entities[binary_sensor.qube_1_srcflw-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Digital input source flow activated',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Digital input source flow activated',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_srcflw',
@@ -1752,8 +1824,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_srsalrm-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1771,6 +1844,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -1788,8 +1862,8 @@
 # name: test_entities[binary_sensor.qube_1_srsalrm-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Collective alarm source',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Collective alarm source',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_srsalrm',
@@ -1801,8 +1875,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_surplus_pv-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1820,6 +1895,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1837,7 +1913,7 @@
 # name: test_entities[binary_sensor.qube_1_surplus_pv-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 PV surplus active',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 PV surplus active',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_surplus_pv',
@@ -1849,8 +1925,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_thermostatdemand-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1868,6 +1945,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -1885,7 +1963,7 @@
 # name: test_entities[binary_sensor.qube_1_thermostatdemand-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Internal thermostat demand',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Internal thermostat demand',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_thermostatdemand',
@@ -1897,8 +1975,9 @@
 # ---
 # name: test_entities[binary_sensor.qube_1_usralrms-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -1916,6 +1995,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': <BinarySensorDeviceClass.PROBLEM: 'problem'>,
@@ -1933,8 +2013,8 @@
 # name: test_entities[binary_sensor.qube_1_usralrms-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'device_class': 'problem',
-      'friendly_name': 'qube 1 Alarm: Collective alarm CH',
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Alarm: Collective alarm CH',
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.qube_1_usralrms',

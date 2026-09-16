@@ -1,11 +1,12 @@
 # serializer version: 1
 # name: test_entities[select.qube_1_sg_ready_mode-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': dict({
-      'options': list([
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
         'Off',
         'Block',
         'Plus',
@@ -27,6 +28,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -44,8 +46,8 @@
 # name: test_entities[select.qube_1_sg_ready_mode-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 SG Ready mode',
-      'options': list([
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 SG Ready mode',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
         'Off',
         'Block',
         'Plus',

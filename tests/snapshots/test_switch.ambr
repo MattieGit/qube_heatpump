@@ -1,8 +1,9 @@
 # serializer version: 1
 # name: test_entities[switch.qube_1_antilegionella_frcstart_ant-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -20,6 +21,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -37,7 +39,7 @@
 # name: test_entities[switch.qube_1_antilegionella_frcstart_ant-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Start anti-legionella',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Start anti-legionella',
     }),
     'context': <ANY>,
     'entity_id': 'switch.qube_1_antilegionella_frcstart_ant',
@@ -49,8 +51,9 @@
 # ---
 # name: test_entities[switch.qube_1_bms_summerwinter-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -68,6 +71,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -85,7 +89,7 @@
 # name: test_entities[switch.qube_1_bms_summerwinter-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Activate summer mode (cooling)',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Activate summer mode (cooling)',
     }),
     'context': <ANY>,
     'entity_id': 'switch.qube_1_bms_summerwinter',
@@ -97,8 +101,9 @@
 # ---
 # name: test_entities[switch.qube_1_dhw_schedule_enabled-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -116,6 +121,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -133,8 +139,8 @@
 # name: test_entities[switch.qube_1_dhw_schedule_enabled-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 DHW schedule enabled',
-      'icon': 'mdi:calendar-clock',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 DHW schedule enabled',
+      <EntityStateAttribute.ICON: 'icon'>: 'mdi:calendar-clock',
     }),
     'context': <ANY>,
     'entity_id': 'switch.qube_1_dhw_schedule_enabled',
@@ -146,8 +152,9 @@
 # ---
 # name: test_entities[switch.qube_1_en_plantsetp_compens-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -165,6 +172,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -182,7 +190,7 @@
 # name: test_entities[switch.qube_1_en_plantsetp_compens-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Enable heating curve',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Enable heating curve',
     }),
     'context': <ANY>,
     'entity_id': 'switch.qube_1_en_plantsetp_compens',
@@ -194,8 +202,9 @@
 # ---
 # name: test_entities[switch.qube_1_modbus_demand-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -213,6 +222,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -230,7 +240,7 @@
 # name: test_entities[switch.qube_1_modbus_demand-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Activate central heating',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Activate central heating',
     }),
     'context': <ANY>,
     'entity_id': 'switch.qube_1_modbus_demand',
@@ -242,8 +252,9 @@
 # ---
 # name: test_entities[switch.qube_1_tapw_timeprogram_bms_forced-entry]
   EntityRegistryEntrySnapshot({
-    'aliases': set({
-    }),
+    'aliases': list([
+      None,
+    ]),
     'area_id': None,
     'capabilities': None,
     'config_entry_id': <ANY>,
@@ -261,6 +272,7 @@
     'labels': set({
     }),
     'name': None,
+    'object_id_base': None,
     'options': dict({
     }),
     'original_device_class': None,
@@ -278,7 +290,7 @@
 # name: test_entities[switch.qube_1_tapw_timeprogram_bms_forced-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      'friendly_name': 'qube 1 Activate DHW heating',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Activate DHW heating',
       'pending_request': False,
     }),
     'context': <ANY>,

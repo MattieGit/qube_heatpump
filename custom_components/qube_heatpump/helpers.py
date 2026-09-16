@@ -6,9 +6,11 @@ import asyncio
 import contextlib
 import ipaddress
 import socket
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
+    from homeassistant.helpers.device_registry import DeviceEntry, DeviceRegistry
+
     from .entity_defs import EntityDef
 
 
@@ -57,3 +59,18 @@ async def async_resolve_host(host: str) -> str | None:
             addr = addr.removeprefix("::ffff:")
         return addr
     return None
+
+
+def get_device_by_identifier(
+    registry: DeviceRegistry, identifier: tuple[str, str], entry_id: str
+) -> DeviceEntry | None:
+    """Look up a device by one identifier, scoped to a config entry.
+
+    Home Assistant 2026.7 added ``async_get_device_by_identifier`` and
+    deprecated ``async_get_device`` (removal planned for 2027.8). Older cores
+    still supported by this integration only have the deprecated form.
+    """
+    lookup = getattr(registry, "async_get_device_by_identifier", None)
+    if lookup is not None:
+        return cast("DeviceEntry | None", lookup(identifier, entry_id))
+    return registry.async_get_device(identifiers={identifier})

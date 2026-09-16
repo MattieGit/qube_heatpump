@@ -45,7 +45,7 @@ from .const import (
     DEFAULT_PORT,
     DOMAIN,
 )
-from .helpers import async_resolve_host
+from .helpers import async_resolve_host, get_device_by_identifier
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -422,8 +422,8 @@ class OptionsFlowHandler(OptionsFlow):
                 entry.options.get(CONF_UNIT_ID, entry.data.get(CONF_UNIT_ID, 1))
             )
             device_registry = dr.async_get(self.hass)
-            if old_device := device_registry.async_get_device(
-                {(DOMAIN, f"{current_host}:{unit_id}")}
+            if old_device := get_device_by_identifier(
+                device_registry, (DOMAIN, f"{current_host}:{unit_id}"), entry.entry_id
             ):
                 device_registry.async_remove_device(old_device.id)
         return self.async_create_entry(title="", data=options)

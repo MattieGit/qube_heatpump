@@ -29,7 +29,9 @@ async def test_full_lifecycle(
     await setup_integration(hass, mock_config_entry)
 
     assert mock_config_entry.state is ConfigEntryState.LOADED
-    device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, "1.2.3.4:1"), mock_config_entry.entry_id
+    )
     assert device is not None
 
     entity_ids = {

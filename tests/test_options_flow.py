@@ -126,7 +126,9 @@ async def test_options_flow_host_change_rewrites_unique_id_and_device(
 ) -> None:
     """Moving the device to a new host re-registers it under the new identifier."""
     await setup_integration(hass, mock_config_entry)
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "1.2.3.4:1"), mock_config_entry.entry_id
+    )
 
     result = await _start_options_flow(hass, mock_config_entry)
     with _tcp_ok():
@@ -139,8 +141,15 @@ async def test_options_flow_host_change_rewrites_unique_id_and_device(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.data[CONF_HOST] == "192.0.2.99"
     assert mock_config_entry.unique_id == f"{DOMAIN}-192.0.2.99-502"
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")}) is None
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "192.0.2.99:1")})
+    assert (
+        device_registry.async_get_device_by_identifier(
+            (DOMAIN, "1.2.3.4:1"), mock_config_entry.entry_id
+        )
+        is None
+    )
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "192.0.2.99:1"), mock_config_entry.entry_id
+    )
 
 
 async def test_options_flow_thermostat_step_creates_the_thermostat(
