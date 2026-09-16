@@ -314,3 +314,78 @@ async def test_sensor_qube_info_entity(
     if info_sensors:
         attrs = info_sensors[0].attributes
         assert "version" in attrs or "label" in attrs or "host" in attrs
+
+
+async def test_alias_sensors_registered_but_disabled(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Library alias keys stay in the registry but are disabled by default."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    for alias, primary, primary_name in (
+        ("flow_rate", "flow", "Measured PVT flow"),
+        (
+            "setpoint_room_heat_day",
+            "thermostat_heatsetp_day",
+            "LinQ setpoint heating (day)",
+        ),
+        ("setpoint_dhw", "tapw_timeprogram_dhwsetp_nolinq", "DHW setpoint (Modbus)"),
+    ):
+        alias_entry = registry.async_get(f"sensor.qube_1_{alias}")
+        assert alias_entry is not None, alias
+        assert alias_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        assert hass.states.get(f"sensor.qube_1_{alias}") is None
+
+        primary_entry = registry.async_get(f"sensor.qube_1_{primary}")
+        assert primary_entry is not None, primary
+        assert primary_entry.disabled_by is None
+        primary_state = hass.states.get(f"sensor.qube_1_{primary}")
+        assert primary_state is not None
+        # Description-driven translation_key still yields the translated name
+        assert primary_state.attributes["friendly_name"] == f"qube 1 {primary_name}"
+
+
+async def test_computed_sensors_are_enums(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Status and valve sensors expose ENUM device class and options."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    status = hass.states.get("sensor.qube_1_status_heatpump")
+    assert status is not None
+    assert status.attributes["device_class"] == "enum"
+    assert "anti_legionella" in status.attributes["options"]
+    assert status.state in status.attributes["options"]
+
+    threeway = hass.states.get("sensor.qube_1_threeway_valve_status")
+    assert threeway is not None
+    assert threeway.attributes["device_class"] == "enum"
+    assert threeway.attributes["options"] == ["dhw", "ch"]
+    assert threeway.state in threeway.attributes["options"]
+
+    fourway = hass.states.get("sensor.qube_1_fourway_valve_status")
+    assert fourway is not None
+    assert fourway.attributes["device_class"] == "enum"
+    assert fourway.attributes["options"] == ["heating", "cooling"]
+    assert fourway.state in fourway.attributes["options"]

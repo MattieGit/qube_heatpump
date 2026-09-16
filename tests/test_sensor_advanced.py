@@ -14,11 +14,11 @@ from custom_components.qube_heatpump.const import CONF_HOST, DOMAIN
 from custom_components.qube_heatpump.sensor import (
     SCOP_MAX_EXPECTED,
     TariffEnergyTracker,
-    _find_binary_by_address,
-    _find_status_source,
+    _find_entity,
     _start_of_day,
     _start_of_month,
 )
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.util import dt as dt_util
 
 if TYPE_CHECKING:
@@ -54,59 +54,36 @@ def test_start_of_day_is_local_midnight(amsterdam_tz: None) -> None:
     assert result.tzinfo == UTC
 
 
-def test_find_status_source_fallback_enum() -> None:
-    """Test _find_status_source falls back to enum device_class."""
+def _mock_hub() -> MagicMock:
+    hub = MagicMock()
+    hub.host = "1.2.3.4"
+    hub.unit = 1
+    hub.label = "qube1"
+    hub.entry_id = "test_entry"
+    hub.resolved_ip = "1.2.3.4"
+    hub.err_connect = 0
+    hub.err_read = 0
+    return hub
+
+
+def test_find_entity_by_vendor_id() -> None:
+    """_find_entity matches on the library key, regardless of platform."""
     from custom_components.qube_heatpump.entity_defs import EntityDef
 
     hub = MagicMock()
-    ent1 = EntityDef(platform="sensor", name="Other", address=100, device_class="enum")
-    hub.entities = [ent1]
-    result = _find_status_source(hub)
-    assert result == ent1
-
-
-def test_find_status_source_fallback_name() -> None:
-    """Test _find_status_source falls back to name containing status."""
-    from custom_components.qube_heatpump.entity_defs import EntityDef
-
-    hub = MagicMock()
-    ent1 = EntityDef(platform="sensor", name="Unit Status Value", address=100)
-    hub.entities = [ent1]
-    result = _find_status_source(hub)
-    assert result == ent1
-
-
-def test_find_status_source_no_match() -> None:
-    """Test _find_status_source returns None when no match."""
-    from custom_components.qube_heatpump.entity_defs import EntityDef
-
-    hub = MagicMock()
-    ent1 = EntityDef(platform="sensor", name="Temperature", address=100)
-    hub.entities = [ent1]
-    result = _find_status_source(hub)
-    assert result is None
-
-
-def test_find_binary_by_address_found() -> None:
-    """Test _find_binary_by_address finds entity."""
-    from custom_components.qube_heatpump.entity_defs import EntityDef
-
-    hub = MagicMock()
-    ent1 = EntityDef(platform="binary_sensor", name="Test", address=4)
-    hub.entities = [ent1]
-    result = _find_binary_by_address(hub, 4)
-    assert result == ent1
-
-
-def test_find_binary_by_address_not_found() -> None:
-    """Test _find_binary_by_address returns None when not found."""
-    from custom_components.qube_heatpump.entity_defs import EntityDef
-
-    hub = MagicMock()
-    ent1 = EntityDef(platform="binary_sensor", name="Test", address=5)
-    hub.entities = [ent1]
-    result = _find_binary_by_address(hub, 4)
-    assert result is None
+    status = EntityDef(
+        platform="sensor", name="Status code", address=38, vendor_id="status_code"
+    )
+    valve = EntityDef(
+        platform="binary_sensor",
+        name="Three-way valve",
+        address=4,
+        vendor_id="dout_threewayvlv_val",
+    )
+    hub.entities = [valve, status]
+    assert _find_entity(hub, "status_code") is status
+    assert _find_entity(hub, "dout_threewayvlv_val") is valve
+    assert _find_entity(hub, "missing") is None
 
 
 class TestTariffEnergyTracker:
@@ -360,152 +337,169 @@ class TestTariffEnergyTracker:
         assert tracker.last_reset == datetime(2026, 8, 31, 22, 0, tzinfo=UTC)
 
 
-class TestQubeSensorUniqueIdFallback:
-    """Tests for QubeSensor unique_id fallback logic."""
+class TestQubeSensorDescription:
+    """QubeSensor derives its entity description from the EntityDef."""
 
-    async def test_sensor_unique_id_fallback_input_type(
-        self, hass: HomeAssistant
+    @staticmethod
+    def _make(ent: Any, data: dict[str, Any] | None = None) -> Any:
+        from custom_components.qube_heatpump.sensor import QubeSensor
+
+        coordinator = MagicMock()
+        coordinator.data = data or {}
+        return QubeSensor(
+            coordinator=coordinator, hub=_mock_hub(), version="1.0", ent=ent
+        )
+
+    @pytest.mark.parametrize(
+        ("device_class", "state_class"),
+        [
+            ("temperature", "measurement"),
+            (SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
+        ],
+    )
+    def test_description_from_entity_def(
+        self, device_class: Any, state_class: Any
     ) -> None:
-        """Test sensor uses input_type in unique_id when unique_id not set."""
+        """Strings and enum members are both accepted for the classes."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
 
         ent = EntityDef(
             platform="sensor",
-            name="Test Sensor",
-            address=100,
-            input_type="holding",
+            name="Supply temperature",
+            address=1,
+            vendor_id="temp_supply",
+            unique_id="temp_supply",
+            translation_key="temp_supply",
+            unit_of_measurement="°C",
+            device_class=device_class,
+            state_class=state_class,
+            precision=1,
         )
-        ent.unique_id = None
-        ent.translation_key = None
+        sensor = self._make(ent)
+        desc = sensor.entity_description
+        assert desc.key == "temp_supply"
+        assert desc.translation_key == "temp_supply"
+        assert sensor.device_class is SensorDeviceClass.TEMPERATURE
+        assert sensor.state_class is SensorStateClass.MEASUREMENT
+        assert sensor.native_unit_of_measurement == "°C"
+        assert sensor.suggested_display_precision == 1
+        assert sensor.entity_registry_enabled_default is True
+        assert sensor.entity_id == "sensor.qube1_temp_supply"
+        assert sensor.unique_id == "1.2.3.4_1_temp_supply"
 
-        sensor = QubeSensor(
-            coordinator=coordinator,
-            hub=hub,
-            version="1.0",
-            ent=ent,
-        )
-
-        # Always scoped with host_unit prefix for stability
-        assert sensor._attr_unique_id == "1.2.3.4_1_qube_sensor_holding_100"
-
-    async def test_sensor_unique_id_fallback_write_type(
-        self, hass: HomeAssistant
-    ) -> None:
-        """Test sensor uses write_type in unique_id fallback."""
+    def test_no_device_class(self) -> None:
+        """A definition without classes yields None, not an error."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
 
         ent = EntityDef(
             platform="sensor",
-            name="Test Sensor",
-            address=200,
-            write_type="holding",
+            name="Status code",
+            address=38,
+            vendor_id="status_code",
+            unique_id="status_code",
+            translation_key="status_code",
         )
-        ent.unique_id = None
-        ent.translation_key = None
-        ent.input_type = None
+        sensor = self._make(ent)
+        assert sensor.device_class is None
+        assert sensor.state_class is None
 
-        sensor = QubeSensor(
-            coordinator=coordinator,
-            hub=hub,
-            version="1.0",
-            ent=ent,
-        )
-
-        # Always scoped with host_unit prefix for stability
-        assert sensor._attr_unique_id == "1.2.3.4_1_qube_sensor_holding_200"
-
-    async def test_sensor_unique_id_multi_device(self, hass: HomeAssistant) -> None:
-        """Test sensor unique_id includes host_unit prefix in multi_device mode."""
+    @pytest.mark.parametrize(
+        "vendor_id",
+        [
+            "flow_rate",
+            "setpoint_room_heat_day",
+            "setpoint_room_heat_night",
+            "setpoint_room_cool_day",
+            "setpoint_room_cool_night",
+            "setpoint_dhw",
+            "temp_room",
+            "cop_calc",
+        ],
+    )
+    def test_disabled_by_default(self, vendor_id: str) -> None:
+        """Library alias keys, temp_room and real-time COP start disabled."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.sensor import QubeSensor
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry_id"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
 
         ent = EntityDef(
             platform="sensor",
-            name="Test Sensor",
-            address=100,
+            name="x",
+            address=1,
+            vendor_id=vendor_id,
+            unique_id=vendor_id,
+            translation_key=vendor_id,
         )
-        ent.unique_id = None
-        ent.translation_key = None
-        ent.input_type = None
-        ent.write_type = None
+        assert self._make(ent).entity_registry_enabled_default is False
 
-        sensor = QubeSensor(
-            coordinator=coordinator,
-            hub=hub,
-            version="1.0",
-            ent=ent,
-        )
-
-        # Multi-device unique_id has host_unit prefix for isolation
-        assert sensor._attr_unique_id.startswith("1.2.3.4_1_")
-
-
-class TestQubeInfoSensorCountsFallback:
-    """Tests for QubeInfoSensor counts fallback."""
-
-    async def test_info_sensor_counts_fallback(self, hass: HomeAssistant) -> None:
-        """Test info sensor falls back to counting entities when counts are None."""
+    def test_temp_room_not_installed_is_unknown(self) -> None:
+        """-999 means no room sensor is connected."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
+
+        ent = EntityDef(
+            platform="sensor",
+            name="Room",
+            address=1,
+            vendor_id="temp_room",
+            unique_id="temp_room",
+            translation_key="temp_room",
+        )
+        assert self._make(ent, {"temp_room": -999}).native_value is None
+        assert self._make(ent, {"temp_room": 20.5}).native_value == 20.5
+
+    def test_clamped_to_zero(self) -> None:
+        """Flow and percentages never go negative (also fixes -0.0)."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
+
+        ent = EntityDef(
+            platform="sensor",
+            name="Flow",
+            address=18,
+            vendor_id="flow",
+            unique_id="flow",
+            translation_key="flow",
+        )
+        value = self._make(ent, {"flow": -0.0}).native_value
+        assert value == 0.0
+        assert str(value) == "0.0"
+        assert self._make(ent, {"flow": -3.2}).native_value == 0.0
+        assert self._make(ent, {"flow": 12.5}).native_value == 12.5
+
+    def test_value_passed_through_unrounded(self) -> None:
+        """Rounding is the coordinator's job; the sensor does not round again."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
+
+        ent = EntityDef(
+            platform="sensor",
+            name="Supply",
+            address=1,
+            vendor_id="temp_supply",
+            unique_id="temp_supply",
+            translation_key="temp_supply",
+            precision=1,
+        )
+        assert self._make(ent, {"temp_supply": 21.37}).native_value == 21.37
+
+
+class TestQubeInfoSensor:
+    """Tests for QubeInfoSensor."""
+
+    def test_info_sensor_attributes(self) -> None:
+        """The info sensor is always 'ok' and exposes hub metadata."""
         from custom_components.qube_heatpump.sensor import QubeInfoSensor
 
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-        hub.resolved_ip = "1.2.3.4"
-        hub.err_connect = 0
-        hub.err_read = 0
-        hub.entities = [
-            EntityDef(platform="sensor", name="Temp", address=100),
-            EntityDef(platform="sensor", name="Power", address=101),
-            EntityDef(platform="binary_sensor", name="Status", address=1),
-            EntityDef(platform="switch", name="Enable", address=1),
-        ]
+        hub = _mock_hub()
+        hub.err_connect = 2
+        hub.err_read = 5
+        sensor = QubeInfoSensor(coordinator=MagicMock(), hub=hub, version="4.10")
 
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        sensor = QubeInfoSensor(
-            coordinator=coordinator,
-            hub=hub,
-            version="1.0",
-            total_counts=None,
-        )
-
+        assert sensor.native_value == "ok"
+        assert sensor.entity_id == "sensor.qube1_info"
+        assert sensor.unique_id == "1.2.3.4_1_info_sensor"
         attrs = sensor.extra_state_attributes
-        assert attrs["count_sensors"] == 2
-        assert attrs["count_binary_sensors"] == 1
-        assert attrs["count_switches"] == 1
+        assert attrs["firmware_version"] == "4.10"
+        assert attrs["integration_version"] == "unknown"
+        assert attrs["errors_connect"] == 2
+        assert attrs["errors_read"] == 5
+        assert not any(key.startswith("count_") for key in attrs)
 
 
 def _make_scop_sensor(
@@ -594,6 +588,75 @@ class TestQubeSCOPSensor:
 
 class TestQubeComputedSensorStatusMappings:
     """Tests for QubeComputedSensor status mappings."""
+
+    @pytest.mark.parametrize(
+        ("kind", "expected_options"),
+        [
+            (
+                "status",
+                [
+                    "standby",
+                    "alarm",
+                    "keyboard_off",
+                    "compressor_startup",
+                    "compressor_shutdown",
+                    "cooling",
+                    "heating",
+                    "start_fail",
+                    "heating_dhw",
+                    "anti_legionella",
+                    "unknown",
+                ],
+            ),
+            ("drieweg", ["dhw", "ch"]),
+            ("vierweg", ["heating", "cooling"]),
+        ],
+    )
+    def test_computed_sensor_is_enum(
+        self, kind: str, expected_options: list[str]
+    ) -> None:
+        """Computed sensors are ENUM sensors with a fixed options list."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
+        from custom_components.qube_heatpump.sensor import QubeComputedSensor
+
+        source = EntityDef(
+            platform="sensor", name="Source", address=1, unique_id="source"
+        )
+        sensor = QubeComputedSensor(
+            coordinator=MagicMock(),
+            hub=_mock_hub(),
+            translation_key="status_heatpump",
+            unique_suffix="status_full",
+            kind=kind,
+            source=source,
+            version="1.0",
+        )
+        assert sensor.device_class is SensorDeviceClass.ENUM
+        assert sensor.options == expected_options
+
+    async def test_computed_sensor_status_non_numeric(
+        self, hass: HomeAssistant
+    ) -> None:
+        """A non-numeric status code yields unknown rather than raising."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
+        from custom_components.qube_heatpump.sensor import (
+            QubeComputedSensor,
+            _entity_key,
+        )
+
+        source = EntityDef(platform="sensor", name="Status", address=38, unique_id="s")
+        coordinator = MagicMock()
+        coordinator.data = {_entity_key(source): "n/a"}
+        sensor = QubeComputedSensor(
+            coordinator=coordinator,
+            hub=_mock_hub(),
+            translation_key="status_heatpump",
+            unique_suffix="status_full",
+            kind="status",
+            source=source,
+            version="1.0",
+        )
+        assert sensor.native_value is None
 
     async def test_computed_sensor_status_standby(self, hass: HomeAssistant) -> None:
         """Test computed sensor returns standby for codes 1, 14, 18."""
@@ -850,69 +913,52 @@ class TestQubeComputedSensorStatusMappings:
         assert sensor.native_value is None
 
 
-class TestQubeStandbyEnergySensorRestore:
-    """Tests for QubeStandbyEnergySensor state restoration."""
-
-    def test_standby_energy_restore_invalid_parse(self) -> None:
-        """Test standby energy sensor handles invalid state parsing."""
-        # Test the try/except logic for float conversion
-        try:
-            value = float("invalid_not_a_number")
-        except (TypeError, ValueError):
-            value = 0.0
-        assert value == 0.0
-
-
 class TestQubeTotalEnergyWithStandby:
     """Tests for QubeTotalEnergyIncludingStandbySensor."""
 
-    def test_total_energy_invalid_base_value_conversion(self) -> None:
-        """Test total energy handles invalid base value conversion."""
-        # Test the try/except logic for float conversion
-        base_value = "not_a_number"
-        try:
-            base_float = float(base_value) if base_value is not None else None
-        except (TypeError, ValueError):
-            base_float = None
-        assert base_float is None
-
-    def test_total_energy_none_base_value(self) -> None:
-        """Test total energy handles None base value."""
-        base_value = None
-        try:
-            base_float = float(base_value) if base_value is not None else None
-        except (TypeError, ValueError):
-            base_float = None
-        assert base_float is None
-
-
-class TestQubeIPAddressSensorDeviceClass:
-    """Tests for QubeIPAddressSensor device class handling."""
-
-    async def test_ip_sensor_without_ip_device_class(self, hass: HomeAssistant) -> None:
-        """Test IP sensor handles missing SensorDeviceClass.IP."""
-        from custom_components.qube_heatpump.sensor import QubeIPAddressSensor
-        from homeassistant.components.sensor import SensorDeviceClass
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-        hub.entry_id = "test_entry"
-        hub.resolved_ip = "1.2.3.4"
+    @staticmethod
+    def _make(data: dict[str, Any]) -> Any:
+        from custom_components.qube_heatpump.sensor import (
+            QubeStandbyEnergySensor,
+            QubeTotalEnergyIncludingStandbySensor,
+        )
 
         coordinator = MagicMock()
+        coordinator.data = data
+        hub = _mock_hub()
+        standby = QubeStandbyEnergySensor(coordinator, hub, "1.0")
+        standby._energy_kwh = 1.25
+        standby._last_update = dt_util.utcnow()
+        return QubeTotalEnergyIncludingStandbySensor(coordinator, hub, "1.0", standby)
 
-        # Mock SensorDeviceClass without IP attribute
-        with patch.object(SensorDeviceClass, "__contains__", return_value=False):
-            sensor = QubeIPAddressSensor(
-                coordinator=coordinator,
-                hub=hub,
-                version="1.0",
-            )
+    def test_total_available_immediately(self, freezer: FrozenDateTimeFactory) -> None:
+        """The value is computed on read, not cached from a coordinator update."""
+        sensor = self._make({"energy_total_electric": 100.5})
+        assert sensor.native_value == 101.75
 
-        # Should still work even if IP device class doesn't exist
+    def test_total_none_without_base_value(self) -> None:
+        """No meter reading means no total."""
+        assert self._make({}).native_value is None
+        assert self._make({"energy_total_electric": "n/a"}).native_value is None
+
+
+class TestQubeIPAddressSensor:
+    """Tests for QubeIPAddressSensor."""
+
+    def test_ip_sensor(self) -> None:
+        """The IP sensor is a plain diagnostic string sensor."""
+        from custom_components.qube_heatpump.sensor import QubeIPAddressSensor
+        from homeassistant.const import EntityCategory
+
+        hub = _mock_hub()
+        sensor = QubeIPAddressSensor(coordinator=MagicMock(), hub=hub, version="1.0")
         assert sensor.native_value == "1.2.3.4"
+        assert sensor.device_class is None
+        assert sensor.entity_category is EntityCategory.DIAGNOSTIC
+
+        hub.resolved_ip = None
+        hub.host = "qube.local"
+        assert sensor.native_value == "qube.local"
 
 
 class TestQubeSensorCOPThrottle:
@@ -942,6 +988,7 @@ class TestQubeSensorCOPThrottle:
             platform="sensor",
             name="COP",
             address=300,
+            vendor_id="cop_calc",
             unique_id="cop_calc",
             translation_key="cop_calc",
         )
