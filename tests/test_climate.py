@@ -592,3 +592,40 @@ async def test_summer_mode_written_once_when_coil_differs(
         hass.states.async_set(SENSOR_ENTITY_ID, temp)
         await hass.async_block_till_done()
     assert _summer_calls(mock_qube_client) == [False]
+
+
+async def test_sensor_timeout_fires_when_sensor_never_valid(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The timeout must also trip when no valid reading ever arrived.
+
+    Regression test: `_async_check_timeout` returned early while
+    `_current_temp` was None, so a sensor that was unavailable from startup
+    never raised the timeout flag.
+    """
+    FakeDevice(mock_qube_client)
+    await _setup_thermostat_entry(hass, initial_temp="unavailable")
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    assert entry.runtime_data.thermostat_sensor_timed_out is False
+    assert _demand_calls(mock_qube_client) == []
+
+    future_monotonic = time.monotonic() + THERMOSTAT_SENSOR_TIMEOUT + 1
+    with patch(
+        "custom_components.qube_heatpump.climate.time.monotonic",
+        return_value=future_monotonic,
+    ):
+        freezer.tick(timedelta(seconds=61))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+    assert entry.runtime_data.thermostat_sensor_timed_out is True
+    # Demand was never on, so nothing is written to turn it off.
+    assert _demand_calls(mock_qube_client) == []
+
+    # First valid reading clears the flag and resumes control.
+    hass.states.async_set(SENSOR_ENTITY_ID, "19.0")
+    await hass.async_block_till_done()
+    assert entry.runtime_data.thermostat_sensor_timed_out is False
+    assert _demand_calls(mock_qube_client) == [True]

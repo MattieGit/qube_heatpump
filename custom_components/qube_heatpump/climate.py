@@ -279,23 +279,29 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         self.async_write_ha_state()
 
     async def _async_check_timeout(self, _now: Any = None) -> None:
-        """Periodic check for sensor timeout."""
-        if self._current_temp is None:
+        """Periodic check for sensor timeout.
+
+        ``_sensor_last_seen`` is set when the entity is added and on every
+        valid reading, so the timeout also trips when the sensor has never
+        delivered a usable value since startup.
+        """
+        if self._sensor_timed_out:
             return
         elapsed = time.monotonic() - self._sensor_last_seen
-        if elapsed > THERMOSTAT_SENSOR_TIMEOUT and not self._sensor_timed_out:
-            _LOGGER.warning(
-                "Thermostat sensor %s timed out after %ds; turning off demand",
-                self._sensor_entity_id,
-                int(elapsed),
-            )
-            self._current_temp = None
-            self._sensor_timed_out = True
-            self._entry.runtime_data.thermostat_sensor_timed_out = True
-            await self._async_set_demand(False)
-            self._is_heating = False
-            self._is_cooling = False
-            self.async_write_ha_state()
+        if elapsed <= THERMOSTAT_SENSOR_TIMEOUT:
+            return
+        _LOGGER.warning(
+            "Thermostat sensor %s timed out after %ds; turning off demand",
+            self._sensor_entity_id,
+            int(elapsed),
+        )
+        self._current_temp = None
+        self._sensor_timed_out = True
+        self._entry.runtime_data.thermostat_sensor_timed_out = True
+        # With no temperature the control pass stops demand if we believe
+        # it is on, and leaves it alone otherwise.
+        await self._async_control_heating()
+        self.async_write_ha_state()
 
     async def _async_control_heating(self) -> None:
         """Evaluate thermostat logic and set switch states.
