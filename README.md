@@ -70,6 +70,10 @@ Beyond raw Modbus values, the integration provides:
 - **IP Address sensor** - Resolved IP for hostname setups
 - **Energy totals not advancing** - Problem binary sensor raised when the energy totalisers stop advancing while the heat pump draws power
 
+## Is my DHW schedule active?
+
+Two diagnostic entities on the device page reflect the DHW schedule configured in the integration options: `binary_sensor.<label>_dhw_schedule` is **on** while the schedule option is enabled and lists the start and end time, the setpoint source (controller Modbus setpoint or a fixed value), whether the daily window is currently active and when it last started and ended; `sensor.<label>_dhw_schedule_next_start` shows the next scheduled start as a timestamp and is *unknown* while the schedule is off. At startup the log also states `DHW schedule enabled 13:00-15:00, setpoint source: controller Modbus setpoint` or `DHW schedule disabled`.
+
 ## Data Integrity
 
 The integration implements **monotonic clamping** for `total_increasing` sensors. When the heat pump occasionally reports glitched values lower than the accumulated total (a known hardware quirk), the integration preserves the previous valid value to prevent energy statistics from being corrupted. A drop of more than 1 kWh that persists for three consecutive polls is treated as a genuine counter reset and accepted as the new baseline (logged as a warning). The cache can be cleared manually with the "Clear energy counter cache" button.

@@ -103,6 +103,7 @@ async def async_setup_entry(
 
     # Surface the resolved host IP as its own diagnostic sensor
     _add_sensor_entity(QubeIPAddressSensor(coordinator, hub, version))
+    _add_sensor_entity(QubeDhwScheduleNextStartSensor(coordinator, hub, entry, version))
 
     # Diagnostic metrics (error counters only)
     for kind in ("errors_connect", "errors_read"):
@@ -682,6 +683,42 @@ class QubeInfoSensor(QubeEntity, SensorEntity):
             if new_version and new_version != self._integration_version:
                 self._integration_version = new_version
                 self.async_write_ha_state()
+
+
+class QubeDhwScheduleNextStartSensor(QubeEntity, SensorEntity):
+    """Timestamp of the next scheduled DHW start; unknown while the schedule is off."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(
+        self,
+        coordinator: Any,
+        hub: QubeHub,
+        entry: QubeConfigEntry,
+        version: str,
+    ) -> None:
+        """Initialize the next-start sensor."""
+        super().__init__(coordinator, hub, version)
+        self._entry = entry
+        self._attr_translation_key = "dhw_schedule_next_start"
+        self.entity_id = f"sensor.{self._label}_dhw_schedule_next_start"
+        self._attr_unique_id = self._scoped_uid("dhw_schedule_next_start")
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to scheduler state changes."""
+        await super().async_added_to_hass()
+        state = self._entry.runtime_data.dhw_schedule
+        if state is not None:
+            self.async_on_remove(state.async_add_listener(self.async_write_ha_state))
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the next start, or None when the schedule is disabled."""
+        state = self._entry.runtime_data.dhw_schedule
+        if state is None or not state.enabled:
+            return None
+        return state.next_start
 
 
 class QubeIPAddressSensor(QubeEntity, SensorEntity):

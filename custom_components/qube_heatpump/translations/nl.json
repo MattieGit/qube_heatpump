@@ -183,6 +183,9 @@
             "info": {
                 "name": "Info"
             },
+            "dhw_schedule_next_start": {
+                "name": "SWW schema volgende start"
+            },
             "ip_address": {
                 "name": "IP adres"
             },
@@ -403,6 +406,24 @@
             },
             "energy_totals_stale": {
                 "name": "Energietotalen lopen niet op"
+            },
+            "dhw_schedule": {
+                "name": "SWW schema",
+                "state_attributes": {
+                    "start": { "name": "Start" },
+                    "end": { "name": "Einde" },
+                    "setpoint_source": {
+                        "name": "Bron instelpunt",
+                        "state": {
+                            "controller": "Modbus instelpunt van de regelaar",
+                            "fixed": "Vast instelpunt uit opties"
+                        }
+                    },
+                    "fixed_setpoint": { "name": "Vast instelpunt" },
+                    "window_active": { "name": "Venster actief" },
+                    "last_start": { "name": "Laatste start" },
+                    "last_end": { "name": "Laatste einde" }
+                }
             },
             "dout_srcpmp_val": {
                 "name": "Voeding Bron pomp"

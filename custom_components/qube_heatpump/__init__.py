@@ -20,7 +20,6 @@ from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.setup import async_setup_component
 
 from .const import (
-    CONF_DHW_SCHEDULE_ENABLED,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
@@ -30,7 +29,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import QubeCoordinator
-from .dhw_scheduler import async_setup_dhw_schedule
+from .dhw_scheduler import DhwScheduleState, async_setup_dhw_schedule
 from .helpers import is_alarm_entity
 from .hub import QubeHub
 
@@ -50,6 +49,7 @@ class QubeData:
     daily_tariff_tracker: Any | None = None
     daily_thermic_tariff_tracker: Any | None = None
     dhw_cancel_callbacks: list[Any] | None = None
+    dhw_schedule: DhwScheduleState | None = None
     thermostat_sensor_timed_out: bool = False
 
 
@@ -276,6 +276,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         version=version,
         multi_device=multi_device,
         alarm_group_object_id=alarm_group_id,
+        # Built before the platforms load so the schedule entities can render
+        # a consistent state even when the schedule is disabled.
+        dhw_schedule=DhwScheduleState.from_options(entry.options),
     )
 
     with contextlib.suppress(Exception):
@@ -292,10 +295,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Set up DHW schedule if enabled
-    if entry.options.get(CONF_DHW_SCHEDULE_ENABLED):
-        dhw_callbacks = await async_setup_dhw_schedule(hass, entry, hub, coordinator)
-        entry.runtime_data.dhw_cancel_callbacks = dhw_callbacks
+    # Register the DHW schedule callbacks (no-op when disabled)
+    entry.runtime_data.dhw_cancel_callbacks = await async_setup_dhw_schedule(
+        hass, entry, hub, coordinator, entry.runtime_data.dhw_schedule
+    )
 
     # Alarm group sync (label and alarm_group_id already computed above)
     # Construct entity IDs directly from vendor_id to ensure consistency
