@@ -94,3 +94,34 @@ async def test_button_device_info(
     device = device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
     assert device is not None
     assert device.manufacturer == "Qube"
+
+
+async def test_clear_monotonic_cache_button_press(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Pressing the clear-cache button delegates to the coordinator."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("button.qube_1_clear_monotonic_cache") is not None
+
+    coordinator = entry.runtime_data.coordinator
+    with patch.object(
+        coordinator, "async_clear_monotonic_cache", new=AsyncMock()
+    ) as clear:
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.qube_1_clear_monotonic_cache"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+    clear.assert_awaited_once()

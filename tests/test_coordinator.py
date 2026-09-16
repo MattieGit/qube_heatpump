@@ -903,3 +903,130 @@ async def test_coordinator_does_not_resolve_ip_per_poll(
 
         # The refresh must not have called async_resolve_ip again.
         assert mock_resolve_ip.call_count == calls_after_setup
+
+
+async def _loaded_coordinator(hass: HomeAssistant) -> QubeCoordinator:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    return entry.runtime_data.coordinator
+
+
+async def test_energy_staleness_flags_stuck_totals_under_load(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Totals unchanged for 15 min while power > 300 W -> stale, with one warning."""
+    from custom_components.qube_heatpump.coordinator import (
+        ENERGY_STALE_TIMEOUT_SECONDS,
+    )
+
+    coordinator = await _loaded_coordinator(hass)
+    coordinator._energy_last_values.clear()
+    coordinator._energy_stale_since = None
+    coordinator.energy_totals_stale = False
+
+    stuck = {
+        "energy_total_electric": 1000.0,
+        "energy_total_thermic": 4000.0,
+        "power_electric": 1200.0,
+    }
+    coordinator._track_energy_staleness(stuck, now=0.0)
+    assert coordinator.energy_totals_stale is False
+    coordinator._track_energy_staleness(stuck, now=ENERGY_STALE_TIMEOUT_SECONDS - 1)
+    assert coordinator.energy_totals_stale is False
+
+    with caplog.at_level(logging.WARNING):
+        coordinator._track_energy_staleness(stuck, now=ENERGY_STALE_TIMEOUT_SECONDS)
+        assert coordinator.energy_totals_stale is True
+        coordinator._track_energy_staleness(stuck, now=ENERGY_STALE_TIMEOUT_SECONDS + 60)
+    assert caplog.text.count("have not advanced") == 1
+
+    # One total advancing clears the flag and restarts the timer
+    advancing = {**stuck, "energy_total_thermic": 4000.3}
+    coordinator._track_energy_staleness(advancing, now=ENERGY_STALE_TIMEOUT_SECONDS + 120)
+    assert coordinator.energy_totals_stale is False
+    assert coordinator._energy_stale_since is None
+
+
+async def test_energy_staleness_ignores_idle_and_missing_power(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Stuck totals are normal while idle (<= 300 W) or when power is unknown."""
+    from custom_components.qube_heatpump.coordinator import (
+        ENERGY_STALE_TIMEOUT_SECONDS,
+    )
+
+    coordinator = await _loaded_coordinator(hass)
+    coordinator._energy_last_values.clear()
+    coordinator._energy_stale_since = None
+    coordinator.energy_totals_stale = False
+
+    idle = {
+        "energy_total_electric": 1000.0,
+        "energy_total_thermic": 4000.0,
+        "power_electric": 55.0,
+    }
+    for t in (0.0, ENERGY_STALE_TIMEOUT_SECONDS * 2, ENERGY_STALE_TIMEOUT_SECONDS * 4):
+        coordinator._track_energy_staleness(idle, now=t)
+    assert coordinator.energy_totals_stale is False
+
+    unknown_power = {**idle, "power_electric": None}
+    for t in (0.0, ENERGY_STALE_TIMEOUT_SECONDS * 2):
+        coordinator._track_energy_staleness(unknown_power, now=t)
+    assert coordinator.energy_totals_stale is False
+
+    # Load starts: the timer only starts counting from now
+    loaded = {**idle, "power_electric": 900.0}
+    coordinator._track_energy_staleness(loaded, now=10_000.0)
+    assert coordinator.energy_totals_stale is False
+    assert coordinator._energy_stale_since == 10_000.0
+
+
+async def test_energy_staleness_tracked_on_every_poll(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """_async_update_data feeds the tracker with the post-clamp results."""
+    coordinator = await _loaded_coordinator(hass)
+    with patch.object(coordinator, "_track_energy_staleness") as tracker:
+        await coordinator.async_refresh()
+    tracker.assert_called_once()
+    results = tracker.call_args.args[0]
+    assert "energy_total_electric" in results
+    assert "power_electric" in results
+
+
+async def test_async_clear_monotonic_cache_clears_client_and_store(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    hass_storage: dict,
+) -> None:
+    """Clearing forgets the client cache, removes the on-disk store and re-polls."""
+    coordinator = await _loaded_coordinator(hass)
+    client = coordinator.hub.client
+    assert client.monotonic_cache, "first refresh should have seeded the cache"
+
+    client.clear_monotonic_cache.side_effect = lambda: client.monotonic_cache.clear()
+    await coordinator._store.async_save(dict(client.monotonic_cache))
+    assert coordinator._store.key in hass_storage
+
+    with patch.object(
+        coordinator, "async_request_refresh", new=AsyncMock()
+    ) as refresh:
+        await coordinator.async_clear_monotonic_cache()
+
+    client.clear_monotonic_cache.assert_called_once()
+    assert coordinator._store.key not in hass_storage
+    refresh.assert_awaited_once()
+    # The next poll must be able to schedule a fresh delayed save
+    assert coordinator._save_scheduled is False
+    coordinator._schedule_save()
+    assert coordinator._save_scheduled is True

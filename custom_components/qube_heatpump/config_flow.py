@@ -29,6 +29,7 @@ from .const import (
     CONF_DHW_SCHEDULE_ENABLED,
     CONF_DHW_SETPOINT,
     CONF_DHW_START_TIME,
+    CONF_DHW_USE_CONTROLLER_SETPOINT,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
@@ -38,6 +39,7 @@ from .const import (
     DEFAULT_DHW_END_TIME,
     DEFAULT_DHW_SETPOINT,
     DEFAULT_DHW_START_TIME,
+    DEFAULT_DHW_USE_CONTROLLER_SETPOINT,
     DEFAULT_PORT,
     DOMAIN,
 )
@@ -383,6 +385,12 @@ class OptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Step 3: configure DHW schedule."""
         if user_input is not None:
+            self._user_input[CONF_DHW_USE_CONTROLLER_SETPOINT] = bool(
+                user_input.get(
+                    CONF_DHW_USE_CONTROLLER_SETPOINT,
+                    DEFAULT_DHW_USE_CONTROLLER_SETPOINT,
+                )
+            )
             self._user_input[CONF_DHW_SETPOINT] = user_input.get(
                 CONF_DHW_SETPOINT, DEFAULT_DHW_SETPOINT
             )
@@ -394,6 +402,11 @@ class OptionsFlowHandler(OptionsFlow):
             )
             return await self._save_options()
 
+        current_use_controller = bool(
+            self._entry.options.get(
+                CONF_DHW_USE_CONTROLLER_SETPOINT, DEFAULT_DHW_USE_CONTROLLER_SETPOINT
+            )
+        )
         current_setpoint = self._entry.options.get(
             CONF_DHW_SETPOINT, DEFAULT_DHW_SETPOINT
         )
@@ -406,6 +419,9 @@ class OptionsFlowHandler(OptionsFlow):
 
         schema = vol.Schema(
             {
+                vol.Optional(
+                    CONF_DHW_USE_CONTROLLER_SETPOINT, default=current_use_controller
+                ): bool,
                 vol.Required(
                     CONF_DHW_SETPOINT, default=current_setpoint
                 ): NumberSelector(
@@ -442,6 +458,7 @@ class OptionsFlowHandler(OptionsFlow):
             CONF_THERMOSTAT_ENABLED,
             CONF_THERMOSTAT_SENSOR,
             CONF_DHW_SCHEDULE_ENABLED,
+            CONF_DHW_USE_CONTROLLER_SETPOINT,
             CONF_DHW_SETPOINT,
             CONF_DHW_START_TIME,
             CONF_DHW_END_TIME,
@@ -453,7 +470,13 @@ class OptionsFlowHandler(OptionsFlow):
                 and key in (CONF_THERMOSTAT_SENSOR,)
             ) or (
                 not self._user_input.get(CONF_DHW_SCHEDULE_ENABLED)
-                and key in (CONF_DHW_SETPOINT, CONF_DHW_START_TIME, CONF_DHW_END_TIME)
+                and key
+                in (
+                    CONF_DHW_USE_CONTROLLER_SETPOINT,
+                    CONF_DHW_SETPOINT,
+                    CONF_DHW_START_TIME,
+                    CONF_DHW_END_TIME,
+                )
             ):
                 opts.pop(key, None)
 

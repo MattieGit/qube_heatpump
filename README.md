@@ -51,13 +51,13 @@ The prefix can be customized via the integration's Options (Configure button) to
 - **Switches** - Summer mode, DHW boost, SG Ready, heating curve
 - **Number entities** - DHW setpoint control
 - **Select entity** - SG Ready mode selector
-- **Button** - Integration reload
+- **Buttons** - Integration reload, clear energy counter cache
 
 ### Computed Sensors
 
 Beyond raw Modbus values, the integration provides:
 
-- **Standby power/energy** - Fixed 17W standby consumption tracking
+- **Standby power/energy** - Fixed 17W standby consumption tracking (the heat pump's own power and energy registers exclude standby)
 - **Total energy (incl. standby)** - Combined active + standby consumption
 - **Monthly/daily energy splits** - CH and DHW consumption separated
 - **SCOP calculations** - Daily and monthly efficiency ratios
@@ -68,10 +68,11 @@ Beyond raw Modbus values, the integration provides:
 - **Qube Info sensor** - Version, host, entity counts
 - **Error counters** - Connection and read error tracking
 - **IP Address sensor** - Resolved IP for hostname setups
+- **Energy totals not advancing** - Problem binary sensor raised when the energy totalisers stop advancing while the heat pump draws power
 
 ## Data Integrity
 
-The integration implements **monotonic clamping** for `total_increasing` sensors. When the heat pump occasionally reports glitched values lower than the accumulated total (a known hardware quirk), the integration preserves the previous valid value to prevent energy statistics from being corrupted.
+The integration implements **monotonic clamping** for `total_increasing` sensors. When the heat pump occasionally reports glitched values lower than the accumulated total (a known hardware quirk), the integration preserves the previous valid value to prevent energy statistics from being corrupted. A drop of more than 1 kWh that persists for three consecutive polls is treated as a genuine counter reset and accepted as the new baseline (logged as a warning). The cache can be cleared manually with the "Clear energy counter cache" button.
 
 ## Security Considerations
 

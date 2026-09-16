@@ -121,6 +121,11 @@
       "unique_id": "1.2.3.4_1_en_dhwpid"
     },
     {
+      "entity_id": "binary_sensor.qube_1_energy_totals_stale",
+      "platform": "binary_sensor",
+      "unique_id": "1.2.3.4_1_energy_totals_stale"
+    },
+    {
       "entity_id": "binary_sensor.qube_1_glbal",
       "platform": "binary_sensor",
       "unique_id": "1.2.3.4_1_glbal"
@@ -189,6 +194,11 @@
       "entity_id": "binary_sensor.qube_1_usralrms",
       "platform": "binary_sensor",
       "unique_id": "1.2.3.4_1_usralrms"
+    },
+    {
+      "entity_id": "button.qube_1_clear_monotonic_cache",
+      "platform": "button",
+      "unique_id": "1.2.3.4_1_clear_monotonic_cache"
     },
     {
       "entity_id": "button.qube_1_reload",
@@ -748,6 +758,11 @@
       "unique_id": "5.6.7.8_1_en_dhwpid"
     },
     {
+      "entity_id": "binary_sensor.qube_1_energy_totals_stale",
+      "platform": "binary_sensor",
+      "unique_id": "5.6.7.8_1_energy_totals_stale"
+    },
+    {
       "entity_id": "binary_sensor.qube_1_glbal",
       "platform": "binary_sensor",
       "unique_id": "5.6.7.8_1_glbal"
@@ -821,6 +836,11 @@
       "entity_id": "binary_sensor.qube_1_usralrms",
       "platform": "binary_sensor",
       "unique_id": "5.6.7.8_1_usralrms"
+    },
+    {
+      "entity_id": "button.qube_1_clear_monotonic_cache",
+      "platform": "button",
+      "unique_id": "5.6.7.8_1_clear_monotonic_cache"
     },
     {
       "entity_id": "button.qube_1_reload",

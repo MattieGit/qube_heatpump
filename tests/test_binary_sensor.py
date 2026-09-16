@@ -199,3 +199,36 @@ async def test_binary_sensor_alarm_entities(
         if "alarm" in s.entity_id.lower() or "alrm" in s.entity_id.lower()
     ]
     assert len(alarm_states) >= 0  # May or may not have alarms
+
+
+async def test_energy_totals_stale_sensor_reflects_coordinator_flag(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """The diagnostic problem sensor mirrors coordinator.energy_totals_stale."""
+    from homeassistant.helpers import entity_registry as er
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    entity_id = "binary_sensor.qube_1_energy_totals_stale"
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == "off"
+    assert state.attributes["device_class"] == "problem"
+    registry_entry = er.async_get(hass).async_get(entity_id)
+    assert registry_entry is not None
+    assert registry_entry.entity_category == "diagnostic"
+
+    coordinator = entry.runtime_data.coordinator
+    coordinator.energy_totals_stale = True
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == "on"

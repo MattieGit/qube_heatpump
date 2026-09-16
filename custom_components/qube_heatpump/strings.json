@@ -74,12 +74,14 @@
         "title": "DHW schedule",
         "description": "Configure daily DHW (hot water) heating schedule.",
         "data": {
+          "dhw_use_controller_setpoint": "Use the controller's Modbus setpoint",
           "dhw_setpoint": "DHW setpoint",
           "dhw_start_time": "Start time",
           "dhw_end_time": "End time"
         },
         "data_description": {
-          "dhw_setpoint": "Target temperature for DHW heating (40-65°C).",
+          "dhw_use_controller_setpoint": "Leave the Modbus DHW setpoint (register 173) as set on the controller and only start the forced run. Turn off to have the schedule write the setpoint below first.",
+          "dhw_setpoint": "Target temperature for DHW heating (40-65°C). Only written when the option above is off.",
           "dhw_start_time": "Time to start DHW heating each day.",
           "dhw_end_time": "Time to stop DHW heating each day."
         }
@@ -104,10 +106,10 @@
         "name": "dT flow temperature DHW"
       },
       "tapw_timeprogram_dhws": {
-        "name": "Minimum temperature DHW"
+        "name": "DHW setpoint (user)"
       },
       "tapw_timeprogram_dhws_prog": {
-        "name": "DHW setpoint (active program)"
+        "name": "DHW setpoint (time program, Linq min.)"
       },
       "regulation_buffersetp_min": {
         "name": "Minimum setpoint buffer regulation"
@@ -122,7 +124,7 @@
         "name": "Max buffer setpoint (cooling)"
       },
       "tapw_timeprogram_dhwsetp_nolinq": {
-        "name": "DHW setpoint (manual)"
+        "name": "DHW setpoint (Modbus)"
       },
       "aout_usrpmp_val": {
         "name": "User (CH) pump control %"
@@ -185,7 +187,7 @@
         "name": "Current compressor speed"
       },
       "dhw_setp": {
-        "name": "DHW calculated setpoint"
+        "name": "Active DHW setpoint"
       },
       "workinghours_dhw_hrsret": {
         "name": "Working hours DHW"
@@ -509,6 +511,9 @@
       },
       "thermostat_sensor_timeout": {
         "name": "Thermostat sensor timeout"
+      },
+      "energy_totals_stale": {
+        "name": "Energy totals not advancing"
       }
     },
     "climate": {
@@ -542,6 +547,9 @@
     "button": {
       "qube_reload": {
         "name": "Reload"
+      },
+      "clear_monotonic_cache": {
+        "name": "Clear energy counter cache"
       }
     },
     "select": {
@@ -551,7 +559,7 @@
     },
     "number": {
       "tapw_timeprogram_dhwsetp_nolinq": {
-        "name": "DHW setpoint (manual override)"
+        "name": "DHW setpoint (Modbus)"
       },
       "usr_pid_heatsetp": {
         "name": "Heating setpoint (no curve)"

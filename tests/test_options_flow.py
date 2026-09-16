@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import (
+    CONF_DHW_SCHEDULE_ENABLED,
+    CONF_DHW_SETPOINT,
+    CONF_DHW_USE_CONTROLLER_SETPOINT,
     CONF_NAME,
     DOMAIN,
 )
@@ -242,4 +245,53 @@ async def test_options_flow_host_change_success(
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert entry.data[CONF_HOST] == "192.0.2.99"
 
+    await hass.async_block_till_done()
+
+
+async def test_options_flow_dhw_step_stores_controller_setpoint_toggle(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """The DHW step offers the controller-setpoint toggle (default on) and stores it."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
+        title="qube 1",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    init_result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        init_result["flow_id"],
+        user_input={
+            CONF_HOST: entry.data[CONF_HOST],
+            CONF_NAME: "qube 1",
+            CONF_DHW_SCHEDULE_ENABLED: True,
+        },
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "dhw_schedule"
+
+    # The toggle defaults to on (controller setpoint is left alone)
+    defaults = {
+        str(key): key.default() for key in result["data_schema"].schema if key.default is not None
+    }
+    assert defaults[CONF_DHW_USE_CONTROLLER_SETPOINT] is True
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DHW_USE_CONTROLLER_SETPOINT: False,
+            CONF_DHW_SETPOINT: 52.0,
+            "dhw_start_time": "13:00",
+            "dhw_end_time": "15:00",
+        },
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_DHW_USE_CONTROLLER_SETPOINT] is False
+    assert entry.options[CONF_DHW_SETPOINT] == 52.0
+
+    await hass.async_block_till_done()
+    await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()

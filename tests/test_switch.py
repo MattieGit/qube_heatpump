@@ -211,3 +211,90 @@ async def test_switch_sgready_hidden(
     all_entities = list(entity_registry.entities.values())
     switch_entities = [e for e in all_entities if e.domain == "switch"]
     assert len(switch_entities) > 0
+
+
+async def _setup_with_forced_coil(
+    hass: HomeAssistant, mock_qube_client: MagicMock, coil_reads: dict[str, bool]
+) -> MockConfigEntry:
+    """Set up the integration with per-key switch values from ``coil_reads``."""
+
+    async def _read_entity(ent):
+        if ent.key in coil_reads:
+            return coil_reads[ent.key]
+        return 45.0
+
+    mock_qube_client.read_entity = AsyncMock(side_effect=_read_entity)
+    add_bulk_read(mock_qube_client)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_forced_dhw_switch_reports_pending_request_when_coil_stays_on(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Turn-off acknowledged but coil still on -> real state on + pending_request."""
+    coil = {"tapw_timeprogram_bms_forced": True}
+    entry = await _setup_with_forced_coil(hass, mock_qube_client, coil)
+    entity_id = "switch.qube_1_tapw_timeprogram_bms_forced"
+
+    state = hass.states.get(entity_id)
+    assert state.state == "on"
+    assert state.attributes["pending_request"] is False
+
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": entity_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+
+    mock_qube_client.write_switch.assert_awaited_with("tapw_timeprogram_bms_forced", False)
+    state = hass.states.get(entity_id)
+    assert state.state == "on", "must surface the coil's real state, not the optimistic one"
+    assert state.attributes["pending_request"] is True
+
+    # The controller clears the coil itself once the DHW run completes
+    coil["tapw_timeprogram_bms_forced"] = False
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state.state == "off"
+    assert state.attributes["pending_request"] is False
+
+
+async def test_forced_dhw_switch_turn_on_clears_pending_request(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Turning the switch back on cancels a pending turn-off."""
+    coil = {"tapw_timeprogram_bms_forced": True}
+    await _setup_with_forced_coil(hass, mock_qube_client, coil)
+    entity_id = "switch.qube_1_tapw_timeprogram_bms_forced"
+
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": entity_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).attributes["pending_request"] is True
+
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": entity_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).attributes["pending_request"] is False
+
+
+async def test_other_switches_have_no_pending_attribute(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Only the forced-DHW coil exposes pending_request."""
+    await _setup_with_forced_coil(hass, mock_qube_client, {"modbus_demand": True})
+    state = hass.states.get("switch.qube_1_modbus_demand")
+    assert state is not None
+    assert "pending_request" not in state.attributes

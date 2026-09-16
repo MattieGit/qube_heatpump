@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.9.1 — 2026-09-16
+- feat: Monotonic clamp now detects counter resets (library 1.14.0): a drop of more than 1 kWh that persists for 3 consecutive polls becomes the new baseline and logs "Counter reset detected"; sub-threshold jitter is still clamped.
+- feat: Add `button.<label>_clear_monotonic_cache` to forget the cached maximums (memory and `.storage/qube_heatpump_monotonic_<entry_id>`).
+- feat: Add diagnostic problem sensor `binary_sensor.<label>_energy_totals_stale`, on when registers 69/71 have not advanced for 15 minutes while electric power is above 300 W.
+- feat: DHW schedule option "Use the controller's Modbus setpoint" (default on). The schedule no longer writes register 173 before a forced run unless this option is turned off.
+- feat: `switch.<label>_tapw_timeprogram_bms_forced` exposes a `pending_request` attribute while an acknowledged turn-off is held by the controller.
+- change: DHW setpoint sensor names follow the controller display: "DHW setpoint (user)" (reg 44), "DHW setpoint (time program, Linq min.)" (reg 46), "DHW setpoint (Modbus)" (reg 173, sensor and number), "Active DHW setpoint" (reg 47). Entity IDs are unchanged.
+- docs: Document the ~2 h compressor hold after a cold power-on, that `modbus_roomtemp` is ignored when LinQ room control is disabled, and that the electric power/energy registers exclude standby.
+- chore: Require python-qube-heatpump >= 1.14.0.
+
 ## 2025.12.5 — 2025-12-18
 - feat: Add monthly SCOP sensors (total, CH, DHW) derived from thermic/electric energy totals.
 - note: SCOP sensors start at 0/unknown until new month-to-date data is collected; historical months are not backfilled.

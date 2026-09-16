@@ -74,12 +74,14 @@
                 "title": "SWW schema",
                 "description": "Configureer het dagelijkse SWW (warm water) verwarmingsschema.",
                 "data": {
+                    "dhw_use_controller_setpoint": "Gebruik het Modbus instelpunt van de regelaar",
                     "dhw_setpoint": "SWW instelpunt",
                     "dhw_start_time": "Starttijd",
                     "dhw_end_time": "Eindtijd"
                 },
                 "data_description": {
-                    "dhw_setpoint": "Doeltemperatuur voor SWW verwarming (40-65°C).",
+                    "dhw_use_controller_setpoint": "Laat het Modbus SWW instelpunt (register 173) zoals ingesteld op de regelaar en start alleen de geforceerde run. Zet uit om het schema eerst het onderstaande instelpunt te laten schrijven.",
+                    "dhw_setpoint": "Doeltemperatuur voor SWW verwarming (40-65°C). Wordt alleen geschreven als de optie hierboven uit staat.",
                     "dhw_start_time": "Tijdstip om SWW verwarming te starten elke dag.",
                     "dhw_end_time": "Tijdstip om SWW verwarming te stoppen elke dag."
                 }
@@ -212,10 +214,10 @@
                 "name": "dT aanvoertemperatuur tapwater"
             },
             "tapw_timeprogram_dhws": {
-                "name": "Minimumtemperatuur tapwater"
+                "name": "SWW setpoint (gebruiker)"
             },
             "tapw_timeprogram_dhws_prog": {
-                "name": "SWW setpoint (actief programma)"
+                "name": "SWW setpoint (tijdprogramma, Linq min.)"
             },
             "regulation_buffersetp_min": {
                 "name": "Minimum setpoint bufferregeling"
@@ -230,7 +232,7 @@
                 "name": "Maximaalwaarde buffer setpoint (koelbedrijf)"
             },
             "tapw_timeprogram_dhwsetp_nolinq": {
-                "name": "SWW setpoint (handmatig)"
+                "name": "SWW setpoint (Modbus)"
             },
             "aout_usrpmp_val": {
                 "name": "Percentage sturing User (CV) pomp"
@@ -293,7 +295,7 @@
                 "name": "Actuele snelheid compressor"
             },
             "dhw_setp": {
-                "name": "Setpoint berekend tapwater"
+                "name": "Actief SWW setpoint"
             },
             "workinghours_dhw_hrsret": {
                 "name": "Bedrijfsuren tapwaterbedrijf"
@@ -398,6 +400,9 @@
             },
             "thermostat_sensor_timeout": {
                 "name": "Thermostaat sensor timeout"
+            },
+            "energy_totals_stale": {
+                "name": "Energietotalen lopen niet op"
             },
             "dout_srcpmp_val": {
                 "name": "Voeding Bron pomp"
@@ -542,6 +547,9 @@
         "button": {
             "qube_reload": {
                 "name": "Herlaad integratie"
+            },
+            "clear_monotonic_cache": {
+                "name": "Wis energieteller-cache"
             }
         },
         "select": {
@@ -551,7 +559,7 @@
         },
         "number": {
             "tapw_timeprogram_dhwsetp_nolinq": {
-                "name": "SWW instelpunt (handmatig)"
+                "name": "SWW instelpunt (Modbus)"
             },
             "usr_pid_heatsetp": {
                 "name": "Verwarming instelpunt (zonder stooklijn)"
