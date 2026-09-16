@@ -108,9 +108,13 @@ async def test_forced_dhw_switch_reports_pending_request_when_coil_stays_on(
         "switch", "turn_off", {"entity_id": FORCED_DHW_SWITCH}, blocking=True
     )
 
-    mock_qube_client.write_switch.assert_awaited_with("tapw_timeprogram_bms_forced", False)
+    mock_qube_client.write_switch.assert_awaited_with(
+        "tapw_timeprogram_bms_forced", False
+    )
     state = hass.states.get(FORCED_DHW_SWITCH)
-    assert state.state == "on", "must surface the coil's real state, not the optimistic one"
+    assert state.state == "on", (
+        "must surface the coil's real state, not the optimistic one"
+    )
     assert state.attributes["pending_request"] is True
 
     # The controller clears the coil itself once the DHW run completes
