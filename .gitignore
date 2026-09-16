@@ -25,6 +25,7 @@
 *.log
 *.sql
 *.sqlite
+output.log
 
 # OS generated files #
 ######################
@@ -34,7 +35,21 @@
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db*.pyc
+Thumbs.db
+
+# Python #
+##########
+*.pyc
 __pycache__/
 *.egg-info/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
 uv.lock
+
+# Local agent / task scratch (not part of the integration) #
+############################################################
+tasks/
+.claude/
+.superpowers/
