@@ -152,7 +152,7 @@ async def test_options_flow_duplicate_ip_error(
     assert init_result["type"] == FlowResultType.FORM
 
     with patch(
-        "custom_components.qube_heatpump.config_flow._async_resolve_host",
+        "custom_components.qube_heatpump.config_flow.async_resolve_host",
         return_value="192.0.2.20",
     ):
         result = await hass.config_entries.options.async_configure(
@@ -232,7 +232,7 @@ async def test_options_flow_host_change_success(
 
     with patch(
         "custom_components.qube_heatpump.config_flow.asyncio.open_connection",
-        return_value=(AsyncMock(), MagicMock()),
+        return_value=(AsyncMock(), MagicMock(wait_closed=AsyncMock())),
     ):
         result = await hass.config_entries.options.async_configure(
             init_result["flow_id"],
@@ -244,6 +244,7 @@ async def test_options_flow_host_change_success(
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert entry.data[CONF_HOST] == "192.0.2.99"
+    assert entry.unique_id == f"{DOMAIN}-192.0.2.99-502"
 
     await hass.async_block_till_done()
 
@@ -295,3 +296,48 @@ async def test_options_flow_dhw_step_stores_controller_setpoint_toggle(
     await hass.async_block_till_done()
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+async def test_options_flow_disabling_feature_drops_its_settings(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """Turning the DHW schedule off removes its sub-settings and reloads once."""
+    from unittest.mock import AsyncMock, patch
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
+        title="qube 1",
+        options={
+            CONF_DHW_SCHEDULE_ENABLED: True,
+            CONF_DHW_SETPOINT: 52.0,
+            "dhw_start_time": "13:00",
+            "dhw_end_time": "15:00",
+            "unit_id": 1,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    init_result = await hass.config_entries.options.async_init(entry.entry_id)
+    with patch.object(
+        hass.config_entries, "async_reload", new_callable=AsyncMock
+    ) as mock_reload:
+        result = await hass.config_entries.options.async_configure(
+            init_result["flow_id"],
+            user_input={
+                CONF_HOST: entry.data[CONF_HOST],
+                CONF_NAME: "qube 1",
+                CONF_DHW_SCHEDULE_ENABLED: False,
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert entry.options == {
+        CONF_DHW_SCHEDULE_ENABLED: False,
+        "thermostat_enabled": False,
+        "unit_id": 1,  # legacy value is left alone
+    }
+    mock_reload.assert_awaited_once_with(entry.entry_id)
