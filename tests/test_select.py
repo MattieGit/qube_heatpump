@@ -11,7 +11,6 @@ from pytest_homeassistant_custom_component.common import (
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.qube_heatpump.const import DOMAIN
-from custom_components.qube_heatpump.select import BITS_TO_MODE, MODE_TO_BITS
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -67,10 +66,7 @@ async def test_select_current_option_from_coils(
     coil_b: bool,
     option: str,
 ) -> None:
-    """The mode is decoded from the two SG Ready coils (and the maps agree)."""
-    assert MODE_TO_BITS[option] == (coil_a, coil_b)
-    assert BITS_TO_MODE[(coil_a, coil_b)] == option
-
+    """The mode is decoded from the two SG Ready coils."""
     client_values.update({"bms_sgready_a": coil_a, "bms_sgready_b": coil_b})
     await setup_integration(hass, mock_config_entry)
 

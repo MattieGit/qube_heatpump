@@ -1,6 +1,5 @@
 """Test the Qube Heat Pump config flow."""
 
-import socket
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -107,41 +106,18 @@ async def test_form_recovers_after_cannot_connect(
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
-async def test_form_already_configured(
-    hass: HomeAssistant, mock_setup_entry: MagicMock
-) -> None:
-    """Test we get duplicate_ip error when same host is already configured."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502},
-        unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-
-    with _tcp_ok():
-        result2 = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_HOST: "1.2.3.4"},
-        )
-
-    assert result2["type"] is FlowResultType.FORM
-    assert result2["errors"] == {CONF_HOST: "duplicate_ip"}
-
-
+@pytest.mark.parametrize(
+    "host", ["1.2.3.4", "qube.local"], ids=["same_host", "resolves_to_same_ip"]
+)
 async def test_form_duplicate_ip(
-    hass: HomeAssistant, mock_setup_entry: MagicMock
+    hass: HomeAssistant, mock_setup_entry: MagicMock, host: str
 ) -> None:
-    """A host name resolving to an already configured IP is rejected."""
-    entry = MockConfigEntry(
+    """A host already configured, literally or after DNS, is rejected."""
+    MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "1.2.3.4", CONF_PORT: 502},
         unique_id=f"{DOMAIN}-1.2.3.4-502",
-    )
-    entry.add_to_hass(hass)
+    ).add_to_hass(hass)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -149,12 +125,12 @@ async def test_form_duplicate_ip(
 
     with _tcp_ok(), patch(RESOLVE_HOST, return_value="1.2.3.4"):
         result2 = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_HOST: "qube.local"},
+            result["flow_id"], {CONF_HOST: host}
         )
 
     assert result2["type"] is FlowResultType.FORM
     assert result2["errors"] == {CONF_HOST: "duplicate_ip"}
+    assert len(mock_setup_entry.mock_calls) == 0
 
 
 async def test_form_with_existing_entries(
@@ -313,24 +289,24 @@ async def test_reconfigure_cannot_connect(
     assert mock_config_entry.data[CONF_HOST] == "1.2.3.4"
 
 
-async def test_resolve_host_dns(
+async def test_form_stores_the_host_name_not_the_resolved_ip(
     hass: HomeAssistant, mock_setup_entry: MagicMock
 ) -> None:
-    """Test DNS resolution during config flow."""
+    """A host name is only resolved to spot duplicates; the entry keeps the name.
+
+    A DHCP lease may move the controller, so the name has to survive.
+    """
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    with _tcp_ok(), patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo = AsyncMock(
-            return_value=[
-                (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("192.168.1.50", 0))
-            ]
-        )
+    with _tcp_ok(), patch(RESOLVE_HOST, return_value="192.168.1.50") as resolve:
         result2 = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_HOST: "qube.local"},
+            result["flow_id"], {CONF_HOST: "qube.local"}
         )
         await hass.async_block_till_done()
 
+    resolve.assert_awaited_with("qube.local")
     assert result2["type"] is FlowResultType.CREATE_ENTRY
+    assert result2["data"][CONF_HOST] == "qube.local"
+    assert result2["result"].unique_id == f"{DOMAIN}-qube.local-502"

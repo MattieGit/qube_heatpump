@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
 
 from custom_components.qube_heatpump.entity_defs import EntityDef
 from custom_components.qube_heatpump.hub import QubeHub
@@ -134,22 +135,35 @@ async def test_hub_resolve_ip_with_ip_address(client: MagicMock) -> None:
     assert hub.resolved_ip == "192.168.1.100"
 
 
-async def test_hub_resolve_ip_dns(client: MagicMock) -> None:
-    """A host name is resolved through getaddrinfo."""
+@pytest.mark.parametrize(
+    ("infos", "expected"),
+    [
+        (
+            [(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("192.168.1.50", 0))],
+            "192.168.1.50",
+        ),
+        (
+            [(socket.AF_INET6, socket.SOCK_STREAM, 0, "", ("::ffff:192.168.1.50", 0))],
+            "192.168.1.50",
+        ),
+        ([], None),
+    ],
+    ids=["ipv4", "ipv4_mapped_ipv6", "no_address"],
+)
+async def test_hub_resolve_ip_dns(
+    client: MagicMock, infos: list[tuple], expected: str | None
+) -> None:
+    """A host name is resolved through getaddrinfo, unwrapping IPv4-mapped IPv6."""
     hub = QubeHub("qube.local", 502, 1, "qube1")
     with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo = AsyncMock(
-            return_value=[
-                (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("192.168.1.50", 0))
-            ]
-        )
+        mock_loop.return_value.getaddrinfo = AsyncMock(return_value=infos)
         await hub.async_resolve_ip()
 
-    assert hub.resolved_ip == "192.168.1.50"
+    assert hub.resolved_ip == expected
 
 
 async def test_hub_resolve_ip_dns_failure(client: MagicMock) -> None:
-    """A failed lookup leaves the resolved IP unset."""
+    """A failed lookup leaves the resolved IP unset instead of raising."""
     hub = QubeHub("invalid.host", 502, 1, "qube1")
     with patch("asyncio.get_running_loop") as mock_loop:
         mock_loop.return_value.getaddrinfo = AsyncMock(side_effect=OSError)
@@ -158,26 +172,18 @@ async def test_hub_resolve_ip_dns_failure(client: MagicMock) -> None:
     assert hub.resolved_ip is None
 
 
-async def test_hub_resolve_ip_ipv6_mapped(client: MagicMock) -> None:
-    """IPv4-mapped IPv6 addresses are unwrapped."""
-    hub = QubeHub("qube.local", 502, 1, "qube1")
-    with patch("asyncio.get_running_loop") as mock_loop:
-        mock_loop.return_value.getaddrinfo = AsyncMock(
-            return_value=[
-                (socket.AF_INET6, socket.SOCK_STREAM, 0, "", ("::ffff:192.168.1.50", 0))
-            ]
-        )
-        await hub.async_resolve_ip()
-
-    assert hub.resolved_ip == "192.168.1.50"
-
-
 def test_hub_load_library_entities(client: MagicMock) -> None:
-    """All library entities are loaded with the key invariant intact."""
+    """Every library entity is loaded, with the key invariant intact.
+
+    unique_id, vendor_id and translation_key must stay the library key:
+    entity ids, the coordinator keys and the strings all derive from it.
+    """
     hub = QubeHub("1.2.3.4", 502, 1, "qube1")
     hub.load_library_entities()
 
-    assert len(hub.entities) > 0
+    assert {ent.unique_id for ent in hub.entities} == (
+        set(SENSORS) | set(BINARY_SENSORS) | set(SWITCHES)
+    )
     assert all(e.unique_id == e.vendor_id == e.translation_key for e in hub.entities)
 
 

@@ -1,9 +1,9 @@
 """Tests for the Qube Heat Pump options flow."""
 
-from __future__ import annotations
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from typing import TYPE_CHECKING
-
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import (
@@ -11,273 +11,224 @@ from custom_components.qube_heatpump.const import (
     CONF_DHW_SETPOINT,
     CONF_DHW_USE_CONTROLLER_SETPOINT,
     CONF_NAME,
+    CONF_THERMOSTAT_ENABLED,
+    CONF_THERMOSTAT_SENSOR,
     DOMAIN,
 )
 from homeassistant.const import CONF_HOST
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import device_registry as dr
 
-if TYPE_CHECKING:
-    from unittest.mock import MagicMock
+from . import setup_integration
 
-    from homeassistant.core import HomeAssistant
+RESOLVE_HOST = "custom_components.qube_heatpump.config_flow.async_resolve_host"
+OPEN_CONNECTION = "custom_components.qube_heatpump.config_flow.asyncio.open_connection"
+
+CLIMATE_ENTITY_ID = "climate.qube_1_thermostat"
+ROOM_SENSOR = "sensor.living_room_temperature"
 
 
-async def test_options_flow_updates_options(
-    hass: HomeAssistant, mock_qube_client: MagicMock
+def _tcp_ok() -> Any:
+    """Patch the TCP probe so no test opens a real socket."""
+    writer = MagicMock(wait_closed=AsyncMock())
+    return patch(OPEN_CONNECTION, return_value=(AsyncMock(), writer))
+
+
+async def _start_options_flow(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> dict[str, Any]:
+    """Open the options flow and return the first form."""
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    return result
+
+
+async def test_options_flow_renames_the_device(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test that options flow successfully updates name."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-    )
-    entry.add_to_hass(hass)
+    """A new name is written to the entry data and title, and reloads the entry."""
+    await setup_integration(hass, mock_config_entry)
+    assert mock_config_entry.data[CONF_NAME] == "qube 1"
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert init_result["type"] == FlowResultType.FORM
-
+    result = await _start_options_flow(hass, mock_config_entry)
     result = await hass.config_entries.options.async_configure(
-        init_result["flow_id"],
+        result["flow_id"],
         user_input={
-            CONF_HOST: entry.data[CONF_HOST],
+            CONF_HOST: mock_config_entry.data[CONF_HOST],
             CONF_NAME: "my heat pump",
         },
     )
-
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.data[CONF_NAME] == "my heat pump"
-
     await hass.async_block_till_done()
 
-    await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.data[CONF_NAME] == "my heat pump"
+    assert mock_config_entry.title == "my heat pump"
 
 
-async def test_options_flow_default_prefix(
-    hass: HomeAssistant, mock_qube_client: MagicMock
+@pytest.mark.parametrize(
+    ("host", "resolves_to", "connects", "expected_error"),
+    [
+        ("", None, True, "invalid_host"),
+        ("qube-new.local", "192.0.2.20", True, "duplicate_ip"),
+        ("192.0.2.99", None, False, "cannot_connect"),
+    ],
+    ids=["empty", "duplicate_ip", "cannot_connect"],
+)
+async def test_options_flow_rejects_a_bad_host(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    host: str,
+    resolves_to: str | None,
+    connects: bool,
+    expected_error: str,
 ) -> None:
-    """Test that options flow keeps default name."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert init_result["type"] == FlowResultType.FORM
-
-    result = await hass.config_entries.options.async_configure(
-        init_result["flow_id"],
-        user_input={
-            CONF_HOST: entry.data[CONF_HOST],
-            CONF_NAME: "qube 1",
-        },
-    )
-
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.data[CONF_NAME] == "qube 1"
-
-    await hass.async_block_till_done()
-
-    await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
-
-
-async def test_options_flow_empty_host_error(
-    hass: HomeAssistant, mock_qube_client: MagicMock
-) -> None:
-    """Test that options flow shows error for empty host."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert init_result["type"] == FlowResultType.FORM
-
-    result = await hass.config_entries.options.async_configure(
-        init_result["flow_id"],
-        user_input={
-            CONF_HOST: "",
-            CONF_NAME: "qube 1",
-        },
-    )
-
-    assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == {CONF_HOST: "invalid_host"}
-
-    await hass.async_block_till_done()
-    await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
-
-
-async def test_options_flow_duplicate_ip_error(
-    hass: HomeAssistant, mock_qube_client: MagicMock
-) -> None:
-    """Test that options flow shows error for duplicate IP."""
-    from unittest.mock import patch
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-    )
-    entry.add_to_hass(hass)
-
-    # Add another entry with a different host
-    other_entry = MockConfigEntry(
+    """A host that is empty, taken or unreachable is a form error, not a change."""
+    MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "192.0.2.20", CONF_NAME: "qube 2"},
         unique_id=f"{DOMAIN}-192.0.2.20-502",
         title="qube 2",
+    ).add_to_hass(hass)
+    await setup_integration(hass, mock_config_entry)
+
+    result = await _start_options_flow(hass, mock_config_entry)
+    tcp = (
+        _tcp_ok()
+        if connects
+        else patch(OPEN_CONNECTION, side_effect=OSError("Connection refused"))
     )
-    other_entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert init_result["type"] == FlowResultType.FORM
-
-    with patch(
-        "custom_components.qube_heatpump.config_flow.async_resolve_host",
-        return_value="192.0.2.20",
-    ):
+    resolve = (
+        patch(RESOLVE_HOST, return_value=resolves_to)
+        if resolves_to
+        else patch(RESOLVE_HOST, side_effect=lambda value: value or None)
+    )
+    with tcp, resolve:
         result = await hass.config_entries.options.async_configure(
-            init_result["flow_id"],
-            user_input={
-                CONF_HOST: "qube-new.local",
-                CONF_NAME: "qube 1",
-            },
+            result["flow_id"],
+            user_input={CONF_HOST: host, CONF_NAME: "qube 1"},
         )
 
-    assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == {CONF_HOST: "duplicate_ip"}
-
-    await hass.async_block_till_done()
-    await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_HOST: expected_error}
+    assert mock_config_entry.data[CONF_HOST] == "1.2.3.4"
 
 
-async def test_options_flow_cannot_connect_error(
-    hass: HomeAssistant, mock_qube_client: MagicMock
+async def test_options_flow_host_change_rewrites_unique_id_and_device(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    device_registry: dr.DeviceRegistry,
 ) -> None:
-    """Test that options flow shows error when cannot connect to new host."""
-    from unittest.mock import patch
+    """Moving the device to a new host re-registers it under the new identifier."""
+    await setup_integration(hass, mock_config_entry)
+    assert device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")})
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-    )
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert init_result["type"] == FlowResultType.FORM
-
-    with patch(
-        "custom_components.qube_heatpump.config_flow.asyncio.open_connection",
-        side_effect=OSError("Connection refused"),
-    ):
+    result = await _start_options_flow(hass, mock_config_entry)
+    with _tcp_ok():
         result = await hass.config_entries.options.async_configure(
-            init_result["flow_id"],
-            user_input={
-                CONF_HOST: "192.0.2.99",
-                CONF_NAME: "qube 1",
-            },
+            result["flow_id"],
+            user_input={CONF_HOST: "192.0.2.99", CONF_NAME: "qube 1"},
         )
-
-    assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == {CONF_HOST: "cannot_connect"}
-
-    await hass.async_block_till_done()
-    await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
 
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.data[CONF_HOST] == "192.0.2.99"
+    assert mock_config_entry.unique_id == f"{DOMAIN}-192.0.2.99-502"
+    assert device_registry.async_get_device(identifiers={(DOMAIN, "1.2.3.4:1")}) is None
+    assert device_registry.async_get_device(identifiers={(DOMAIN, "192.0.2.99:1")})
 
-async def test_options_flow_host_change_success(
-    hass: HomeAssistant, mock_qube_client: MagicMock
+
+async def test_options_flow_thermostat_step_creates_the_thermostat(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Test that options flow successfully changes host."""
-    from unittest.mock import AsyncMock, MagicMock, patch
+    """Enabling the thermostat asks for a sensor, stores it and reloads the entry."""
+    hass.states.async_set(ROOM_SENSOR, "20.0", {"device_class": "temperature"})
+    await setup_integration(hass, mock_config_entry)
+    assert hass.states.get(CLIMATE_ENTITY_ID) is None
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        unique_id=f"{DOMAIN}-192.0.2.10-502",
-        title="qube 1",
+    result = await _start_options_flow(hass, mock_config_entry)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_HOST: mock_config_entry.data[CONF_HOST],
+            CONF_NAME: "qube 1",
+            CONF_THERMOSTAT_ENABLED: True,
+        },
     )
-    entry.add_to_hass(hass)
 
-    await hass.config_entries.async_setup(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "thermostat"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={CONF_THERMOSTAT_SENSOR: ROOM_SENSOR},
+    )
     await hass.async_block_till_done()
 
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert init_result["type"] == FlowResultType.FORM
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.options[CONF_THERMOSTAT_ENABLED] is True
+    assert mock_config_entry.options[CONF_THERMOSTAT_SENSOR] == ROOM_SENSOR
+    # The reload is what makes the option take effect
+    assert hass.states.get(CLIMATE_ENTITY_ID) is not None
 
-    with patch(
-        "custom_components.qube_heatpump.config_flow.asyncio.open_connection",
-        return_value=(AsyncMock(), MagicMock(wait_closed=AsyncMock())),
-    ):
-        result = await hass.config_entries.options.async_configure(
-            init_result["flow_id"],
-            user_input={
-                CONF_HOST: "192.0.2.99",
-                CONF_NAME: "qube 1",
-            },
-        )
 
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.data[CONF_HOST] == "192.0.2.99"
-    assert entry.unique_id == f"{DOMAIN}-192.0.2.99-502"
+@pytest.mark.parametrize(
+    "config_entry_options",
+    [{CONF_THERMOSTAT_ENABLED: True, CONF_THERMOSTAT_SENSOR: ROOM_SENSOR}],
+)
+async def test_options_flow_thermostat_step_defaults_to_the_current_sensor(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Reopening the step offers the configured sensor rather than an empty box."""
+    hass.states.async_set(ROOM_SENSOR, "20.0", {"device_class": "temperature"})
+    await setup_integration(hass, mock_config_entry)
 
-    await hass.async_block_till_done()
+    result = await _start_options_flow(hass, mock_config_entry)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_HOST: mock_config_entry.data[CONF_HOST],
+            CONF_NAME: "qube 1",
+            CONF_THERMOSTAT_ENABLED: True,
+        },
+    )
+
+    assert result["step_id"] == "thermostat"
+    defaults = {str(key): key.default() for key in result["data_schema"].schema}
+    assert defaults[CONF_THERMOSTAT_SENSOR] == ROOM_SENSOR
 
 
 async def test_options_flow_dhw_step_stores_controller_setpoint_toggle(
-    hass: HomeAssistant, mock_qube_client: MagicMock
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
 ) -> None:
     """The DHW step offers the controller-setpoint toggle (default on) and stores it."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-    )
-    entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, mock_config_entry)
 
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _start_options_flow(hass, mock_config_entry)
     result = await hass.config_entries.options.async_configure(
-        init_result["flow_id"],
+        result["flow_id"],
         user_input={
-            CONF_HOST: entry.data[CONF_HOST],
+            CONF_HOST: mock_config_entry.data[CONF_HOST],
             CONF_NAME: "qube 1",
             CONF_DHW_SCHEDULE_ENABLED: True,
         },
     )
-    assert result["type"] == FlowResultType.FORM
+    assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "dhw_schedule"
 
-    # The toggle defaults to on (controller setpoint is left alone)
-    defaults = {
-        str(key): key.default() for key in result["data_schema"].schema if key.default is not None
-    }
+    # The toggle defaults to on (the controller's own setpoint is left alone)
+    defaults = {str(key): key.default() for key in result["data_schema"].schema}
     assert defaults[CONF_DHW_USE_CONTROLLER_SETPOINT] is True
 
     result = await hass.config_entries.options.async_configure(
@@ -289,55 +240,51 @@ async def test_options_flow_dhw_step_stores_controller_setpoint_toggle(
             "dhw_end_time": "15:00",
         },
     )
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options[CONF_DHW_USE_CONTROLLER_SETPOINT] is False
-    assert entry.options[CONF_DHW_SETPOINT] == 52.0
-
-    await hass.async_block_till_done()
-    await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
 
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.options[CONF_DHW_USE_CONTROLLER_SETPOINT] is False
+    assert mock_config_entry.options[CONF_DHW_SETPOINT] == 52.0
 
-async def test_options_flow_disabling_feature_drops_its_settings(
-    hass: HomeAssistant, mock_qube_client: MagicMock
-) -> None:
-    """Turning the DHW schedule off removes its sub-settings and reloads once."""
-    from unittest.mock import AsyncMock, patch
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "192.0.2.10", CONF_NAME: "qube 1"},
-        title="qube 1",
-        options={
+@pytest.mark.parametrize(
+    "config_entry_options",
+    [
+        {
             CONF_DHW_SCHEDULE_ENABLED: True,
             CONF_DHW_SETPOINT: 52.0,
             "dhw_start_time": "13:00",
             "dhw_end_time": "15:00",
             "unit_id": 1,
-        },
-    )
-    entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+        }
+    ],
+)
+async def test_options_flow_disabling_feature_drops_its_settings(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Turning the DHW schedule off removes its sub-settings and reloads once."""
+    await setup_integration(hass, mock_config_entry)
 
-    init_result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _start_options_flow(hass, mock_config_entry)
     with patch.object(
         hass.config_entries, "async_reload", new_callable=AsyncMock
     ) as mock_reload:
         result = await hass.config_entries.options.async_configure(
-            init_result["flow_id"],
+            result["flow_id"],
             user_input={
-                CONF_HOST: entry.data[CONF_HOST],
+                CONF_HOST: mock_config_entry.data[CONF_HOST],
                 CONF_NAME: "qube 1",
                 CONF_DHW_SCHEDULE_ENABLED: False,
             },
         )
         await hass.async_block_till_done()
 
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options == {
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.options == {
         CONF_DHW_SCHEDULE_ENABLED: False,
-        "thermostat_enabled": False,
+        CONF_THERMOSTAT_ENABLED: False,
         "unit_id": 1,  # legacy value is left alone
     }
-    mock_reload.assert_awaited_once_with(entry.entry_id)
+    mock_reload.assert_awaited_once_with(mock_config_entry.entry_id)
