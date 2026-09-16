@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 import time
-from typing import TYPE_CHECKING
-from unittest.mock import patch
+from typing import TYPE_CHECKING, Any
+from unittest.mock import AsyncMock, patch
 
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -42,6 +42,40 @@ SENSOR_ENTITY_ID = "sensor.outdoor_temperature"
 # which slugifies to the "qube_1" label used in generated entity_ids below.
 CLIMATE_ENTITY_ID = "climate.qube_1_thermostat"
 TIMEOUT_SENSOR_ENTITY_ID = "binary_sensor.qube_1_thermostat_sensor_timeout"
+
+
+class FakeDevice:
+    """Coil store standing in for the heat pump controller.
+
+    The shared ``mock_qube_client`` returns 45.0 for every read, which makes
+    both thermostat coils read as "on". The thermostat compares its flags
+    against the coil values the coordinator polls, so the climate tests need
+    reads to reflect writes: writes land in ``coils`` and reads return them.
+    Keys listed in ``failing`` make ``write_switch`` report failure.
+    """
+
+    def __init__(self, mock_qube_client: MagicMock, **initial: bool) -> None:
+        """Wire the mock client's read/write methods to this coil store."""
+        self.coils: dict[str, bool] = {
+            "modbus_demand": False,
+            "bms_summerwinter": False,
+            **initial,
+        }
+        self.failing: set[str] = set()
+        mock_qube_client.read_entity = AsyncMock(side_effect=self._read)
+        mock_qube_client.write_switch = AsyncMock(side_effect=self._write)
+
+    async def _read(self, ent: Any) -> Any:
+        key = getattr(ent, "key", None)
+        if key in self.coils:
+            return self.coils[key]
+        return 45.0
+
+    async def _write(self, key: str, on: bool) -> bool:
+        if key in self.failing:
+            return False
+        self.coils[key] = on
+        return True
 
 
 async def _setup_thermostat_entry(
@@ -466,3 +500,55 @@ async def test_sensor_timeout_recovery_reenables_heating_when_still_cold(
     await hass.async_block_till_done()
 
     assert _demand_calls(mock_qube_client) == [True]
+
+
+async def test_failed_demand_write_does_not_set_flag_and_is_retried(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """A failed modbus_demand write must not flip _is_heating; retry next pass.
+
+    Regression test: the write helper swallowed the error and the caller set
+    the heating flag anyway, so the thermostat believed it was heating while
+    the coil stayed off and never retried.
+    """
+    device = FakeDevice(mock_qube_client)
+    device.failing.add("modbus_demand")
+
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
+    assert _demand_calls(mock_qube_client) == [True]
+    assert device.coils["modbus_demand"] is False
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE
+
+    # Device is reachable again; the next evaluation retries the write.
+    device.failing.clear()
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.0")
+    await hass.async_block_till_done()
+
+    assert _demand_calls(mock_qube_client) == [True]
+    assert device.coils["modbus_demand"] is True
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+
+
+async def test_failed_demand_off_write_keeps_flag_and_is_retried(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """A failed turn-off keeps _is_heating so the next pass tries again."""
+    device = FakeDevice(mock_qube_client)
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.1")
+    assert device.coils["modbus_demand"] is True
+
+    device.failing.add("modbus_demand")
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.9")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [False]
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+
+    device.failing.clear()
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "21.0")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [False]
+    assert device.coils["modbus_demand"] is False
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.IDLE

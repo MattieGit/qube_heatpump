@@ -291,85 +291,85 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
             self.async_write_ha_state()
 
     async def _async_control_heating(self) -> None:
-        """Evaluate thermostat logic and set switch states."""
-        if self._hvac_mode == HVACMode.OFF:
-            if self._is_heating or self._is_cooling:
-                await self._async_set_demand(False)
-                self._is_heating = False
-                self._is_cooling = False
-            return
+        """Evaluate thermostat logic and set switch states.
 
-        if self._current_temp is None:
-            # No temperature — turn off for safety
-            if self._is_heating or self._is_cooling:
-                await self._async_set_demand(False)
-                self._is_heating = False
-                self._is_cooling = False
+        Flags (``_is_heating`` / ``_is_cooling``) only change after the
+        corresponding Modbus write succeeded, so a failed write is retried on
+        the next evaluation instead of being papered over.
+        """
+        if self._hvac_mode == HVACMode.OFF or self._current_temp is None:
+            # Thermostat off, or no usable temperature: stop for safety.
+            await self._async_stop_demand()
             return
 
         too_cold = self._current_temp <= self._target_temp - THERMOSTAT_COLD_TOLERANCE
         too_hot = self._current_temp >= self._target_temp + THERMOSTAT_HOT_TOLERANCE
 
+        # Decide which action this pass is about. In HEAT_COOL the deadband
+        # holds the current action (hysteresis), mirroring HEAT and COOL:
+        # heating only stops once too_hot, cooling only once too_cold.
         if self._hvac_mode == HVACMode.HEAT:
-            await self._async_ensure_summer_mode(False)
+            want = HVACAction.HEATING
+        elif self._hvac_mode == HVACMode.COOL:
+            want = HVACAction.COOLING
+        elif too_cold:
+            want = HVACAction.HEATING
+        elif too_hot:
+            want = HVACAction.COOLING
+        elif self._is_heating:
+            want = HVACAction.HEATING
+        elif self._is_cooling:
+            want = HVACAction.COOLING
+        else:
+            return  # HEAT_COOL, idle in the deadband
+
+        if want == HVACAction.HEATING:
+            if self._is_cooling:
+                # Switching direction: stop before flipping summer/winter.
+                await self._async_stop_demand()
+            if not await self._async_ensure_summer_mode(False):
+                return
             if too_cold and not self._is_heating:
-                await self._async_set_demand(True)
-                self._is_heating = True
-            elif not too_cold and self._is_heating and not too_hot:
-                pass  # Stay heating until reaching target + hot_tolerance
+                if await self._async_set_demand(True):
+                    self._is_heating = True
             elif too_hot and self._is_heating:
-                await self._async_set_demand(False)
-                self._is_heating = False
+                await self._async_stop_demand()
+        else:
+            if self._is_heating:
+                await self._async_stop_demand()
+            if not await self._async_ensure_summer_mode(True):
+                return
+            if too_hot and not self._is_cooling:
+                if await self._async_set_demand(True):
+                    self._is_cooling = True
+            elif too_cold and self._is_cooling:
+                await self._async_stop_demand()
+
+    async def _async_stop_demand(self) -> None:
+        """Turn demand off if we believe it is on; clear flags only on success."""
+        if not (self._is_heating or self._is_cooling):
+            return
+        if await self._async_set_demand(False):
+            self._is_heating = False
             self._is_cooling = False
 
-        elif self._hvac_mode == HVACMode.COOL:
-            await self._async_ensure_summer_mode(True)
-            if too_hot and not self._is_cooling:
-                await self._async_set_demand(True)
-                self._is_cooling = True
-            elif not too_hot and self._is_cooling and not too_cold:
-                pass  # Stay cooling until reaching target - cold_tolerance
-            elif too_cold and self._is_cooling:
-                await self._async_set_demand(False)
-                self._is_cooling = False
-            self._is_heating = False
-
-        elif self._hvac_mode == HVACMode.HEAT_COOL:
-            if too_cold:
-                # Need heating
-                if self._is_cooling:
-                    await self._async_set_demand(False)
-                    self._is_cooling = False
-                await self._async_ensure_summer_mode(False)
-                if not self._is_heating:
-                    await self._async_set_demand(True)
-                    self._is_heating = True
-            elif too_hot:
-                # Need cooling
-                if self._is_heating:
-                    await self._async_set_demand(False)
-                    self._is_heating = False
-                await self._async_ensure_summer_mode(True)
-                if not self._is_cooling:
-                    await self._async_set_demand(True)
-                    self._is_cooling = True
-            # In the deadband: hold the current action (hysteresis), mirroring
-            # HEAT and COOL. Heating only stops once too_hot, cooling only once
-            # too_cold, otherwise demand would toggle at a single threshold.
-
-    async def _async_set_demand(self, on: bool) -> None:
-        """Set the modbus_demand switch."""
+    async def _async_set_demand(self, on: bool) -> bool:
+        """Set the modbus_demand switch; return True when the write succeeded."""
         try:
             await self._hub.async_connect()
             await self._hub.async_write_switch(self._demand_switch, on)
-            await self._coordinator.async_request_refresh()
-        except Exception:
-            _LOGGER.exception("Failed to set modbus_demand to %s", on)
+        except (ConnectionError, OSError) as exc:
+            _LOGGER.warning("Failed to set modbus_demand to %s: %s", on, exc)
+            return False
+        await self._coordinator.async_request_refresh()
+        return True
 
-    async def _async_ensure_summer_mode(self, on: bool) -> None:
-        """Ensure bms_summerwinter is in the correct state."""
+    async def _async_ensure_summer_mode(self, on: bool) -> bool:
+        """Ensure bms_summerwinter is in the correct state; True when it is."""
         try:
             await self._hub.async_connect()
             await self._hub.async_write_switch(self._summer_switch, on)
-        except Exception:
-            _LOGGER.exception("Failed to set bms_summerwinter to %s", on)
+        except (ConnectionError, OSError) as exc:
+            _LOGGER.warning("Failed to set bms_summerwinter to %s: %s", on, exc)
+            return False
+        return True
