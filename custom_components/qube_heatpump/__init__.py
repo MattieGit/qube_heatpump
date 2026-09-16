@@ -236,7 +236,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
         new_data[CONF_NAME] = device_name
         hass.config_entries.async_update_entry(entry, data=new_data, title=device_name)
 
-    hub = QubeHub(hass, host, port, entry.entry_id, unit_id, device_name)
+    hub = QubeHub(host, port, unit_id, device_name)
 
     await hub.async_resolve_ip()
 

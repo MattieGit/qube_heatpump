@@ -43,36 +43,12 @@ from .const import (
     DEFAULT_PORT,
     DOMAIN,
 )
+from .helpers import async_resolve_host as _async_resolve_host
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 _LOGGER = logging.getLogger(__name__)
-
-
-async def _async_resolve_host(host: str) -> str | None:
-    """Resolve a host or IP string to a canonical IP address."""
-    if not host:
-        return None
-    with contextlib.suppress(ValueError):
-        return str(ipaddress.ip_address(host))
-
-    with contextlib.suppress(OSError):
-        infos = await asyncio.get_running_loop().getaddrinfo(
-            host,
-            None,
-            type=socket.SOCK_STREAM,
-        )
-        for family, _, _, _, sockaddr in infos:
-            if not sockaddr:
-                continue
-            addr = sockaddr[0]
-            if not isinstance(addr, str):
-                continue
-            if family == socket.AF_INET6 and addr.startswith("::ffff:"):
-                addr = addr.removeprefix("::ffff:")
-            return addr
-    return None
 
 
 async def _async_find_conflicting_entry(
