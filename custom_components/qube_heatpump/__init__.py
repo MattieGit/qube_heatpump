@@ -46,12 +46,6 @@ class QubeData:
     version: str
     multi_device: bool
     alarm_group_object_id: str | None = None
-    tariff_tracker: Any | None = None
-    thermic_tariff_tracker: Any | None = None
-    daily_tariff_tracker: Any | None = None
-    daily_thermic_tariff_tracker: Any | None = None
-    # Also registered with entry.async_on_unload; kept for introspection.
-    dhw_cancel_callbacks: list[Any] | None = None
     dhw_schedule: DhwScheduleState | None = None
     thermostat_sensor_timed_out: bool = False
 
@@ -246,11 +240,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Register the DHW schedule callbacks (no-op when disabled)
-    cancel_callbacks = await async_setup_dhw_schedule(
+    for cancel in await async_setup_dhw_schedule(
         hass, entry, hub, coordinator, entry.runtime_data.dhw_schedule
-    )
-    entry.runtime_data.dhw_cancel_callbacks = cancel_callbacks
-    for cancel in cancel_callbacks:
+    ):
         entry.async_on_unload(cancel)
 
     # Alarm group: entity IDs are constructed from vendor_id so they match

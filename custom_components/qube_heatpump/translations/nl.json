@@ -587,7 +587,7 @@
             "message": "Kan schakelaar {entity_id} niet schrijven."
         },
         "write_setpoint_failed": {
-            "message": "Kan setpoint {entity_id} niet schrijven."
+            "message": "Kan instelpunt {entity_id} niet schrijven."
         }
     }
 }

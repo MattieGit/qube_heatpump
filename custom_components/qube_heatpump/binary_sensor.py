@@ -88,6 +88,9 @@ def _derive_entity_category(vendor_id: str | None) -> EntityCategory | None:
     return None
 
 
+# Writes go through the shared hub; no per-platform throttling needed.
+PARALLEL_UPDATES = 0
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: QubeConfigEntry,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -78,7 +78,7 @@ async def test_dhw_schedule_setup_returns_cancel_callbacks_with_parsed_times(
     hass: HomeAssistant, mock_qube_client: MagicMock
 ) -> None:
     """Setup should register two time-change listeners at the configured times."""
-    entry, calls, cancels = await _setup_dhw_entry(
+    _entry, calls, cancels = await _setup_dhw_entry(
         hass,
         {
             CONF_DHW_SCHEDULE_ENABLED: True,
@@ -88,7 +88,6 @@ async def test_dhw_schedule_setup_returns_cancel_callbacks_with_parsed_times(
         },
     )
 
-    assert entry.runtime_data.dhw_cancel_callbacks == cancels
     assert len(cancels) == 2
 
     assert len(calls) == 2
@@ -127,7 +126,7 @@ async def test_dhw_schedule_start_callback_writes_setpoint_then_switch(
 
     mock_qube_client.write_setpoint.side_effect = _setpoint_side_effect
     mock_qube_client.write_switch.side_effect = _switch_side_effect
-    entry.runtime_data.coordinator.async_request_refresh = MagicMock(
+    entry.runtime_data.coordinator.async_request_refresh = AsyncMock(
         side_effect=lambda: order.append(("refresh",))
     )
 
@@ -163,7 +162,7 @@ async def test_dhw_schedule_start_callback_default_leaves_controller_setpoint(
 
     mock_qube_client.write_setpoint.reset_mock()
     mock_qube_client.write_switch.reset_mock()
-    entry.runtime_data.coordinator.async_request_refresh = MagicMock()
+    entry.runtime_data.coordinator.async_request_refresh = AsyncMock()
 
     await calls[0]["action"](None)
 
@@ -188,7 +187,7 @@ async def test_dhw_schedule_start_callback_uses_default_setpoint_when_writing(
     )
 
     mock_qube_client.write_setpoint.reset_mock()
-    entry.runtime_data.coordinator.async_request_refresh = MagicMock()
+    entry.runtime_data.coordinator.async_request_refresh = AsyncMock()
 
     await calls[0]["action"](None)
 
@@ -212,7 +211,7 @@ async def test_dhw_schedule_end_callback_turns_switch_off(
     )
 
     mock_qube_client.write_switch.reset_mock()
-    refresh_mock = MagicMock()
+    refresh_mock = AsyncMock()
     entry.runtime_data.coordinator.async_request_refresh = refresh_mock
 
     end_callback = calls[1]["action"]
@@ -230,7 +229,7 @@ async def test_dhw_schedule_missing_switch_returns_empty_and_logs_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """If the tapw_timeprogram_bms_forced switch can't be found, bail out cleanly."""
-    hub = QubeHub(hass, "1.2.3.4", 502, "test_entry_id", 1, "qube 1")
+    hub = QubeHub("1.2.3.4", 502, 1, "qube 1")
     hub.load_library_entities()
     hub.entities = [
         ent for ent in hub.entities if ent.vendor_id != "tapw_timeprogram_bms_forced"

@@ -172,7 +172,7 @@ async def async_setup_dhw_schedule(
     hub: QubeHub,
     coordinator: Any,
     state: DhwScheduleState | None = None,
-) -> list[Callable]:
+) -> list[Callable[[], None]]:
     """Set up DHW schedule and return cancel callbacks.
 
     ``state`` is the shared state holder (``runtime_data.dhw_schedule``); it is
@@ -218,8 +218,8 @@ async def async_setup_dhw_schedule(
                 await hub.async_write_setpoint(dhw_setpoint_ent, setpoint)
             await hub.async_write_switch(dhw_switch_ent, True)
             await coordinator.async_request_refresh()
-        except Exception:
-            _LOGGER.exception("DHW schedule: failed to start DHW heating")
+        except OSError as exc:  # ConnectionError from the hub is an OSError
+            _LOGGER.warning("DHW schedule: failed to start DHW heating: %s", exc)
         finally:
             state.record_start(dt_util.now())
             state.async_update_listeners()
@@ -231,8 +231,8 @@ async def async_setup_dhw_schedule(
             await hub.async_connect()
             await hub.async_write_switch(dhw_switch_ent, False)
             await coordinator.async_request_refresh()
-        except Exception:
-            _LOGGER.exception("DHW schedule: failed to stop DHW heating")
+        except OSError as exc:
+            _LOGGER.warning("DHW schedule: failed to stop DHW heating: %s", exc)
         finally:
             state.record_end(dt_util.now())
             state.async_update_listeners()

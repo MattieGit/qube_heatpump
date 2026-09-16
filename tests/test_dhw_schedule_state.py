@@ -241,7 +241,7 @@ async def test_scheduler_callbacks_update_entities_immediately(
                 CONF_DHW_END_TIME: "15:00",
             },
         )
-    entry.runtime_data.coordinator.async_request_refresh = MagicMock()
+    entry.runtime_data.coordinator.async_request_refresh = AsyncMock()
     start_cb = next(c["action"] for c in calls if c["hour"] == 13)
     end_cb = next(c["action"] for c in calls if c["hour"] == 15)
 

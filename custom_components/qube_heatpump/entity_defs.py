@@ -105,7 +105,7 @@ def _derive_precision(
 ) -> int | None:
     """Derive suggested display precision from unit and data type."""
     # COP sensors: reduce precision to minimize state updates
-    if key in ("cop_calc", "generalmng_cop"):
+    if key == "cop_calc":
         return 1
     if not unit:
         return None

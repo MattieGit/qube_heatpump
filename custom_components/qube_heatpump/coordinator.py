@@ -281,7 +281,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
 
         # The library swallows per-register errors and returns None; when
         # every register is None the device did not answer at all.
-        if all(bulk.get(ent.vendor_id) is None for ent in self.hub.entities):
+        if all(bulk.get(ent.vendor_id or "") is None for ent in self.hub.entities):
             self.hub.inc_read_error()
             raise self._record_failure(f"No data received from {self.hub.host}")
 

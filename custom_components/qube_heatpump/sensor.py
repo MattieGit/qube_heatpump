@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from python_qube_heatpump import StatusCode, resolve_status
 
@@ -104,6 +104,9 @@ def _find_entity(hub: QubeHub, vendor_id: str) -> EntityDef | None:
     """Return the hub entity definition with the given library key."""
     return next((ent for ent in hub.entities if ent.vendor_id == vendor_id), None)
 
+
+# Writes go through the shared hub; no per-platform throttling needed.
+PARALLEL_UPDATES = 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -321,7 +324,7 @@ class QubeSensor(QubeEntity, SensorEntity):
         if self._key in CLAMP_TO_ZERO_KEYS and isinstance(value, (int, float)):
             return max(0.0, float(value))
 
-        return value
+        return cast("StateType", value)
 
     def _compute_throttled_value(self) -> StateType:
         """Compute the COP display value, throttling frequent small changes.

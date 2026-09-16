@@ -191,7 +191,12 @@ async def test_sensor_handles_none_data(hass: HomeAssistant) -> None:
         client.is_connected = True
         client.close = AsyncMock(return_value=None)
         # Return None for some reads
-        client.read_entity = AsyncMock(return_value=None)
+        # Some registers fail (None), the rest read normally; an all-None
+        # poll is treated as a failed update and creates no entities.
+        async def _partial(ent):
+            return None if ent.key.startswith("temp_") else 45.0
+
+        client.read_entity = AsyncMock(side_effect=_partial)
         add_bulk_read(client)
         client.read_sensor = AsyncMock(return_value=None)
         client.read_binary_sensor = AsyncMock(return_value=None)

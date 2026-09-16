@@ -7,7 +7,7 @@ import contextlib
 from datetime import timedelta
 import logging
 import time
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.climate import (
     ATTR_HVAC_ACTION,
@@ -47,6 +47,9 @@ if TYPE_CHECKING:
     from .hub import QubeHub
 
 _LOGGER = logging.getLogger(__name__)
+
+# Writes go through the shared hub; no per-platform throttling needed.
+PARALLEL_UPDATES = 0
 
 _TIMEOUT_CHECK_INTERVAL = 60  # seconds
 
@@ -112,7 +115,7 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
 
     _attr_translation_key = "thermostat"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_hvac_modes: ClassVar[list[HVACMode]] = [
+    _attr_hvac_modes = [  # noqa: RUF012 - HA declares this as an instance attribute
         HVACMode.OFF,
         HVACMode.HEAT,
         HVACMode.COOL,
