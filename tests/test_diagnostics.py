@@ -1,7 +1,10 @@
 """Tests for the Qube Heat Pump diagnostics."""
 
+from datetime import timedelta
+from typing import Any
 from unittest.mock import MagicMock
 
+from freezegun.api import FrozenDateTimeFactory
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from syrupy.assertion import SnapshotAssertion
 
@@ -10,7 +13,7 @@ from custom_components.qube_heatpump.diagnostics import (
 )
 from homeassistant.core import HomeAssistant
 
-from . import setup_integration
+from . import async_poll, setup_integration
 
 
 async def test_diagnostics(
@@ -71,3 +74,25 @@ async def test_diagnostics_reports_error_counters(
     assert diagnostics["hub"]["err_read"] == 2
     assert diagnostics["hub"]["err_connect"] == 0
     assert diagnostics["firmware_version"] == mock_config_entry.runtime_data.version
+
+
+async def test_diagnostics_show_raw_values_next_to_clamped_ones(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The dump carries the raw register value, the value HA shows and the held
+    maximum, so a frozen counter can be told apart from the clamp.
+    """
+    client_values["energy_total_thermic"] = 4000.0
+    await setup_integration(hass, mock_config_entry)
+    client_values["energy_total_thermic"] = 3999.81
+    await async_poll(hass, freezer)
+
+    diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
+    assert diagnostics["raw_data"]["energy_total_thermic"] == 3999.81
+    assert diagnostics["coordinator_data"]["energy_total_thermic"] == 4000.0
+    assert diagnostics["monotonic_cache"]["energy_total_thermic"] == 4000.0
+    assert diagnostics["energy_totals_stale"] is False

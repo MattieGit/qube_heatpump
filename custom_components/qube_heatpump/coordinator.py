@@ -82,6 +82,10 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         self._nonfinite_warned: set[str] = set()
         # Energy totaliser staleness tracking (see _track_energy_staleness)
         self.energy_totals_stale = False
+        # Readings as the controller reported them (rounded, before monotonic
+        # clamping); ``data`` holds what Home Assistant shows. Comparing the
+        # two tells a stalled counter apart from the clamp holding a maximum.
+        self.raw_data: dict[str, Any] = {}
         self._energy_last_values: dict[str, float] = {}
         self._energy_stale_since: float | None = None
         super().__init__(
@@ -185,13 +189,15 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     def _track_energy_staleness(
         self, results: dict[str, Any], now: float | None = None
     ) -> None:
-        """Update ``energy_totals_stale`` from this poll's results.
+        """Update ``energy_totals_stale`` from this poll's raw readings.
 
         Stale means: electric power above ENERGY_STALE_POWER_THRESHOLD_W for
         at least ENERGY_STALE_TIMEOUT_SECONDS while neither energy total
-        changed. The values compared are the ones Home Assistant sees (after
-        monotonic clamping), because those feed every derived day/month/SCOP
-        sensor. A poll without a power reading leaves the timer untouched.
+        changed *on the controller*. The raw (pre-clamp) values are compared,
+        so a counter that stepped back slightly and is climbing again is not
+        reported as stale merely because the clamp holds the old maximum for
+        Home Assistant. A poll without a power reading leaves the timer
+        untouched.
         """
         now = time.monotonic() if now is None else now
         advanced = False
@@ -289,6 +295,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
 
         client = self.hub.client
         results: dict[str, Any] = {}
+        raw: dict[str, Any] = {}
         for ent in self.hub.entities:
             value = bulk.get(ent.vendor_id) if ent.vendor_id else None
             key = _entity_key(ent)
@@ -306,6 +313,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
                 with contextlib.suppress(TypeError, ValueError):
                     value = round(float(value), int(ent.precision))
 
+            raw[key] = value
             # Delegate monotonic clamping to the library client
             if _needs_monotonic_clamping(ent) and isinstance(value, (int, float)):
                 value = client.clamp_monotonic(key, value)
@@ -315,6 +323,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         if client.monotonic_cache:
             self._schedule_save()
 
-        self._track_energy_staleness(results)
+        self.raw_data = raw
+        self._track_energy_staleness(raw)
 
         return results
