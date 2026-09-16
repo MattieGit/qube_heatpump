@@ -134,14 +134,13 @@ async def test_diagnostics_includes_entity_info(
     assert "name" in entity
     assert "platform" in entity
     assert "address" in entity
-    # unique_id should be redacted
-    assert entity["unique_id"] == "**REDACTED**"
+    # The unique_id is the library register key; it stays readable so the
+    # dump can be matched against the register documentation.
+    first = entry.runtime_data.hub.entities[0]
+    assert entity["unique_id"] == first.unique_id
+    assert entity["unique_id"] != "**REDACTED**"
 
 
 def test_to_redact_fields() -> None:
-    """Test TO_REDACT contains expected fields."""
-    assert "host" in TO_REDACT
-    assert "port" in TO_REDACT
-    assert "unique_id" in TO_REDACT
-    assert "ip_address" in TO_REDACT
-    assert "resolved_ip" in TO_REDACT
+    """Only network identifiers are redacted."""
+    assert {"host", "port", "ip_address", "resolved_ip"} == TO_REDACT

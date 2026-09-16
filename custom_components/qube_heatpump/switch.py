@@ -18,10 +18,32 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
+    from .coordinator import QubeCoordinator
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
+
+# The SG Ready coils are exposed through the select entity instead
+SGREADY_VENDOR_IDS = frozenset({"bms_sgready_a", "bms_sgready_b"})
+
+# Coils the controller keeps on after an acknowledged turn-off while a request
+# is still pending (they clear by themselves when the run completes). These
+# switches expose a ``pending_request`` attribute instead of pretending the
+# write took effect.
+PENDING_STATE_SWITCHES = frozenset({"tapw_timeprogram_bms_forced"})
+
+# Switches that should appear in Controls (no entity_category) instead of Configuration
+CONTROL_SWITCHES = frozenset(
+    {
+        "modbus_demand",
+        "tapw_timeprogram_bms_forced",
+        "bms_summerwinter",
+        "antilegionella_frcstart_ant",
+    }
+)
 
 
 async def async_setup_entry(
@@ -33,56 +55,31 @@ async def async_setup_entry(
     data = entry.runtime_data
     hub = data.hub
     coordinator = data.coordinator
-    version = data.version or "unknown"
+    version = data.version
 
-    entities: list[SwitchEntity] = []
-    for ent in hub.entities:
-        if ent.platform != "switch":
-            continue
-        if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
-            continue
-        entities.append(QubeSwitch(coordinator, hub, ent, version))
-
+    entities: list[SwitchEntity] = [
+        QubeSwitch(coordinator, hub, ent, version)
+        for ent in hub.entities
+        if ent.platform == "switch" and ent.vendor_id not in SGREADY_VENDOR_IDS
+    ]
     entities.append(QubeDhwScheduleEnabledSwitch(coordinator, hub, entry, version))
-
     async_add_entities(entities)
 
-    # Cleanup deprecated SG Ready entities (check both old and new unique_id formats)
+    # Cleanup deprecated SG Ready switch entities from releases that created
+    # them (both the old unscoped and the scoped unique_id formats).
     registry = er.async_get(hass)
-    to_remove_base = ["bms_sgready_a", "bms_sgready_b"]
-    for base in to_remove_base:
-        # Check for old format (non-scoped)
-        entity_id = registry.async_get_entity_id("switch", DOMAIN, base)
-        if entity_id:
-            registry.async_remove(entity_id)
-        # Check for new format (scoped with host_unit)
-        scoped_uid = f"{hub.host}_{hub.unit}_{base}"
-        entity_id = registry.async_get_entity_id("switch", DOMAIN, scoped_uid)
-        if entity_id:
-            registry.async_remove(entity_id)
-
-
-# Coils the controller keeps on after an acknowledged turn-off while a request
-# is still pending (they clear by themselves when the run completes). These
-# switches expose a ``pending_request`` attribute instead of pretending the
-# write took effect.
-PENDING_STATE_SWITCHES = frozenset({"tapw_timeprogram_bms_forced"})
-
-# Switches that should appear in Controls (no entity_category) instead of Configuration
-CONTROL_SWITCHES = frozenset({
-    "modbus_demand",
-    "tapw_timeprogram_bms_forced",
-    "bms_summerwinter",
-    "antilegionella_frcstart_ant",
-})
+    for base in SGREADY_VENDOR_IDS:
+        for unique_id in (base, f"{hub.host}_{hub.unit}_{base}"):
+            if entity_id := registry.async_get_entity_id("switch", DOMAIN, unique_id):
+                registry.async_remove(entity_id)
 
 
 class QubeSwitch(QubeEntity, SwitchEntity):
-    """Qube switch entity."""
+    """Qube switch entity backed by a writable coil."""
 
     def __init__(
         self,
-        coordinator: Any,
+        coordinator: QubeCoordinator,
         hub: QubeHub,
         ent: EntityDef,
         version: str = "unknown",
@@ -90,33 +87,22 @@ class QubeSwitch(QubeEntity, SwitchEntity):
         """Initialize the switch."""
         super().__init__(coordinator, hub, version)
         self._ent = ent
+        self._key = entity_data_key(ent)
         # True after an acknowledged turn-off until the coil actually reads off
         self._turn_off_requested = False
         # Control switches go in Controls section, others in Configuration
         if ent.vendor_id not in CONTROL_SWITCHES:
             self._attr_entity_category = EntityCategory.CONFIG
-        if ent.vendor_id in {"bms_sgready_a", "bms_sgready_b"}:
-            self._attr_entity_registry_visible_default = False
-        # Use vendor_id for stable, predictable entity IDs
-        if ent.vendor_id:
-            self.entity_id = f"switch.{self._label}_{ent.vendor_id}"
-        if ent.translation_key:
-            self._attr_translation_key = ent.translation_key
-        else:
-            self._attr_name = str(ent.name)
-        # Always scope unique_id per device (host_unit prefix) to ensure stability
-        # when adding/removing devices - prevents entity duplication
-        if ent.unique_id:
-            self._attr_unique_id = self._scoped_uid(ent.unique_id)
-        else:
-            suffix = f"{ent.write_type or 'coil'}_{ent.address}".lower()
-            base_uid = f"qube_switch_{suffix}"
-            self._attr_unique_id = self._scoped_uid(base_uid)
+        # vendor_id gives stable, predictable entity IDs
+        self.entity_id = f"switch.{self._label}_{ent.vendor_id}"
+        self._attr_translation_key = ent.translation_key
+        # Always scoped per device (host_unit prefix) for multi-device stability
+        self._attr_unique_id = self._scoped_uid(self._key)
 
     @property
     def is_on(self) -> bool | None:
         """Return true if switch is on."""
-        val = self.coordinator.data.get(entity_data_key(self._ent))
+        val = self.coordinator.data.get(self._key)
         return None if val is None else bool(val)
 
     @property
@@ -140,15 +126,15 @@ class QubeSwitch(QubeEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         self._turn_off_requested = False
-        await self._hub.async_connect()
-        await self._hub.async_write_switch(self._ent, True)
+        await self._async_connect()
+        await self._async_write_switch(self._ent, True)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self._hub.async_connect()
-        await self._hub.async_write_switch(self._ent, False)
+        await self._async_connect()
+        await self._async_write_switch(self._ent, False)
         self._turn_off_requested = self._ent.vendor_id in PENDING_STATE_SWITCHES
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
@@ -170,10 +156,11 @@ class QubeDhwScheduleEnabledSwitch(QubeEntity, SwitchEntity):
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:calendar-clock"
+    _attr_translation_key = "dhw_schedule_enabled"
 
     def __init__(
         self,
-        coordinator: Any,
+        coordinator: QubeCoordinator,
         hub: QubeHub,
         entry: QubeConfigEntry,
         version: str = "unknown",
@@ -181,7 +168,6 @@ class QubeDhwScheduleEnabledSwitch(QubeEntity, SwitchEntity):
         """Initialize the schedule toggle."""
         super().__init__(coordinator, hub, version)
         self._entry = entry
-        self._attr_translation_key = "dhw_schedule_enabled"
         self.entity_id = f"switch.{self._label}_dhw_schedule_enabled"
         self._attr_unique_id = self._scoped_uid("dhw_schedule_enabled")
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import EntityCategory
@@ -14,7 +14,11 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import QubeConfigEntry
+    from .coordinator import QubeCoordinator
     from .hub import QubeHub
+
+
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -26,7 +30,7 @@ async def async_setup_entry(
     data = entry.runtime_data
     hub = data.hub
     coordinator = data.coordinator
-    version = data.version or "unknown"
+    version = data.version
 
     async_add_entities(
         [
@@ -46,7 +50,7 @@ class QubeReloadButton(QubeEntity, ButtonEntity):
 
     def __init__(
         self,
-        coordinator: Any,
+        coordinator: QubeCoordinator,
         hub: QubeHub,
         entry_id: str,
         version: str,
@@ -77,7 +81,9 @@ class QubeClearMonotonicCacheButton(QubeEntity, ButtonEntity):
     _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:counter"
 
-    def __init__(self, coordinator: Any, hub: QubeHub, version: str) -> None:
+    def __init__(
+        self, coordinator: QubeCoordinator, hub: QubeHub, version: str
+    ) -> None:
         """Initialize the clear-cache button."""
         super().__init__(coordinator, hub, version)
         self._attr_translation_key = "clear_monotonic_cache"

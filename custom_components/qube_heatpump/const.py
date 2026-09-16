@@ -1,6 +1,13 @@
 """Constants for the Qube Heat Pump integration."""
 
-from homeassistant.const import Platform
+# Re-exported so the rest of the integration (and its tests) can keep
+# importing the connection keys from here; the values are HA's standard ones.
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_NAME,
+    CONF_PORT,
+    Platform,
+)
 
 DOMAIN = "qube_heatpump"
 PLATFORMS = [
@@ -15,10 +22,8 @@ PLATFORMS = [
 
 TARIFF_OPTIONS = ("CH", "DHW")
 
-CONF_HOST = "host"
-CONF_PORT = "port"
+# Legacy: the Modbus unit id was once configurable; only read, never written.
 CONF_UNIT_ID = "unit_id"
-CONF_NAME = "name"
 DEFAULT_PORT = 502
 DEFAULT_SCAN_INTERVAL = 15
 

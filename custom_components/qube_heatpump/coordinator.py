@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
+from homeassistant.components.sensor import SensorStateClass
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import (
@@ -26,7 +27,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .helpers import entity_data_key as _entity_key
 
-# Number of consecutive failures before creating a repair issue
+# Number of consecutive failed polls before creating a repair issue
 CONSECUTIVE_FAILURES_THRESHOLD = 5
 STORAGE_VERSION = 1
 STORAGE_KEY_PREFIX = f"{DOMAIN}_monotonic"
@@ -46,32 +47,39 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _needs_monotonic_clamping(ent: EntityDef) -> bool:
-    """Check if an entity needs monotonic clamping."""
-    if ent.state_class == "total_increasing":
-        return True
-    # Working hours counters should never decrease
-    try:
-        vendor = str(ent.vendor_id or "").strip().lower()
-    except (TypeError, ValueError, AttributeError):
-        return False
-    return bool(vendor.startswith("workinghours"))
+    """Check if an entity needs monotonic clamping.
+
+    Energy totals and working-hour counters are mapped to
+    ``total_increasing`` by entity_defs, so the state class is the only
+    signal needed.
+    """
+    return ent.state_class == SensorStateClass.TOTAL_INCREASING
+
+
+def monotonic_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, float]]:
+    """Return the on-disk store holding an entry's monotonic clamp baselines."""
+    return Store(hass, STORAGE_VERSION, f"{STORAGE_KEY_PREFIX}_{entry_id}")
+
+
+def connection_issue_id(entry_id: str) -> str:
+    """Return the repair issue id used for persistent connection failures."""
+    return f"connection_failed_{entry_id}"
 
 
 class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     """Qube Heat Pump custom coordinator."""
 
+    config_entry: ConfigEntry
+    sw_version: str | None = None
+
     def __init__(self, hass: HomeAssistant, hub: QubeHub, entry: ConfigEntry) -> None:
         """Initialize the coordinator."""
         self.hub = hub
-        self.entry = entry
         self._consecutive_failures = 0
-        self._issue_created = False
-        self._store: Store[dict[str, float]] = Store(
-            hass,
-            STORAGE_VERSION,
-            f"{STORAGE_KEY_PREFIX}_{entry.entry_id}",
-        )
+        self._store = monotonic_store(hass, entry.entry_id)
         self._save_scheduled = False
+        # Register keys that already produced a non-finite warning
+        self._nonfinite_warned: set[str] = set()
         # Energy totaliser staleness tracking (see _track_energy_staleness)
         self.energy_totals_stale = False
         self._energy_last_values: dict[str, float] = {}
@@ -84,30 +92,60 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             config_entry=entry,
         )
 
-    def _create_connection_issue(self) -> None:
-        """Create a repair issue for persistent connection failures."""
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            f"connection_failed_{self.entry.entry_id}",
-            is_fixable=True,
-            is_persistent=False,
-            severity=ir.IssueSeverity.ERROR,
-            translation_key="connection_failed",
-            translation_placeholders={"host": self.hub.host},
-            data={"entry_id": self.entry.entry_id},
-        )
-        self._issue_created = True
+    async def _async_setup(self) -> None:
+        """Connect to the device and read its software version.
 
-    def _delete_connection_issue(self) -> None:
-        """Delete the connection failure repair issue."""
-        if self._issue_created:
-            ir.async_delete_issue(
+        Raising UpdateFailed here makes async_config_entry_first_refresh
+        raise ConfigEntryNotReady so Home Assistant retries the setup.
+        """
+        try:
+            await self.hub.async_connect()
+        except ConnectionError as err:
+            raise UpdateFailed(
+                f"Unable to connect to Qube heat pump at {self.hub.host}: {err}"
+            ) from err
+        # The library returns None (and logs) when the register is unreadable
+        self.sw_version = await self.hub.async_get_software_version()
+
+    async def async_shutdown(self) -> None:
+        """Stop polling and flush a pending monotonic cache save.
+
+        The base class registers this on config entry unload. Writing the
+        cache now (instead of letting the delayed save fire later) prevents a
+        stale write after the entry has been reloaded with a fresh client.
+        """
+        await super().async_shutdown()
+        if self._save_scheduled:
+            self._save_scheduled = False
+            await self._store.async_save(dict(self.hub.client.monotonic_cache))
+
+    def _record_failure(self, reason: str) -> UpdateFailed:
+        """Count a failed poll and raise a repair issue after enough of them."""
+        self._consecutive_failures += 1
+        if self._consecutive_failures == CONSECUTIVE_FAILURES_THRESHOLD:
+            ir.async_create_issue(
                 self.hass,
                 DOMAIN,
-                f"connection_failed_{self.entry.entry_id}",
+                connection_issue_id(self.config_entry.entry_id),
+                is_fixable=False,
+                is_persistent=False,
+                severity=ir.IssueSeverity.ERROR,
+                translation_key="connection_failed",
+                translation_placeholders={"host": self.hub.host},
             )
-            self._issue_created = False
+        return UpdateFailed(reason)
+
+    def _record_success(self) -> None:
+        """Reset the failure counter and clear any connection issue.
+
+        Deleting is unconditional (and a no-op when there is no issue): the
+        issue may have been created by a previous coordinator instance
+        before a reload.
+        """
+        self._consecutive_failures = 0
+        ir.async_delete_issue(
+            self.hass, DOMAIN, connection_issue_id(self.config_entry.entry_id)
+        )
 
     async def async_load_monotonic_cache(self) -> None:
         """Load the monotonic cache from persistent storage into the library client.
@@ -119,18 +157,15 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         disk we ensure the first reading is properly clamped.
         """
         client = self.hub.client
-        if client is not None and client.monotonic_cache:
+        if client.monotonic_cache:
             return  # Already populated
 
         stored = await self._store.async_load()
         if not stored or not isinstance(stored, dict):
             return
 
-        if client is not None:
-            client.monotonic_cache = stored
-        _LOGGER.info(
-            "Restored monotonic cache with %d values from disk", len(stored)
-        )
+        client.monotonic_cache = stored
+        _LOGGER.info("Restored monotonic cache with %d values from disk", len(stored))
 
     async def async_clear_monotonic_cache(self) -> None:
         """Forget all monotonic baselines, in memory and on disk, then re-poll.
@@ -139,9 +174,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         in the cache are stale; clearing them lets the next reading through
         as the new baseline.
         """
-        client = self.hub.client
-        if client is not None:
-            client.clear_monotonic_cache()
+        self.hub.client.clear_monotonic_cache()
         await self._store.async_remove()
         # async_remove cancels any pending delayed save; allow the next poll
         # to schedule a fresh one, otherwise the cache is never persisted again.
@@ -158,7 +191,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         at least ENERGY_STALE_TIMEOUT_SECONDS while neither energy total
         changed. The values compared are the ones Home Assistant sees (after
         monotonic clamping), because those feed every derived day/month/SCOP
-        sensor.
+        sensor. A poll without a power reading leaves the timer untouched.
         """
         now = time.monotonic() if now is None else now
         advanced = False
@@ -166,16 +199,21 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             value = results.get(key)
             if not isinstance(value, (int, float)):
                 continue
-            if key in self._energy_last_values and self._energy_last_values[key] != value:
+            if (
+                key in self._energy_last_values
+                and self._energy_last_values[key] != value
+            ):
                 advanced = True
             self._energy_last_values[key] = float(value)
 
         power = results.get(ENERGY_POWER_KEY)
-        drawing_power = (
-            isinstance(power, (int, float)) and power > ENERGY_STALE_POWER_THRESHOLD_W
-        )
-
-        if advanced or not drawing_power:
+        if advanced:
+            self._energy_stale_since = None
+            stale = False
+        elif not isinstance(power, (int, float)):
+            # Unknown power: neither evidence for nor against staleness
+            stale = self.energy_totals_stale
+        elif power <= ENERGY_STALE_POWER_THRESHOLD_W:
             self._energy_stale_since = None
             stale = False
         else:
@@ -204,59 +242,59 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
 
         def _get_data() -> dict[str, float]:
             self._save_scheduled = False
-            if client is not None:
-                return dict(client.monotonic_cache)
-            return {}
+            return dict(client.monotonic_cache)
 
         self._save_scheduled = True
         self._store.async_delay_save(_get_data, SAVE_INTERVAL_SECONDS)
+
+    def _log_nonfinite(self, ent: EntityDef, key: str, value: Any) -> None:
+        """Warn once per register about a non-finite value, then log at DEBUG."""
+        level = logging.DEBUG if key in self._nonfinite_warned else logging.WARNING
+        self._nonfinite_warned.add(key)
+        _LOGGER.log(
+            level,
+            "Non-finite value (%s) for %s %s@%s; treating as unavailable",
+            value,
+            ent.platform,
+            ent.input_type or ent.write_type or "register",
+            ent.address,
+        )
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the hub."""
         try:
             await self.hub.async_connect()
-        except Exception as exc:
-            self._consecutive_failures += 1
-            if (
-                self._consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD
-                and not self._issue_created
-            ):
-                self._create_connection_issue()
-            raise UpdateFailed(f"Connection to {self.hub.host} failed: {exc}") from exc
-
-        # Connection successful - reset failure counter and delete any issue
-        self._consecutive_failures = 0
-        self._delete_connection_issue()
-
-        client = self.hub.client
-        results: dict[str, Any] = {}
-        nonfinite_count = 0
-        warn_cap = 5
+        except ConnectionError as exc:
+            raise self._record_failure(
+                f"Connection to {self.hub.host} failed: {exc}"
+            ) from exc
 
         # Fetch all values in a handful of batched block reads instead of
         # one Modbus transaction per entity (library >=1.12.0).
         try:
             bulk = await self.hub.async_get_all_entities()
-        except Exception as exc:
+        except OSError as exc:
             self.hub.inc_read_error()
-            raise UpdateFailed(
+            raise self._record_failure(
                 f"Reading from {self.hub.host} failed: {exc}"
             ) from exc
 
+        # The library swallows per-register errors and returns None; when
+        # every register is None the device did not answer at all.
+        if all(bulk.get(ent.vendor_id) is None for ent in self.hub.entities):
+            self.hub.inc_read_error()
+            raise self._record_failure(f"No data received from {self.hub.host}")
+
+        self._record_success()
+
+        client = self.hub.client
+        results: dict[str, Any] = {}
         for ent in self.hub.entities:
             value = bulk.get(ent.vendor_id) if ent.vendor_id else None
-
             key = _entity_key(ent)
+
             if isinstance(value, (int, float)) and not math.isfinite(float(value)):
-                nonfinite_count += 1
-                if nonfinite_count <= warn_cap:
-                    _LOGGER.warning(
-                        "Non-finite value (%s) for %s %s@%s; treating as unavailable",
-                        value,
-                        ent.platform,
-                        ent.input_type or ent.write_type or "register",
-                        ent.address,
-                    )
+                self._log_nonfinite(ent, key, value)
                 results[key] = None
                 continue
 
@@ -269,24 +307,14 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
                     value = round(float(value), int(ent.precision))
 
             # Delegate monotonic clamping to the library client
-            if (
-                _needs_monotonic_clamping(ent)
-                and isinstance(value, (int, float))
-                and client is not None
-            ):
+            if _needs_monotonic_clamping(ent) and isinstance(value, (int, float)):
                 value = client.clamp_monotonic(key, value)
 
             results[key] = value
 
-        if client is not None and client.monotonic_cache:
+        if client.monotonic_cache:
             self._schedule_save()
 
         self._track_energy_staleness(results)
-
-        if nonfinite_count > warn_cap:
-            _LOGGER.debug(
-                "%d additional non-finite values suppressed this cycle",
-                nonfinite_count - warn_cap,
-            )
 
         return results

@@ -225,17 +225,17 @@ async def test_coordinator_handles_no_data(
 
 
 def test_needs_monotonic_clamping_workinghours() -> None:
-    """Test _needs_monotonic_clamping detects workinghours entities."""
-    from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
-    from custom_components.qube_heatpump.entity_defs import EntityDef
+    """Test _needs_monotonic_clamping follows the derived total_increasing class."""
+    from python_qube_heatpump import SENSORS
 
-    # Test workinghours vendor_id
-    ent2 = EntityDef(
-        platform="sensor",
-        name="Working Hours",
-        address=101,
-        vendor_id="workinghours_comp",
+    from custom_components.qube_heatpump.coordinator import _needs_monotonic_clamping
+    from custom_components.qube_heatpump.entity_defs import (
+        EntityDef,
+        _library_to_ha_entity,
     )
+
+    # Working-hour counters are total_increasing via entity_defs
+    ent2 = _library_to_ha_entity(SENSORS["workinghours_heat_hrsret"])
     assert _needs_monotonic_clamping(ent2) is True
 
     # Test total_increasing state_class
@@ -813,60 +813,6 @@ async def test_coordinator_uses_batched_bulk_read(
     assert state.state == "45.0"
 
 
-async def test_coordinator_suppresses_non_finite_warnings_after_cap(
-    hass: HomeAssistant,
-    mock_qube_client: MagicMock,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Only the first 5 non-finite values warn; the rest are one debug summary.
-
-    Reproduces the unreachable-suppression-notice defect: warn_count only
-    ever incremented up to warn_cap, so the old `warn_count > warn_cap`
-    check after the loop could never be true and the debug summary line
-    never fired no matter how many non-finite values were seen.
-    """
-    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
-
-    bulk_values: dict = dict.fromkeys(SENSORS, 45.0)
-    bulk_values |= dict.fromkeys(BINARY_SENSORS, False)
-    bulk_values |= dict.fromkeys(SWITCHES, False)
-
-    # Force exactly 7 sensor values to be non-finite (NaN).
-    nonfinite_keys = list(SENSORS)[:7]
-    for key in nonfinite_keys:
-        bulk_values[key] = float("nan")
-
-    mock_qube_client.get_all_entities = AsyncMock(return_value=bulk_values)
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: "1.2.3.4"},
-        title="Qube Heat Pump",
-    )
-    entry.add_to_hass(hass)
-
-    with caplog.at_level(logging.DEBUG, logger="custom_components.qube_heatpump"):
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    assert entry.state is ConfigEntryState.LOADED
-
-    warning_records = [
-        r
-        for r in caplog.records
-        if r.levelno == logging.WARNING and "Non-finite value" in r.message
-    ]
-    assert len(warning_records) == 5
-
-    debug_records = [
-        r
-        for r in caplog.records
-        if r.levelno == logging.DEBUG and "non-finite" in r.message.lower()
-    ]
-    assert len(debug_records) == 1
-    assert "2 additional" in debug_records[0].message
-
-
 async def test_coordinator_does_not_resolve_ip_per_poll(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
@@ -1030,3 +976,210 @@ async def test_async_clear_monotonic_cache_clears_client_and_store(
     assert coordinator._save_scheduled is False
     coordinator._schedule_save()
     assert coordinator._save_scheduled is True
+
+
+def _all_none_bulk() -> dict:
+    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+
+    return dict.fromkeys({**SENSORS, **BINARY_SENSORS, **SWITCHES})
+
+
+async def test_entities_unavailable_when_bulk_read_returns_no_data(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An all-None bulk read is a failed poll: entities go unavailable, then recover."""
+    coordinator = await _loaded_coordinator(hass)
+    hub = coordinator.hub
+    assert hass.states.get("sensor.qube_1_temp_supply").state == "45.0"
+    read_errors = hub.err_read
+
+    mock_qube_client.get_all_entities = AsyncMock(return_value=_all_none_bulk())
+    freezer.tick(timedelta(seconds=31))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.qube_1_temp_supply").state == STATE_UNAVAILABLE
+    assert hass.states.get("switch.qube_1_modbus_demand").state == STATE_UNAVAILABLE
+    assert coordinator.last_update_success is False
+    assert hub.err_read == read_errors + 1
+
+    add_bulk_read(mock_qube_client)
+    freezer.tick(timedelta(seconds=31))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.qube_1_temp_supply").state == "45.0"
+    assert coordinator.last_update_success is True
+
+
+async def test_partial_none_bulk_read_keeps_entry_available(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """A partially failed block read only marks the missing registers unknown."""
+    coordinator = await _loaded_coordinator(hass)
+    values = _all_none_bulk()
+    values["temp_supply"] = 33.0
+    mock_qube_client.get_all_entities = AsyncMock(return_value=values)
+
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert coordinator.last_update_success is True
+    assert hass.states.get("sensor.qube_1_temp_supply").state == "33.0"
+    assert hass.states.get("sensor.qube_1_temp_return").state == "unknown"
+
+
+async def test_repair_issue_created_after_consecutive_failures_and_cleared(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """Five failed polls raise a non-fixable repair issue; one success clears it."""
+    from custom_components.qube_heatpump.coordinator import (
+        CONSECUTIVE_FAILURES_THRESHOLD,
+    )
+    from homeassistant.helpers import issue_registry as ir
+
+    coordinator = await _loaded_coordinator(hass)
+    entry_id = coordinator.config_entry.entry_id
+    issue_id = f"connection_failed_{entry_id}"
+    registry = ir.async_get(hass)
+
+    mock_qube_client.is_connected = False
+    mock_qube_client.connect = AsyncMock(return_value=False)
+
+    for _ in range(CONSECUTIVE_FAILURES_THRESHOLD - 1):
+        await coordinator.async_refresh()
+    assert registry.async_get_issue(DOMAIN, issue_id) is None
+
+    await coordinator.async_refresh()
+    issue = registry.async_get_issue(DOMAIN, issue_id)
+    assert issue is not None
+    assert issue.is_fixable is False
+    assert issue.translation_key == "connection_failed"
+    assert issue.translation_placeholders == {"host": "1.2.3.4"}
+
+    mock_qube_client.connect = AsyncMock(return_value=True)
+    await coordinator.async_refresh()
+    assert registry.async_get_issue(DOMAIN, issue_id) is None
+
+
+async def test_repair_issue_cleared_after_reload(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+) -> None:
+    """An issue left over from a previous coordinator is deleted on the next success."""
+    from homeassistant.helpers import issue_registry as ir
+
+    coordinator = await _loaded_coordinator(hass)
+    entry_id = coordinator.config_entry.entry_id
+    issue_id = f"connection_failed_{entry_id}"
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        is_fixable=False,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key="connection_failed",
+        translation_placeholders={"host": "1.2.3.4"},
+    )
+
+    await hass.config_entries.async_reload(entry_id)
+    await hass.async_block_till_done()
+
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+
+async def test_coordinator_warns_once_per_non_finite_key(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Each non-finite register warns once; repeats are logged at DEBUG."""
+    from python_qube_heatpump.entities import BINARY_SENSORS, SENSORS, SWITCHES
+
+    bulk_values: dict = dict.fromkeys(SENSORS, 45.0)
+    bulk_values |= dict.fromkeys(BINARY_SENSORS, False)
+    bulk_values |= dict.fromkeys(SWITCHES, False)
+    nonfinite_keys = list(SENSORS)[:7]
+    for key in nonfinite_keys:
+        bulk_values[key] = float("nan")
+    mock_qube_client.get_all_entities = AsyncMock(return_value=bulk_values)
+
+    with caplog.at_level(logging.DEBUG, logger="custom_components.qube_heatpump"):
+        coordinator = await _loaded_coordinator(hass)
+        warnings_first = [
+            r
+            for r in caplog.records
+            if r.levelno == logging.WARNING and "Non-finite value" in r.message
+        ]
+        assert len(warnings_first) == 7
+
+        caplog.clear()
+        await coordinator.async_refresh()
+
+    assert not [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and "Non-finite value" in r.message
+    ]
+    debug = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.DEBUG and "Non-finite value" in r.message
+    ]
+    assert len(debug) == 7
+    for key in nonfinite_keys:
+        assert hass.states.get(f"sensor.qube_1_{key}").state == "unknown"
+
+
+async def test_energy_staleness_keeps_timer_when_power_unknown(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """A None power read neither resets nor advances the staleness timer."""
+    from custom_components.qube_heatpump.coordinator import (
+        ENERGY_STALE_TIMEOUT_SECONDS,
+    )
+
+    coordinator = await _loaded_coordinator(hass)
+    coordinator._energy_last_values.clear()
+    coordinator._energy_stale_since = None
+    coordinator.energy_totals_stale = False
+
+    stuck = {
+        "energy_total_electric": 1000.0,
+        "energy_total_thermic": 4000.0,
+        "power_electric": 900.0,
+    }
+    coordinator._track_energy_staleness(stuck, now=0.0)
+    assert coordinator._energy_stale_since == 0.0
+
+    coordinator._track_energy_staleness(
+        {**stuck, "power_electric": None}, now=ENERGY_STALE_TIMEOUT_SECONDS / 2
+    )
+    assert coordinator._energy_stale_since == 0.0
+    assert coordinator.energy_totals_stale is False
+
+    coordinator._track_energy_staleness(stuck, now=ENERGY_STALE_TIMEOUT_SECONDS)
+    assert coordinator.energy_totals_stale is True
+
+
+async def test_monotonic_cache_flushed_on_unload(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    hass_storage: dict,
+) -> None:
+    """A pending delayed save is written immediately when the entry unloads."""
+    coordinator = await _loaded_coordinator(hass)
+    entry_id = coordinator.config_entry.entry_id
+    assert coordinator._save_scheduled is True
+    assert coordinator._store.key not in hass_storage
+    expected = dict(coordinator.hub.client.monotonic_cache)
+
+    await hass.config_entries.async_unload(entry_id)
+    await hass.async_block_till_done()
+
+    assert hass_storage[coordinator._store.key]["data"] == expected
+    assert coordinator._save_scheduled is False

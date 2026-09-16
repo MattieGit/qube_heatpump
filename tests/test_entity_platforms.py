@@ -14,11 +14,13 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-class TestSwitchUniqueIdFallback:
-    """Tests for switch unique_id fallback logic."""
+class TestSwitchIdentity:
+    """Tests for switch unique_id / naming derived from the library key."""
 
-    async def test_switch_unique_id_fallback(self, hass: HomeAssistant) -> None:
-        """Test switch uses write_type in unique_id when unique_id not set."""
+    async def test_switch_unique_id_and_translation_key(
+        self, hass: HomeAssistant
+    ) -> None:
+        """The scoped unique_id and translation key both come from the library key."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
         from custom_components.qube_heatpump.switch import QubeSwitch
 
@@ -34,11 +36,11 @@ class TestSwitchUniqueIdFallback:
             platform="switch",
             name="Test Switch",
             address=100,
+            vendor_id="my_switch",
+            unique_id="my_switch",
+            translation_key="my_switch",
             write_type="coil",
         )
-        ent.unique_id = None
-        ent.translation_key = None
-        ent.vendor_id = None
 
         switch = QubeSwitch(
             coordinator=coordinator,
@@ -46,101 +48,10 @@ class TestSwitchUniqueIdFallback:
             ent=ent,
         )
 
-        # Always scoped with host_unit prefix for stability
-        assert switch._attr_unique_id == "1.2.3.4_1_qube_switch_coil_100"
-
-    async def test_switch_unique_id_multi_device(self, hass: HomeAssistant) -> None:
-        """Test switch unique_id includes label in multi_device mode."""
-        from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.switch import QubeSwitch
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        ent = EntityDef(
-            platform="switch",
-            name="Test Switch",
-            address=100,
-        )
-        ent.unique_id = None
-        ent.translation_key = None
-        ent.vendor_id = None
-        ent.write_type = None
-
-        switch = QubeSwitch(
-            coordinator=coordinator,
-            hub=hub,
-            ent=ent,
-        )
-
-        # Multi-device unique_id has host_unit prefix for isolation
-        assert switch._attr_unique_id.startswith("1.2.3.4_1_")
-
-    async def test_switch_translation_key_fallback(self, hass: HomeAssistant) -> None:
-        """Test switch uses translation_key when set."""
-        from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.switch import QubeSwitch
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        ent = EntityDef(
-            platform="switch",
-            name="Test Switch",
-            address=100,
-            translation_key="my_switch",
-        )
-        ent.unique_id = "test_unique"
-        ent.vendor_id = None
-
-        switch = QubeSwitch(
-            coordinator=coordinator,
-            hub=hub,
-            ent=ent,
-        )
-
+        assert switch._attr_unique_id == "1.2.3.4_1_my_switch"
+        assert switch.entity_id == "switch.qube1_my_switch"
         assert switch._attr_translation_key == "my_switch"
         assert switch._attr_has_entity_name is True
-
-    async def test_switch_name_fallback(self, hass: HomeAssistant) -> None:
-        """Test switch uses name when translation_key not set."""
-        from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.switch import QubeSwitch
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        ent = EntityDef(
-            platform="switch",
-            name="My Test Switch",
-            address=100,
-        )
-        ent.unique_id = "test_unique"
-        ent.translation_key = None
-        ent.vendor_id = None
-
-        switch = QubeSwitch(
-            coordinator=coordinator,
-            hub=hub,
-            ent=ent,
-        )
-
-        assert switch._attr_name == "My Test Switch"
 
 
 class TestBinarySensorUniqueIdFallback:
@@ -313,41 +224,23 @@ class TestBinarySensorAlarmHelpers:
         assert entity_data_key(ent) == "binary_sensor_discrete_100"
 
 
-class TestSwitchSGReady:
-    """Tests for switch SG Ready handling."""
+async def test_sgready_coils_have_no_switch_entities(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """The SG Ready coils are only exposed through the select entity."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        title="Qube Heat Pump",
+        unique_id=f"{DOMAIN}-1.2.3.4-502",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
 
-    async def test_switch_sgready_properties(self, hass: HomeAssistant) -> None:
-        """Test SG Ready switch has correct properties."""
-        from custom_components.qube_heatpump.entity_defs import EntityDef
-        from custom_components.qube_heatpump.switch import QubeSwitch
-        from homeassistant.const import EntityCategory
-
-        hub = MagicMock()
-        hub.host = "1.2.3.4"
-        hub.unit = 1
-        hub.label = "qube1"
-
-        coordinator = MagicMock()
-        coordinator.data = {}
-
-        ent = EntityDef(
-            platform="switch",
-            name="SG Ready A",
-            address=100,
-            vendor_id="bms_sgready_a",
-        )
-        ent.unique_id = "sgready_a"
-        ent.translation_key = None
-
-        switch = QubeSwitch(
-            coordinator=coordinator,
-            hub=hub,
-            ent=ent,
-        )
-
-        # SG Ready switches should be hidden and in config category
-        assert switch._attr_entity_registry_visible_default is False
-        assert switch._attr_entity_category == EntityCategory.CONFIG
+    assert hass.states.get("switch.qube_1_bms_sgready_a") is None
+    assert hass.states.get("switch.qube_1_bms_sgready_b") is None
+    assert hass.states.get("select.qube_1_sg_ready_mode") is not None
 
 
 async def test_binary_sensor_hidden_vendor_ids(
