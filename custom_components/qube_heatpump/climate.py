@@ -83,17 +83,19 @@ async def async_setup_entry(
         _LOGGER.error("Cannot find bms_summerwinter switch; thermostat not created")
         return
 
-    async_add_entities([
-        QubeVirtualThermostat(
-            entry,
-            hub,
-            coordinator,
-            sensor_entity_id,
-            demand_switch,
-            summer_switch,
-            version,
-        )
-    ])
+    async_add_entities(
+        [
+            QubeVirtualThermostat(
+                entry,
+                hub,
+                coordinator,
+                sensor_entity_id,
+                demand_switch,
+                summer_switch,
+                version,
+            )
+        ]
+    )
 
 
 class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
@@ -217,9 +219,7 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
                     self._target_temp = float(temp)
 
         # Read initial sensor state
-        self._update_temp_from_state(
-            self.hass.states.get(self._sensor_entity_id)
-        )
+        self._update_temp_from_state(self.hass.states.get(self._sensor_entity_id))
         self._sensor_last_seen = time.monotonic()
 
         # Listen for sensor state changes
@@ -264,9 +264,7 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
         except (TypeError, ValueError):
             pass
 
-    async def _async_sensor_changed(
-        self, event: Event[EventStateChangedData]
-    ) -> None:
+    async def _async_sensor_changed(self, event: Event[EventStateChangedData]) -> None:
         """Handle sensor state change."""
         new_state = event.data.get("new_state")
         self._update_temp_from_state(new_state)
@@ -355,12 +353,9 @@ class QubeVirtualThermostat(RestoreEntity, ClimateEntity):
                 if not self._is_cooling:
                     await self._async_set_demand(True)
                     self._is_cooling = True
-            else:
-                # In deadband — turn off
-                if self._is_heating or self._is_cooling:
-                    await self._async_set_demand(False)
-                    self._is_heating = False
-                    self._is_cooling = False
+            # In the deadband: hold the current action (hysteresis), mirroring
+            # HEAT and COOL. Heating only stops once too_hot, cooling only once
+            # too_cold, otherwise demand would toggle at a single threshold.
 
     async def _async_set_demand(self, on: bool) -> None:
         """Set the modbus_demand switch."""

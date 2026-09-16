@@ -23,6 +23,7 @@ from custom_components.qube_heatpump.const import (
 from homeassistant.components.climate import (
     ATTR_TEMPERATURE,
     ClimateEntityFeature,
+    HVACAction,
     HVACMode,
 )
 from homeassistant.const import STATE_ON
@@ -88,7 +89,9 @@ def _summer_calls(mock_qube_client: MagicMock) -> list[bool]:
     ]
 
 
-async def _set_hvac_mode(hass: HomeAssistant, entity_id: str, hvac_mode: HVACMode) -> None:
+async def _set_hvac_mode(
+    hass: HomeAssistant, entity_id: str, hvac_mode: HVACMode
+) -> None:
     """Call the climate.set_hvac_mode service and settle the event loop."""
     await hass.services.async_call(
         "climate",
@@ -285,11 +288,54 @@ async def test_heat_cool_mode_switches_summer_mode_and_demand(
     assert _demand_calls(mock_qube_client) == [False, True]
     assert True in _summer_calls(mock_qube_client)
 
-    # Back to deadband while cooling -> demand off
+    # Back to deadband while cooling -> hysteresis holds, keep cooling
     mock_qube_client.write_switch.reset_mock()
     hass.states.async_set(SENSOR_ENTITY_ID, "20.5")
     await hass.async_block_till_done()
-    assert _demand_calls(mock_qube_client) == [False]
+    assert _demand_calls(mock_qube_client) == []
+
+    # Too cold again -> cooling stops and heating starts in one pass
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.1")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [False, True]
+    assert False in _summer_calls(mock_qube_client)
+
+
+async def test_heat_cool_deadband_keeps_hysteresis(
+    hass: HomeAssistant, mock_qube_client: MagicMock
+) -> None:
+    """HEAT_COOL must not short-cycle: heating holds through the deadband.
+
+    Regression test: the deadband branch used to turn demand off as soon as
+    the temperature was no longer ``too_cold`` (the same threshold at which
+    heating started), so demand toggled every time the reading crossed
+    target - cold_tolerance.
+    """
+    entity_id = await _setup_thermostat_entry(hass, initial_temp="20.5")
+    await _set_hvac_mode(hass, entity_id, HVACMode.HEAT_COOL)
+
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.1")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [True]
+
+    # Crossing target - 0.3 upward stays in the deadband: no demand write
+    mock_qube_client.write_switch.reset_mock()
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.3")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == []
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.HEATING
+
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.6")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == []
+
+    # Only reaching target + 0.3 ends heating (and, in HEAT_COOL, starts cooling)
+    hass.states.async_set(SENSOR_ENTITY_ID, "20.8")
+    await hass.async_block_till_done()
+    assert _demand_calls(mock_qube_client) == [False, True]
+    assert hass.states.get(entity_id).attributes["hvac_action"] == HVACAction.COOLING
 
 
 async def test_off_mode_turns_off_demand(
