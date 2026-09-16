@@ -256,6 +256,9 @@ async def test_thermostat_not_created_when_sensor_missing(
         s for s in hass.states.async_all() if s.entity_id.startswith("climate.")
     ]
     assert climate_states == []
+    # Without a thermostat there is nothing to time out: the diagnostic
+    # binary sensor must not be created either (it would stay off forever).
+    assert hass.states.get(TIMEOUT_SENSOR_ENTITY_ID) is None
 
 
 async def test_heat_mode_hysteresis(
