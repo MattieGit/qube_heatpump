@@ -162,11 +162,11 @@ The controller display distinguishes three DHW setpoints (**Min**, **User**, **M
 
 Number entities are created for the writable temperature registers:
 
-| Entity | Description |
-|--------|-------------|
-| `number.qube_tapw_timeprogram_dhwsetp_nolinq` | DHW setpoint (Modbus), register 173 — the setpoint used by forced DHW runs |
-| `number.qube_usr_pid_heatsetp` | Heating setpoint (no curve), register 101 — supply setpoint used when the heating curve is disabled |
-| `number.qube_usr_pid_coolsetp` | Cooling setpoint (no curve), register 103 |
+| Entity | Description | Range |
+|--------|-------------|-------|
+| `number.qube_tapw_timeprogram_dhwsetp_nolinq` | DHW setpoint (Modbus), register 173 — the setpoint used by forced DHW runs | 40-65 °C |
+| `number.qube_usr_pid_heatsetp` | Heating setpoint (no curve), register 101 — supply setpoint used when the heating curve is disabled | 20-65 °C |
+| `number.qube_usr_pid_coolsetp` | Cooling setpoint (no curve), register 103 | 7-25 °C |
 
 Each number entity has a read-only sensor twin with the same key (e.g. `sensor.qube_usr_pid_heatsetp`).
 
@@ -232,7 +232,7 @@ Daily sensors reset at midnight (local time). Use these for daily statistics and
 | `sensor.qube_scop_ch_day` | Daily | CH only |
 | `sensor.qube_scop_dhw_day` | Daily | DHW only |
 
-SCOP values are calculated by dividing thermal yield by electrical consumption. Values outside the 0-10 range are filtered as implausible.
+SCOP values are calculated by dividing thermal yield by electrical consumption. They are *unknown* until at least 0.1 kWh of electricity has been consumed in the current cycle, and values outside the 0-10 range are reported as *unknown* rather than 0. Daily and monthly cycles reset at local midnight and on the first of the month (local time).
 
 ### Status Sensors
 

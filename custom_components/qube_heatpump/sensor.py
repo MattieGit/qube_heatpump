@@ -108,6 +108,7 @@ def _find_entity(hub: QubeHub, vendor_id: str) -> EntityDef | None:
 # Writes go through the shared hub; no per-platform throttling needed.
 PARALLEL_UPDATES = 0
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: QubeConfigEntry,

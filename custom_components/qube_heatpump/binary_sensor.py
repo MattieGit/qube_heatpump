@@ -91,6 +91,7 @@ def _derive_entity_category(vendor_id: str | None) -> EntityCategory | None:
 # Writes go through the shared hub; no per-platform throttling needed.
 PARALLEL_UPDATES = 0
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: QubeConfigEntry,
@@ -130,9 +131,7 @@ async def async_setup_entry(
     if entry.options.get(CONF_THERMOSTAT_ENABLED) and entry.options.get(
         CONF_THERMOSTAT_SENSOR
     ):
-        entities.append(
-            QubeThermostatTimeoutSensor(coordinator, hub, entry, version)
-        )
+        entities.append(QubeThermostatTimeoutSensor(coordinator, hub, entry, version))
 
     async_add_entities(entities)
 

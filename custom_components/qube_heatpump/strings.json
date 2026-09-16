@@ -549,7 +549,7 @@
     },
     "write_register": {
       "name": "Write holding register",
-      "description": "Write a value to a Modbus holding register exposed by the Qube heat pump, using the data type of the matching writable entity.",
+      "description": "Write a value by register address to one of the writable Qube entities (setpoint registers or coils). Coils accept only 0 or 1; unknown or read-only addresses are rejected. Prefer the number and switch entities for normal use.",
       "fields": {
         "address": {
           "name": "Register address",

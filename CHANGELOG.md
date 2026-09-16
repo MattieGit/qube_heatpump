@@ -3,7 +3,21 @@
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
 ## 2026.9.3 — unreleased
-- chore: Quality pass (see PR).
+Quality pass based on a full code review against the Home Assistant core integration. No new features; several long-standing bugs fixed.
+- fix: Daily and monthly energy/SCOP cycles reset at **local** midnight and on the 1st (local), not at 00:00 UTC; totals restored after a restart across a cycle boundary are discarded instead of carried into the new cycle; the reset also happens when the heat pump is idle at midnight.
+- fix: Virtual thermostat heat/cool mode no longer short-cycles (the deadband keeps hysteresis); heating/cooling flags only change after a successful Modbus write (failed writes are retried); `bms_summerwinter` is only written when it differs; control passes are serialised; the sensor timeout also trips when no reading ever arrived; `hvac_action` follows the real `modbus_demand` coil; the timeout binary sensor is only created when a thermostat exists; unloading an idle thermostat no longer writes `modbus_demand`.
+- fix: Entities become **unavailable** when the heat pump stops answering (every register None) and recover automatically; the connection repair issue is created after 5 failed polls and always cleared on recovery or reload (it no longer offers a fix button that did nothing).
+- fix: Connect and firmware-version read happen in the coordinator's setup step; an unreachable device now retries setup instead of loading with version "unknown".
+- fix: `compressor_speed` keeps its 0-decimal precision; `%` sensors no longer carry the `power_factor` device class; `L/min` sensors get `volume_flow_rate`; the raw `status_code` register is no longer an enum; device and state classes are proper HA enums.
+- fix: Number entity ranges per register: DHW 40-65 °C, heating 20-65 °C, **cooling 7-25 °C** (was 20-65 for all); temperature device class.
+- fix: Failed writes from number, select, switch and the `write_register` service raise translated errors instead of a raw traceback; `write_register` rejects fractional coil values and unknown addresses; the SG Ready select shows *unknown* while a coil is unreadable instead of the last assumed mode.
+- fix: SCOP sensors are measurements (not totals) and report *unknown* instead of 0 before 0.1 kWh has been used in the cycle or when the ratio is implausible.
+- fix: Reconfigure and options flows share one host validator (TCP probe + duplicate check); reconfigure uses HA's standard success abort; the legacy `unit_id` option is no longer dropped by the options flow.
+- fix: Removing the integration deletes its `.storage/qube_heatpump_monotonic_<entry_id>` file; unloading flushes a pending cache save.
+- change: Status and valve sensors gain `device_class: enum` with an `options` list; error-counter sensors are `total_increasing`; the info sensor loses its count attributes; six library alias sensors (`flow_rate`, `setpoint_room_*`, `setpoint_dhw`) are disabled by default for new installs.
+- change: `group` is a manifest dependency; `PARALLEL_UPDATES = 0` on all platforms; `quality_scale.yaml` now lists every rule honestly.
+- chore: Sensor platform rewritten around entity descriptions and tables (1268 → ~900 lines); tariff sensor classes merged; dead code, dead fallbacks, orphan translations and icons removed; Dutch translations completed with consistent SWW/instelpunt terminology; docs corrected (15 s polling, real entity IDs, GPL-3.0 license, removal instructions, changelog backfill).
+- chore: Repo hygiene: the stray copy of Home Assistant core's `pyproject.toml` replaced by this repo's own tooling config; `template_sensors.yaml` and planning documents removed; CI tests on Python 3.13/3.14 against a pinned test framework and runs ruff.
 
 ## 2026.9.2 — 2026-09-16
 - feat: DHW schedule visibility. `binary_sensor.<label>_dhw_schedule` (diagnostic) is on when the schedule option is enabled and carries start, end, setpoint source, fixed setpoint, window state and last start/end as attributes; `sensor.<label>_dhw_schedule_next_start` (timestamp) shows the next scheduled start. Both update when the scheduler fires.

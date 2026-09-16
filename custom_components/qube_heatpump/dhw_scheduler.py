@@ -199,11 +199,15 @@ async def async_setup_dhw_schedule(
     for ent in hub.entities:
         if ent.vendor_id == "tapw_timeprogram_dhwsetp_nolinq":
             dhw_setpoint_ent = ent
-        elif ent.vendor_id == "tapw_timeprogram_bms_forced" and ent.platform == "switch":
+        elif (
+            ent.vendor_id == "tapw_timeprogram_bms_forced" and ent.platform == "switch"
+        ):
             dhw_switch_ent = ent
 
     if dhw_switch_ent is None:
-        _LOGGER.error("Cannot find tapw_timeprogram_bms_forced switch; DHW schedule not set up")
+        _LOGGER.error(
+            "Cannot find tapw_timeprogram_bms_forced switch; DHW schedule not set up"
+        )
         return []
 
     async def _dhw_start(_now: Any) -> None:
@@ -248,9 +252,7 @@ async def async_setup_dhw_schedule(
         "DHW schedule enabled %s-%s, setpoint source: %s",
         state.start_time,
         state.end_time,
-        "controller Modbus setpoint"
-        if setpoint is None
-        else f"fixed {setpoint:.1f}°C",
+        "controller Modbus setpoint" if setpoint is None else f"fixed {setpoint:.1f}°C",
     )
 
     return [cancel_start, cancel_end]

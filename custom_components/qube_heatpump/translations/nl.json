@@ -549,7 +549,7 @@
         },
         "write_register": {
             "name": "Schrijf holdingregister",
-            "description": "Schrijf een waarde naar een Modbus holding register van de Qube warmtepomp, met het datatype van de bijbehorende schrijfbare entiteit.",
+            "description": "Schrijf een waarde op registeradres naar een van de schrijfbare Qube-entiteiten (instelpuntregisters of spoelen). Spoelen accepteren alleen 0 of 1; onbekende of alleen-lezen adressen worden geweigerd. Gebruik bij voorkeur de number- en switch-entiteiten.",
             "fields": {
                 "address": {
                     "name": "Registeradres",
