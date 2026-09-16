@@ -29,6 +29,26 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Enable custom integrations for all tests."""
 
 
+@pytest.fixture(autouse=True)
+def stable_integration_version(request: pytest.FixtureRequest) -> Generator[None]:
+    """Pin the version the info sensor reports.
+
+    It comes from manifest.json, so without this every release bump would
+    rewrite the sensor snapshots. Tests that assert the real wiring carry
+    the ``real_integration_version`` marker.
+    """
+    if "real_integration_version" in request.keywords:
+        yield
+        return
+    integration = MagicMock()
+    integration.version = "0.0.0"
+    with patch(
+        "custom_components.qube_heatpump.sensor.async_get_integration",
+        AsyncMock(return_value=integration),
+    ):
+        yield
+
+
 @pytest.fixture
 def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
     """Use the Home Assistant serializer; snapshots live in tests/snapshots."""

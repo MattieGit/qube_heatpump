@@ -57,6 +57,7 @@ async def test_sensor_refresh_updates_value(
     assert hass.states.get("sensor.qube_1_temp_supply").state == "50.0"
 
 
+@pytest.mark.real_integration_version
 async def test_info_sensor_exposes_hub_metadata(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,

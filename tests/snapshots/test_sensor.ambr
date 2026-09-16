@@ -1207,7 +1207,7 @@
       'firmware_version': '4.10',
       'friendly_name': 'qube 1 Info',
       'host': '1.2.3.4',
-      'integration_version': '2026.9.2',
+      'integration_version': '0.0.0',
       'ip_address': '1.2.3.4',
       'label': 'qube_1',
       'unit_id': 1,

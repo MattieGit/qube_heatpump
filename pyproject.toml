@@ -23,6 +23,9 @@ forced-separate = ["tests"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "real_integration_version: let the info sensor report the real manifest version",
+]
 
 [tool.mypy]
 python_version = "3.13"
