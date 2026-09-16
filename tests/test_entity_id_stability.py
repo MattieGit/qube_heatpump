@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
     from homeassistant.core import HomeAssistant
 
-SNAPSHOT_PATH = Path(__file__).parent / "snapshots" / "entity_ids.json"
+SNAPSHOT_PATH = Path(__file__).parent / "fixtures" / "entity_ids.json"
 
 
 def _collect_entities(hass: HomeAssistant, entry: MockConfigEntry) -> list[dict]:

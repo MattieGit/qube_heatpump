@@ -161,7 +161,7 @@ def mock_config_entry(config_entry_options: dict[str, Any]) -> MockConfigEntry:
     """Return a config entry for host 1.2.3.4.
 
     It carries no name, so setup assigns the default "qube 1" and every
-    entity id starts with ``qube_1_`` (see tests/snapshots/entity_ids.json).
+    entity id starts with ``qube_1_`` (see tests/fixtures/entity_ids.json).
     """
     return MockConfigEntry(
         domain=DOMAIN,
