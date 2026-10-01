@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2026.10.0 — unreleased
+## 2026.10.0 — 2026-10-01
 - chore: Require python-qube-heatpump 1.15.0.
 - fix: When the heat pump stops answering, a poll now gives up after two Modbus requests instead of retrying every register (a silent device held a poll for about 96 s, now about 24 s), and the client reconnects on the next poll.
 - fix: Setpoint writes outside the supported range (DHW 40-65 °C, heating 20-65 °C, cooling 7-25 °C) or non-numeric values are refused by the library before anything is sent; through the `write_register` service they raise the existing write error.
