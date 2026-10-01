@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.0 — unreleased
+- chore: Require python-qube-heatpump 1.15.0.
+- fix: When the heat pump stops answering, a poll now gives up after two Modbus requests instead of retrying every register (a silent device held a poll for about 96 s, now about 24 s), and the client reconnects on the next poll.
+- fix: Setpoint writes outside the supported range (DHW 40-65 °C, heating 20-65 °C, cooling 7-25 °C) or non-numeric values are refused by the library before anything is sent; through the `write_register` service they raise the existing write error.
+- fix: SG Ready mode is written to both coils in one request, so a failed write no longer leaves a half-applied mode.
+
 ## 2026.9.5 — unreleased
 - fix: `binary_sensor.<label>_energy_totals_stale` now watches the controller's raw counters instead of the clamped values, so a counter that stepped back slightly and is climbing again (the clamp holding the old maximum for Home Assistant) is no longer reported as stalled.
 - feat: The diagnostics download shows `raw_data`, `coordinator_data` and `monotonic_cache` side by side, plus the stale flag, so a frozen controller counter can be told apart from the clamp without guessing.
