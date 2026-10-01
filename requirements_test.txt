@@ -3,4 +3,4 @@ pytest>=8.0
 # (0.13.365 == HA 2026.9.2, requires Python >= 3.14). Bump deliberately
 # together with a local run; a new syrupy major rewrites the .ambr snapshots.
 pytest-homeassistant-custom-component==0.13.365
-python-qube-heatpump>=1.14.0
+python-qube-heatpump>=1.15.0
