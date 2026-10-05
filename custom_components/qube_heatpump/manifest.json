@@ -3,13 +3,13 @@
   "name": "Qube heat pump",
   "codeowners": ["@MattieGit"],
   "config_flow": true,
-  "dependencies": ["group"],
+  "dependencies": ["group", "zeroconf"],
   "documentation": "https://github.com/MattieGit/qube_heatpump/blob/main/wiki/README.md",
   "integration_type": "hub",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/MattieGit/qube_heatpump/issues",
   "loggers": ["python_qube_heatpump"],
   "quality_scale": "bronze",
-  "requirements": ["python-qube-heatpump>=1.15.0"],
-  "version": "2026.10.0"
+  "requirements": ["python-qube-heatpump>=1.16.0"],
+  "version": "2026.10.1"
 }
