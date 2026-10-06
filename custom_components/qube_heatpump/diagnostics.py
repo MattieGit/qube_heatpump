@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.diagnostics import async_redact_data
@@ -31,6 +32,7 @@ async def async_get_config_entry_diagnostics(
             "options": entry.options,
         },
         "firmware_version": data.version,
+        "mdns": asdict(coordinator.mdns_info) if coordinator.mdns_info else None,
         "hub": {
             "host": hub.host,
             "port": hub.port,

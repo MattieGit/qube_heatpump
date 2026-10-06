@@ -2,10 +2,11 @@
 
 from datetime import timedelta
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from freezegun.api import FrozenDateTimeFactory
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from python_qube_heatpump import QubeDeviceInfo
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.qube_heatpump.diagnostics import (
@@ -96,3 +97,29 @@ async def test_diagnostics_show_raw_values_next_to_clamped_ones(
     assert diagnostics["coordinator_data"]["energy_total_thermic"] == 4000.0
     assert diagnostics["monotonic_cache"]["energy_total_thermic"] == 4000.0
     assert diagnostics["energy_totals_stale"] is False
+
+
+async def test_diagnostics_include_the_mdns_record(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The controller's mDNS record (panel version, firmware, uuid) is shown."""
+    mock_mdns_info.return_value = QubeDeviceInfo(
+        uuid="000100000007B5EA",
+        software_version="4.1.00",
+        controller_firmware="v5.1.007",
+        project_name="DEQSIHPB000CR",
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
+
+    assert diagnostics["firmware_version"] == "4.1.00"
+    assert diagnostics["mdns"] == {
+        "uuid": "000100000007B5EA",
+        "software_version": "4.1.00",
+        "controller_firmware": "v5.1.007",
+        "project_name": "DEQSIHPB000CR",
+    }

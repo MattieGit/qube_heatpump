@@ -1,15 +1,18 @@
 """Tests for the Qube Heat Pump integration setup and unloading."""
 
+from dataclasses import replace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from freezegun.api import FrozenDateTimeFactory
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from python_qube_heatpump import QubeDeviceInfo
 
 from custom_components.qube_heatpump import _alarm_group_object_id, _resolve_entry
 from custom_components.qube_heatpump.const import CONF_HOST, CONF_NAME, DOMAIN
 from custom_components.qube_heatpump.coordinator import STORAGE_KEY_PREFIX
+from custom_components.qube_heatpump.hub import MDNS_LOOKUP_TIMEOUT
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
@@ -81,25 +84,52 @@ async def test_setup_retries_when_device_unreachable(
     assert not hass.states.async_all()
 
 
+MDNS_INFO = QubeDeviceInfo(
+    uuid="000100000007B5EA",
+    software_version="4.1.00",
+    controller_firmware="v5.1.007",
+    project_name="DEQSIHPB000CR",
+)
+
+
 @pytest.mark.parametrize(
-    ("reported", "expected"),
-    [("4.10", "4.10"), (None, "unknown")],
-    ids=["readable", "unreadable"],
+    ("reported", "mdns_info", "expected"),
+    [
+        ("4.10", None, "4.10"),
+        (None, None, "unknown"),
+        ("0.0", MDNS_INFO, "4.1.00"),
+        (None, MDNS_INFO, "4.1.00"),
+        ("0.0", replace(MDNS_INFO, software_version=None), "0.0"),
+    ],
+    ids=[
+        "register",
+        "unreadable",
+        "mdns_preferred",
+        "mdns_only",
+        "mdns_without_version",
+    ],
 )
 async def test_software_version_read_during_setup(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
     mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_async_zeroconf: MagicMock,
     mock_config_entry: MockConfigEntry,
     reported: str | None,
+    mdns_info: QubeDeviceInfo | None,
     expected: str,
 ) -> None:
-    """The firmware version read at setup lands on the device; failure is not fatal."""
+    """The panel version from mDNS wins over register 77; failure is not fatal."""
     mock_qube_client.async_get_software_version = AsyncMock(return_value=reported)
+    mock_mdns_info.return_value = mdns_info
 
     await setup_integration(hass, mock_config_entry)
 
     assert mock_config_entry.state is ConfigEntryState.LOADED
+    mock_mdns_info.assert_awaited_once_with(
+        "1.2.3.4", mock_async_zeroconf, timeout=MDNS_LOOKUP_TIMEOUT
+    )
     assert mock_config_entry.runtime_data.version == expected
     device = device_registry.async_get_device_by_identifier(
         (DOMAIN, mock_config_entry.entry_id), mock_config_entry.entry_id

@@ -683,6 +683,7 @@
       'port': '**REDACTED**',
       'resolved_ip': '**REDACTED**',
     }),
+    'mdns': None,
     'monotonic_cache': dict({
       'energy_total_electric': 45.0,
       'energy_total_thermic': 45.0,

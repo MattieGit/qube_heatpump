@@ -30,6 +30,21 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 
 
 @pytest.fixture(autouse=True)
+def auto_mock_zeroconf(mock_async_zeroconf: MagicMock) -> None:
+    """Use the test harness zeroconf instead of opening real sockets."""
+
+
+@pytest.fixture
+def mock_mdns_info() -> Generator[AsyncMock]:
+    """The mDNS lookup; finds nothing unless a test sets a return value."""
+    with patch(
+        "custom_components.qube_heatpump.hub.async_get_device_info",
+        AsyncMock(return_value=None),
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
 def stable_integration_version(request: pytest.FixtureRequest) -> Generator[None]:
     """Pin the version the info sensor reports.
 
@@ -94,7 +109,9 @@ def read_value(client_values: dict[str, Any], key: str) -> Any:
 
 
 @pytest.fixture
-def mock_qube_client(client_values: dict[str, Any]) -> Generator[MagicMock]:
+def mock_qube_client(
+    client_values: dict[str, Any], mock_mdns_info: AsyncMock
+) -> Generator[MagicMock]:
     """Mock the library client the hub creates.
 
     Reads come from ``client_values``; successful writes land in the same

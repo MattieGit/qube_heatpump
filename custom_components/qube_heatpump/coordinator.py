@@ -10,12 +10,15 @@ import time
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from python_qube_heatpump import QubeDeviceInfo
+
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
+from homeassistant.components import zeroconf
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
@@ -71,6 +74,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
 
     config_entry: ConfigEntry
     sw_version: str | None = None
+    mdns_info: QubeDeviceInfo | None = None
 
     def __init__(self, hass: HomeAssistant, hub: QubeHub, entry: ConfigEntry) -> None:
         """Initialize the coordinator."""
@@ -110,6 +114,12 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             ) from err
         # The library returns None (and logs) when the register is unreadable
         self.sw_version = await self.hub.async_get_software_version()
+        # Register 77 reads 0.0 on recent firmware; the version shown on the
+        # panel is only advertised over mDNS, so prefer that when available.
+        aiozc = await zeroconf.async_get_async_instance(self.hass)
+        self.mdns_info = await self.hub.async_get_mdns_info(aiozc)
+        if self.mdns_info is not None and self.mdns_info.software_version:
+            self.sw_version = self.mdns_info.software_version
 
     async def async_shutdown(self) -> None:
         """Stop polling and flush a pending monotonic cache save.

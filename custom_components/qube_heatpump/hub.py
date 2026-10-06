@@ -5,14 +5,28 @@ from __future__ import annotations
 import contextlib
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from python_qube_heatpump import BINARY_SENSORS, SENSORS, SWITCHES, QubeClient
+from python_qube_heatpump import (
+    BINARY_SENSORS,
+    SENSORS,
+    SWITCHES,
+    QubeClient,
+    QubeDeviceInfo,
+    async_get_device_info,
+)
 
 from .entity_defs import EntityDef, _library_to_ha_entity
 from .helpers import async_resolve_host, entity_data_key
 
+if TYPE_CHECKING:
+    from zeroconf.asyncio import AsyncZeroconf
+
 _LOGGER = logging.getLogger(__name__)
+
+# Cap on the mDNS lookup during setup; a network that does not forward mDNS
+# (e.g. across VLANs) delays the setup by at most this long.
+MDNS_LOOKUP_TIMEOUT = 3.0
 
 
 class QubeHub:
@@ -130,6 +144,12 @@ class QubeHub:
     async def async_get_software_version(self) -> str | None:
         """Get the firmware software version from the device (None on failure)."""
         return await self.client.async_get_software_version()
+
+    async def async_get_mdns_info(self, aiozc: AsyncZeroconf) -> QubeDeviceInfo | None:
+        """Look up the controller's mDNS advertisement (None if not found)."""
+        return await async_get_device_info(
+            self._host, aiozc, timeout=MDNS_LOOKUP_TIMEOUT
+        )
 
     async def async_get_all_entities(self) -> dict[str, Any]:
         """Read all entity values in a few batched Modbus block reads."""
