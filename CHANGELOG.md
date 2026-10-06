@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
-## 2026.10.1 — unreleased
+## 2026.10.1 — 2026-10-06
 - fix: The device's software version now shows the version on the heat pump panel (for example 4.1.00). It is read from the controller's mDNS advertisement, because the Modbus software version register reads 0.0 on recent firmware. When mDNS is not reachable (for example across VLANs without an mDNS reflector) the register value is used as before; setup waits at most 3 s for the lookup.
 - feat: The diagnostics download includes the controller's mDNS record (`mdns`): panel software version, controller firmware, project name and UUID.
 - chore: Require python-qube-heatpump 1.16.0; the integration now depends on Home Assistant's `zeroconf` integration.
