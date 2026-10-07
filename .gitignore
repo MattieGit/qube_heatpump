@@ -53,3 +53,5 @@ uv.lock
 tasks/
 .claude/
 .superpowers/
+# Personal Claude Code notes (loaded next to CLAUDE.md, never committed)
+CLAUDE.local.md
