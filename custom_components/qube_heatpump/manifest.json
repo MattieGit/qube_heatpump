@@ -10,6 +10,12 @@
   "issue_tracker": "https://github.com/MattieGit/qube_heatpump/issues",
   "loggers": ["python_qube_heatpump"],
   "quality_scale": "bronze",
-  "requirements": ["python-qube-heatpump>=1.16.0"],
-  "version": "2026.10.1"
+  "requirements": ["python-qube-heatpump>=1.17.0"],
+  "version": "2026.10.3",
+  "zeroconf": [
+    {
+      "type": "_workstation._tcp.local.",
+      "properties": { "Vendor": "000a5c", "ProjectName": "deqsihpb*" }
+    }
+  ]
 }

@@ -37,9 +37,7 @@ rules:
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable: done
-  parallel-updates:
-    status: todo
-    comment: Set on button, number, select and switch; sensor, binary_sensor and climate still need PARALLEL_UPDATES.
+  parallel-updates: done
   reauthentication-flow:
     status: exempt
     comment: Modbus TCP has no authentication.
@@ -48,12 +46,8 @@ rules:
   # Gold
   devices: done
   diagnostics: done
-  discovery-update-info:
-    status: exempt
-    comment: No discovery mechanism available for Modbus devices.
-  discovery:
-    status: exempt
-    comment: Modbus/TCP devices cannot be auto-discovered on the network.
+  discovery-update-info: done
+  discovery: done
   docs-data-update: done
   docs-examples: done
   docs-known-limitations: done

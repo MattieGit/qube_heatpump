@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
+import ipaddress
 import logging
 from typing import TYPE_CHECKING, Any
 
+from python_qube_heatpump import QubeClient, async_get_device_info, parse_device_info
 import voluptuous as vol
 
+from homeassistant.components import zeroconf
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -22,6 +24,7 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    TextSelector,
     TimeSelector,
 )
 
@@ -44,9 +47,12 @@ from .const import (
     DOMAIN,
 )
 from .helpers import async_resolve_host
+from .hub import MDNS_LOOKUP_TIMEOUT
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +69,21 @@ DHW_KEYS = (
 
 
 def _unique_id(host: str, port: int) -> str:
+    """Host-based unique id, used until the controller's mDNS uuid is known."""
     return f"{DOMAIN}-{host}-{port}"
+
+
+def _is_controller_uuid(unique_id: str | None) -> bool:
+    """Return True when the unique id is the controller's mDNS uuid."""
+    return unique_id is not None and not unique_id.startswith(f"{DOMAIN}-")
+
+
+def _is_ip_address(host: str) -> bool:
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return True
 
 
 async def _async_find_conflicting_entry(
@@ -88,8 +108,9 @@ async def _async_validate_host(
 ) -> str | None:
     """Validate a host for a new or changed entry.
 
-    Returns an error key (``duplicate_ip`` or ``cannot_connect``) or None when
-    the host is unique among the other entries and accepts a TCP connection.
+    Returns an error key (``duplicate_ip``, ``cannot_connect`` or
+    ``not_qube_device``) or None when the host is unique among the other
+    entries and answers like a Qube controller over Modbus.
     """
     entries = [
         entry
@@ -104,22 +125,51 @@ async def _async_validate_host(
         )
         return "duplicate_ip"
 
+    client = QubeClient(host, port)
     try:
-        _, writer = await asyncio.wait_for(
-            asyncio.open_connection(host, port), timeout=CONNECT_TIMEOUT
-        )
+        async with asyncio.timeout(CONNECT_TIMEOUT):
+            if not await client.connect():
+                return "cannot_connect"
+            # Any readable software-version register counts, including 0
+            if not await client.async_verify_device():
+                return "not_qube_device"
     except (OSError, TimeoutError):
         return "cannot_connect"
-    writer.close()
-    with contextlib.suppress(OSError):
-        await writer.wait_closed()
+    finally:
+        await client.close()
     return None
+
+
+async def _async_check_host(
+    hass: HomeAssistant, host: str, port: int, *, entry: ConfigEntry | None = None
+) -> tuple[str | None, str]:
+    """Validate a host and work out the unique id its entry gets.
+
+    Returns an error key (or None) and the unique id: the controller's mDNS
+    uuid when it answers, otherwise the entry's existing uuid, otherwise a
+    host-based id. An entry keyed on a uuid refuses a different controller.
+    """
+    if error := await _async_validate_host(
+        hass, host, port, skip_entry_id=entry.entry_id if entry else None
+    ):
+        return error, ""
+
+    aiozc = await zeroconf.async_get_async_instance(hass)
+    device = await async_get_device_info(host, aiozc, timeout=MDNS_LOOKUP_TIMEOUT)
+    current = entry.unique_id if entry else None
+    if _is_controller_uuid(current):
+        if device is not None and device.uuid != current:
+            return "different_heat_pump", ""
+        return None, str(current)
+    return None, device.uuid if device else _unique_id(host, port)
 
 
 class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Qube Heat Pump."""
 
     VERSION = 2
+
+    _discovered_host: str
 
     @staticmethod
     @callback
@@ -142,10 +192,11 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
             name = user_input.get(CONF_NAME, "").strip() or self._default_name()
             port = DEFAULT_PORT
 
-            if error := await _async_validate_host(self.hass, host, port):
+            error, unique_id = await _async_check_host(self.hass, host, port)
+            if error:
                 errors[CONF_HOST] = error
             else:
-                await self.async_set_unique_id(_unique_id(host, port))
+                await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title=name,
@@ -159,7 +210,7 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         schema = vol.Schema(
             {
-                host_field: str,
+                host_field: TextSelector(),
                 vol.Optional(CONF_NAME, default=self._default_name()): str,
             }
         )
@@ -168,6 +219,66 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=schema,
             errors=errors,
             description_placeholders={"docs_url": DOCS_URL},
+        )
+
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle a Qube discovered through its mDNS advertisement."""
+        if (device := parse_device_info(discovery_info.properties)) is None:
+            return self.async_abort(reason="not_qube_device")
+
+        host = discovery_info.host
+        await self.async_set_unique_id(device.uuid)
+        # Follow a new DHCP address, but keep a host name the user entered
+        entry = self.hass.config_entries.async_entry_for_domain_unique_id(
+            DOMAIN, device.uuid
+        )
+        updates = (
+            {CONF_HOST: host}
+            if entry is not None and _is_ip_address(entry.data.get(CONF_HOST, ""))
+            else None
+        )
+        # The entry's update listener reloads it after a data change
+        self._abort_if_unique_id_configured(updates=updates, reload_on_update=False)
+
+        # Entries set up before mDNS was seen still have a host-based id; they
+        # adopt the uuid on their next start
+        if await _async_find_conflicting_entry(
+            self._async_current_entries(include_ignore=False), host
+        ):
+            return self.async_abort(reason="already_configured")
+
+        self._discovered_host = host
+        self.context["title_placeholders"] = {"host": host}
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm a discovered Qube and choose its device name."""
+        errors: dict[str, str] = {}
+        host = self._discovered_host
+
+        if user_input is not None:
+            name = user_input.get(CONF_NAME, "").strip() or self._default_name()
+            port = DEFAULT_PORT
+            error, _ = await _async_check_host(self.hass, host, port)
+            if error:
+                errors["base"] = error
+            else:
+                return self.async_create_entry(
+                    title=name,
+                    data={CONF_HOST: host, CONF_PORT: port, CONF_NAME: name},
+                )
+
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            data_schema=vol.Schema(
+                {vol.Optional(CONF_NAME, default=self._default_name()): str}
+            ),
+            description_placeholders={"host": host},
+            errors=errors,
         )
 
     async def async_step_reconfigure(
@@ -187,16 +298,12 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
         host = user_input[CONF_HOST]
         port = user_input[CONF_PORT]
         name = user_input.get(CONF_NAME, "").strip() or entry.title
-        unique_id = _unique_id(host, port)
+        error, unique_id = await _async_check_host(self.hass, host, port, entry=entry)
+        if error:
+            return self._show_reconfigure_form(entry, {CONF_HOST: error})
         for other in self._async_current_entries():
             if other.entry_id != entry.entry_id and other.unique_id == unique_id:
                 return self.async_abort(reason="already_configured")
-
-        error = await _async_validate_host(
-            self.hass, host, port, skip_entry_id=entry.entry_id
-        )
-        if error:
-            return self._show_reconfigure_form(entry, {CONF_HOST: error})
 
         return self.async_update_reload_and_abort(
             entry,
@@ -210,7 +317,9 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         schema = vol.Schema(
             {
-                vol.Required(CONF_HOST, default=entry.data.get(CONF_HOST)): str,
+                vol.Required(
+                    CONF_HOST, default=entry.data.get(CONF_HOST)
+                ): TextSelector(),
                 vol.Required(
                     CONF_PORT, default=entry.data.get(CONF_PORT, DEFAULT_PORT)
                 ): int,
@@ -230,6 +339,7 @@ class OptionsFlowHandler(OptionsFlow):
     def __init__(self) -> None:
         """Initialize options flow."""
         self._user_input: dict[str, Any] = {}
+        self._unique_id: str | None = None
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -250,12 +360,12 @@ class OptionsFlowHandler(OptionsFlow):
 
             if not new_host:
                 errors[CONF_HOST] = "invalid_host"
-            elif host_changed and (
-                error := await _async_validate_host(
-                    self.hass, new_host, current_port, skip_entry_id=entry.entry_id
+            elif host_changed:
+                error, self._unique_id = await _async_check_host(
+                    self.hass, new_host, current_port, entry=entry
                 )
-            ):
-                errors[CONF_HOST] = error
+                if error:
+                    errors[CONF_HOST] = error
 
             if not errors:
                 self._user_input = {
@@ -276,7 +386,7 @@ class OptionsFlowHandler(OptionsFlow):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_HOST, default=current_host): str,
+                vol.Required(CONF_HOST, default=current_host): TextSelector(),
                 vol.Required(CONF_NAME, default=current_name): str,
                 vol.Optional(
                     CONF_THERMOSTAT_ENABLED,
@@ -406,7 +516,7 @@ class OptionsFlowHandler(OptionsFlow):
         if new_host != current_host:
             data[CONF_HOST] = new_host
             data[CONF_PORT] = current_port
-            update["unique_id"] = _unique_id(new_host, current_port)
+            update["unique_id"] = self._unique_id or _unique_id(new_host, current_port)
         if new_name != (entry.data.get(CONF_NAME) or entry.title):
             data[CONF_NAME] = new_name
             update["title"] = new_name

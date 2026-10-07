@@ -37,6 +37,8 @@ The key is the vendor's Modbus register key, so an entity ID can be looked up di
 
 ## Configuration
 
+On the same network as Home Assistant the heat pump is discovered automatically: select **Add** on the discovered Qube heat pump under **Settings → Devices & Services** and choose a device name. To add it manually:
+
 1. Go to **Settings → Devices & Services → Integrations**
 2. Click **Add Integration** and search for **Qube heat pump**
 3. Enter the IP address or hostname of your heat pump and a device name. `qube.local` works when Home Assistant and the heat pump are on the same network; in a separate VLAN, use the IP address

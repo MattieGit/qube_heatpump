@@ -2,11 +2,14 @@
     "config": {
         "abort": {
             "already_configured": "Apparaat is al geconfigureerd.",
-            "reconfigure_successful": "Herconfiguratie is geslaagd."
+            "reconfigure_successful": "Herconfiguratie is geslaagd.",
+            "not_qube_device": "Het gevonden apparaat is geen Qube warmtepomp."
         },
         "error": {
             "cannot_connect": "Kan niet verbinden. Controleer host en poort.",
-            "duplicate_ip": "Een Qube warmtepomp met dit IP-adres bestaat al. Kies een andere host."
+            "duplicate_ip": "Een Qube warmtepomp met dit IP-adres bestaat al. Kies een andere host.",
+            "not_qube_device": "Het apparaat reageert, maar niet als een Qube warmtepomp. Controleer host en poort.",
+            "different_heat_pump": "Deze host is een andere Qube warmtepomp. Voer het adres in van de warmtepomp die eerder is ingesteld."
         },
         "step": {
             "user": {
@@ -34,14 +37,27 @@
                     "port": "Modbus TCP-poort (standaard: 502).",
                     "name": "Naam voor deze warmtepomp."
                 }
+            },
+            "zeroconf_confirm": {
+                "title": "Qube warmtepomp gevonden",
+                "description": "Er is een Qube warmtepomp gevonden op {host}. Kies een apparaatnaam om hem toe te voegen.",
+                "data": {
+                    "name": "Apparaatnaam"
+                },
+                "data_description": {
+                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Deze bepaalt entiteit-ID's zoals sensor.qube_1_supply_temp."
+                }
             }
-        }
+        },
+        "flow_title": "Qube warmtepomp ({host})"
     },
     "options": {
         "error": {
             "duplicate_ip": "Een andere Qube warmtepomp gebruikt dit IP-adres al.",
             "cannot_connect": "Kan niet verbinden met Qube. Controleer het IP-adres.",
-            "invalid_host": "Voer een geldig host- of IP-adres in."
+            "invalid_host": "Voer een geldig host- of IP-adres in.",
+            "not_qube_device": "Het apparaat reageert, maar niet als een Qube warmtepomp. Controleer het IP-adres.",
+            "different_heat_pump": "Deze host is een andere Qube warmtepomp dan de eerder ingestelde."
         },
         "step": {
             "init": {

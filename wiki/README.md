@@ -761,7 +761,7 @@ logger:
 
 ## Changing the host or IP
 
-Use **Reconfigure** (or the host field in the options dialog). Since 2026.9.4 the device and its entities are keyed on the config entry rather than on the host, so a host change keeps the device, its area, custom names, disabled entities and long-term statistics. Installs from before 2026.9.4 are migrated automatically on first start; entity ids do not change. Downgrading to an older release afterwards is not supported.
+Use **Reconfigure** (or the host field in the options dialog). An entry that uses an IP address is also updated automatically when the heat pump announces a new address over mDNS (see [Network & mDNS](#network--mdns)). When the entry knows the controller's identifier, a host that turns out to be a different Qube is refused. Since 2026.9.4 the device and its entities are keyed on the config entry rather than on the host, so a host change keeps the device, its area, custom names, disabled entities and long-term statistics. Installs from before 2026.9.4 are migrated automatically on first start; entity ids do not change. Downgrading to an older release afterwards is not supported.
 
 ## Removing the Integration
 
