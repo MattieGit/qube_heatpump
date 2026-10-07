@@ -305,14 +305,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     ):
         entry.async_on_unload(cancel)
 
-    # Alarm group: entity IDs are constructed from vendor_id so they match
-    # the binary sensors even when the registry holds stale IDs.
+    # Alarm group: look the alarm sensors up by unique id. Their entity ids
+    # keep the prefix they were created with, so after a device rename they
+    # no longer match the current label.
     label = hub.label
+    ent_reg = er.async_get(hass)
     entity_ids = sorted(
         {
-            f"binary_sensor.{label}_{ent.vendor_id}"
+            entity_id
             for ent in hub.entities
-            if ent.vendor_id and is_alarm_entity(ent)
+            if ent.unique_id
+            and is_alarm_entity(ent)
+            and (
+                entity_id := ent_reg.async_get_entity_id(
+                    "binary_sensor", DOMAIN, f"{entry.entry_id}_{ent.unique_id}"
+                )
+            )
         }
     )
     await hass.services.async_call(
