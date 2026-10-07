@@ -39,7 +39,7 @@ The key is the vendor's Modbus register key, so an entity ID can be looked up di
 
 1. Go to **Settings → Devices & Services → Integrations**
 2. Click **Add Integration** and search for **Qube heat pump**
-3. Enter the IP address or hostname of your heat pump and a device name
+3. Enter the IP address or hostname of your heat pump and a device name. `qube.local` works when Home Assistant and the heat pump are on the same network; in a separate VLAN, use the IP address
 4. The integration creates all Modbus entities
 
 The optional virtual thermostat and DHW schedule are enabled in the **Configure** dialog of the entry.
@@ -72,7 +72,12 @@ Beyond raw Modbus values, the integration provides:
 - **Error counters** - Connection and read error tracking
 - **IP address sensor** - Resolved IP for hostname setups
 - **Energy totals not advancing** - Problem binary sensor raised when the energy totalisers stop advancing while the heat pump draws power
-- **Download diagnostics** - Entry data and options (host/IP redacted), firmware version, hub info, entity list and the current register data
+- **Download diagnostics** - Entry data and options (host/IP redacted), software version, the heat pump's mDNS announcement, hub info, entity list and the current register data
+- **Software version** - Read from the heat pump's mDNS announcement (the version on the display). It shows as *unknown* when the heat pump is in another VLAN; see [Network & mDNS](./wiki/README.md#network--mdns)
+
+## Official core integration
+
+Since 2026.4, Home Assistant also ships an official [Qube heat pump integration](https://www.home-assistant.io/integrations/hr_energy_qube/) (`hr_energy_qube`) with a smaller feature set. This custom integration adds, among others, the virtual thermostat, the DHW schedule and the computed energy and SCOP sensors. Choose one integration per heat pump; see the [wiki](./wiki/README.md#official-core-integration) for the differences.
 
 ## Is my DHW schedule active?
 
@@ -96,6 +101,7 @@ Delete the entry via **Settings → Devices & Services → Qube heat pump → �
 
 See the [project wiki](./wiki/README.md) for detailed documentation on:
 
+- Supported firmware, network and mDNS
 - Entity reference and computed sensors
 - SG Ready signal configuration
 - Virtual thermostat setup and DHW schedule
