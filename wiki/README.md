@@ -65,21 +65,13 @@ The Qube announces itself on the local network with mDNS (multicast DNS):
 - The hostname `qube.local`, which you can use instead of an IP address when Home Assistant is on the same network.
 - A service announcement (`_workstation._tcp`) with the software version, the controller firmware and a fixed identifier of the controller.
 
-The integration uses this announcement for:
-
-- **Automatic discovery** (since 2026.10.3): Home Assistant shows a discovered Qube heat pump under **Settings → Devices & services**. Select **Add**, choose a device name and the integration is set up.
-- **Recognising the heat pump**: the entry is keyed on the controller's identifier, so the same heat pump cannot be added twice under different addresses, and reconfiguring to a different Qube is refused. Entries set up earlier switch to the identifier on their next start.
-- **Following a new IP address**: when an entry uses an IP address and the heat pump gets a new one, the next announcement updates the entry. An entry that uses a host name such as `qube.local` keeps that name.
-- **The software version** on the device page.
-
-Polling the heat pump itself always goes over Modbus/TCP (port 502) and does not depend on mDNS. If you also have the core integration installed, the heat pump is discovered by both; add it to one and ignore the other.
+The integration uses this announcement for the software version on the device page. Polling the heat pump itself always goes over Modbus/TCP (port 502) and does not depend on mDNS.
 
 mDNS does not cross network boundaries. If the heat pump is in a separate VLAN or subnet from Home Assistant:
 
 - `qube.local` does not resolve, so set up the integration with the heat pump's IP address. Give the heat pump a fixed IP address (DHCP reservation) in your router.
-- The heat pump is not discovered, and its entry does not follow IP address changes.
 - The software version shows as *unknown* and the `mdns` section of the diagnostics is `null`. Everything else works as normal.
-- To get discovery and the version anyway, enable mDNS forwarding (an mDNS reflector or repeater) between the VLANs in your router or firewall.
+- To get the version anyway, enable mDNS forwarding (an mDNS reflector or repeater) between the VLANs in your router or firewall.
 
 ---
 
