@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.4 — unreleased
+- fix: After a device name change, the alarm group (`group.qube_alarms_<device name>`) listed entity ids with the new prefix, which do not exist because entity ids keep the prefix they were created with. The group now looks the alarm sensors up in the entity registry by unique id, so it always lists the real entities.
+
 ## 2026.10.3 — 2026-10-07
 - feat: Zeroconf discovery. A Qube heat pump on the same network appears under **Settings → Devices & services**; confirm it and choose a device name. The matcher requires the Carel vendor id and the Qube's project name in the mDNS record, like the core integration.
 - feat: Entries are keyed on the controller's mDNS uuid instead of `host-port` when the heat pump answers mDNS. Existing entries switch on their next start; without mDNS (another VLAN) they keep the host-based id. The same heat pump can no longer be added twice under different addresses.

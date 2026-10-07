@@ -11,7 +11,7 @@
   "loggers": ["python_qube_heatpump"],
   "quality_scale": "bronze",
   "requirements": ["python-qube-heatpump>=1.17.0"],
-  "version": "2026.10.3",
+  "version": "2026.10.4",
   "zeroconf": [
     {
       "type": "_workstation._tcp.local.",

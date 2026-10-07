@@ -187,6 +187,30 @@ async def test_alarm_group_created_and_removed_with_entry(
     assert hass.states.get(ALARM_GROUP) is None
 
 
+async def test_alarm_group_follows_the_registry_after_a_rename(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """After a device rename the group still lists the existing alarm sensors.
+
+    Entity ids keep the prefix they were created with, so the group must not
+    build them from the new label.
+    """
+    await setup_integration(hass, mock_config_entry)
+
+    hass.config_entries.async_update_entry(
+        mock_config_entry, data={**mock_config_entry.data, CONF_NAME: "basement"}
+    )
+    await hass.async_block_till_done()
+
+    group = hass.states.get("group.qube_alarms_basement")
+    assert group is not None
+    members = group.attributes["entity_id"]
+    assert "binary_sensor.qube_1_alrm_flw" in members
+    assert all(hass.states.get(entity_id) is not None for entity_id in members)
+
+
 @pytest.mark.parametrize(
     ("label", "expected"),
     [
