@@ -21,7 +21,7 @@
         },
         "data_description": {
           "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
-          "name": "Name for this heat pump (e.g. 'qube 1'). This determines entity IDs like sensor.qube_1_supply_temp."
+          "name": "Name for this heat pump (e.g. 'qube 1'). This determines entity IDs like sensor.qube_1_temp_supply."
         }
       },
       "reconfigure_confirm": {
@@ -45,7 +45,7 @@
           "name": "Device name"
         },
         "data_description": {
-          "name": "Name for this heat pump (e.g. 'qube 1'). This determines entity IDs like sensor.qube_1_supply_temp."
+          "name": "Name for this heat pump (e.g. 'qube 1'). This determines entity IDs like sensor.qube_1_temp_supply."
         }
       }
     },
@@ -71,7 +71,7 @@
         },
         "data_description": {
           "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
-          "name": "Name for this heat pump. Changing this will update entity IDs.",
+          "name": "Name for this heat pump. Changing it renames the device; existing entity IDs keep their prefix.",
           "thermostat_enabled": "Use an external temperature sensor to control heating/cooling demand.",
           "dhw_schedule_enabled": "Schedule daily DHW (hot water) heating at a fixed time."
         }
@@ -581,7 +581,7 @@
         },
         "label": {
           "name": "Hub label",
-          "description": "Optional hub label to target a specific device when multiple hubs exist. The label is derived from the integration entry title (e.g. 'Qube Heat Pump (qube.local)' → 'qube_local'). Ignored if entry_id is provided."
+          "description": "Optional hub label to target a specific device when multiple hubs exist. The label is the slugified device name (e.g. 'qube 1' → 'qube_1'). Ignored if entry_id is provided."
         }
       }
     }

@@ -17,7 +17,7 @@ switch.qube_1_bms_summerwinter
 select.qube_1_sg_ready_mode
 ```
 
-The key is the vendor's Modbus register key, so an entity ID can be looked up directly in the Modbus documentation. The device name can be changed later via the integration's **Configure** dialog; this renames all entity IDs. In the wiki and examples, `qube` stands for your slugified device name.
+The key is the vendor's Modbus register key, so an entity ID can be looked up directly in the Modbus documentation. The device name sets the prefix when the entities are first created. Changing the device name later (in the **Configure** dialog) renames the device and the entry, but existing entity IDs keep their prefix; rename them under **Settings → Entities** if you want the new prefix. Entities created after the change (for example the thermostat, when enabled later) get the new prefix. In the wiki and examples, `qube` stands for your slugified device name.
 
 ## Installation
 
@@ -74,7 +74,7 @@ Beyond raw Modbus values, the integration provides:
 - **Error counters** - Connection and read error tracking
 - **IP address sensor** - Resolved IP for hostname setups
 - **Energy totals not advancing** - Problem binary sensor raised when the energy totalisers stop advancing while the heat pump draws power
-- **Download diagnostics** - Entry data and options (host/IP redacted), software version, the heat pump's mDNS announcement, hub info, entity list and the current register data
+- **Download diagnostics** - Entry data and options (host/IP redacted), software version, the heat pump's mDNS announcement, hub info, entity list, the values as read (`raw_data`) and as shown in Home Assistant (`coordinator_data`), the energy counter cache and the stale-energy flag
 - **Software version** - Read from the heat pump's mDNS announcement (the version on the display). It shows as *unknown* when the heat pump is in another VLAN; see [Network & mDNS](./wiki/README.md#network--mdns)
 
 ## Official core integration
@@ -92,7 +92,7 @@ The integration implements **monotonic clamping** for `total_increasing` sensors
 ## Security Considerations
 
 - **Network**: Modbus/TCP is an unencrypted protocol. The integration assumes a trusted local network
-- **Write access**: The `write_register` service allows raw register writes for advanced users. Normal setpoint control should use the `number` entity actions
+- **Write access**: The `write_register` service writes by address, but only to the registers and coils the integration knows as writable (the setpoints and control coils); other addresses are rejected. Normal setpoint control should use the `number` entity actions
 - **No external connections**: All communication stays within your local network
 
 ## Removing the Integration

@@ -1,12 +1,12 @@
 # Repository Guidelines
 
 Conventions for this codebase live in [CLAUDE.md](CLAUDE.md) (entity ID naming,
-task workflow). This file only records facts that are not in CLAUDE.md.
+unique IDs and device identity). This file only records facts that are not in CLAUDE.md.
 
 ## Layout
 - `custom_components/qube_heatpump/` — the HACS integration (the only shipped code).
-- `tests/` — pytest suite (`pytest-homeassistant-custom-component`); `tests/snapshots/entity_ids.json` pins entity and unique IDs.
-- `wiki/README.md` — user documentation; `manifest.json` `documentation` points at the GitHub wiki, keep it that way.
+- `tests/` — pytest suite (`pytest-homeassistant-custom-component`); `tests/fixtures/entity_ids.json` pins entity and unique IDs; `tests/snapshots/` holds the syrupy entity snapshots.
+- `wiki/README.md` — user documentation; `manifest.json` `documentation` and the config flow's `DOCS_URL` link to this file in the repository (there is no separate GitHub wiki).
 - `examples/` — sample Lovelace dashboard; `assets/` — images referenced by the wiki and dashboard.
 - Tooling config (ruff, pytest, mypy) is in `pyproject.toml`.
 
@@ -14,7 +14,11 @@ task workflow). This file only records facts that are not in CLAUDE.md.
 - Register addresses, data types, scaling and entity keys are defined in the
   [python-qube-heatpump](https://github.com/MattieGit/python-qube-heatpump) library
   (`entities/sensors.py`, `binary_sensors.py`, `switches.py`), not in this repo.
-  Change entities there first, release to PyPI, then raise the `>=` pin in `manifest.json`.
+  Change entities there first, release to PyPI, then raise the `>=` pin in `manifest.json` and
+  `requirements_test.txt`.
+- The library also reads the controller's mDNS record (`async_get_device_info`, `parse_device_info`)
+  and validates a host (`async_verify_device`); the core integration `hr_energy_qube` uses the same library
+  with an exact `==` pin.
 - The library key doubles as `vendor_id` and `translation_key` in the integration.
 
 ## Commands
@@ -22,6 +26,8 @@ task workflow). This file only records facts that are not in CLAUDE.md.
 - Lint/format: `ruff check custom_components tests` and `ruff format --check custom_components tests` (CI pins ruff 0.14.14).
 - HACS validation runs in CI (`hacs/action`); to run it locally use the `ghcr.io/hacs/action:main`
   image with `--platform linux/amd64` on Apple Silicon.
+- hassfest in CI also checks the requirement against the pin in the newest core release; it fails while
+  this repo requires a newer library than core pins, until core catches up.
 
 ## Translations
 - `strings.json` is the source; `translations/en.json` and `translations/nl.json` must have the
