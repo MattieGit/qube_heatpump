@@ -3,24 +3,26 @@
 ## Table of Contents
 
 1. [Supported Devices](#supported-devices)
-2. [Data Updates](#data-updates)
-3. [Known Limitations](#known-limitations)
-4. [Entity Reference](#entity-reference)
-5. [Computed & Derived Entities](#computed--derived-entities)
-6. [SG Ready Signals](#sg-ready-signals)
-7. [Virtual Thermostat Control](#virtual-thermostat-control)
-8. [DHW Schedule](#dhw-schedule)
-9. [Multi-Device Configuration](#multi-device-configuration)
-10. [Use Cases](#use-cases)
-11. [Dashboard Controls](#dashboard-controls)
-12. [Data Integrity & Monotonic Clamping](#data-integrity--monotonic-clamping)
-13. [Error Handling & Recovery](#error-handling--recovery)
-14. [Security Considerations](#security-considerations)
-15. [Troubleshooting](#troubleshooting)
-16. [Diagnostics Toolkit](#diagnostics-toolkit)
-17. [Changing the host or IP](#changing-the-host-or-ip)
-18. [Removing the Integration](#removing-the-integration)
-19. [Notes](#notes)
+2. [Network & mDNS](#network--mdns)
+3. [Official core integration](#official-core-integration)
+4. [Data Updates](#data-updates)
+5. [Known Limitations](#known-limitations)
+6. [Entity Reference](#entity-reference)
+7. [Computed & Derived Entities](#computed--derived-entities)
+8. [SG Ready Signals](#sg-ready-signals)
+9. [Virtual Thermostat Control](#virtual-thermostat-control)
+10. [DHW Schedule](#dhw-schedule)
+11. [Multi-Device Configuration](#multi-device-configuration)
+12. [Use Cases](#use-cases)
+13. [Dashboard Controls](#dashboard-controls)
+14. [Data Integrity & Monotonic Clamping](#data-integrity--monotonic-clamping)
+15. [Error Handling & Recovery](#error-handling--recovery)
+16. [Security Considerations](#security-considerations)
+17. [Troubleshooting](#troubleshooting)
+18. [Diagnostics Toolkit](#diagnostics-toolkit)
+19. [Changing the host or IP](#changing-the-host-or-ip)
+20. [Removing the Integration](#removing-the-integration)
+21. [Notes](#notes)
 
 ---
 
@@ -43,7 +45,43 @@ This integration supports [Qube](https://qube-renewables.com/) heat pumps with M
 
 ### Firmware Compatibility
 
-The integration is tested with current Qube firmware versions. If you encounter issues with a specific firmware version, please open an issue on GitHub with your firmware version and the problem description.
+The Qube runs on a Carel c.pCO controller. Two version numbers matter:
+
+| Version | Where to find it | Known values |
+|---------|------------------|--------------|
+| Software version (the version on the heat pump display) | Device page in Home Assistant, diagnostics `mdns.software_version` | 4.1.00, 4.1.01 |
+| Controller firmware | Diagnostics `mdns.controller_firmware` | v5.1.007 |
+
+Users have confirmed the integration on software 4.1.00 and 4.1.01. If you run into problems on another version, open an issue on GitHub with your diagnostics file.
+
+Since 2026.10.1 the software version is read from the heat pump's mDNS announcement (see [Network & mDNS](#network--mdns)). The Modbus register that holds the version (register 77) is not filled on every firmware: it reads 0 on 4.1.00. When mDNS is unavailable and the register reads 0, the version shows as *unknown* (older library versions showed `0.00`).
+
+---
+
+## Network & mDNS
+
+The Qube announces itself on the local network with mDNS (multicast DNS):
+
+- The hostname `qube.local`, which you can use instead of an IP address when Home Assistant is on the same network.
+- A service announcement (`_workstation._tcp`) with the software version, the controller firmware and a fixed identifier of the controller.
+
+The integration uses this announcement for the software version on the device page. Polling the heat pump itself always goes over Modbus/TCP (port 502) and does not depend on mDNS.
+
+mDNS does not cross network boundaries. If the heat pump is in a separate VLAN or subnet from Home Assistant:
+
+- `qube.local` does not resolve, so set up the integration with the heat pump's IP address. Give the heat pump a fixed IP address (DHCP reservation) in your router.
+- The software version shows as *unknown* and the `mdns` section of the diagnostics is `null`. Everything else works as normal.
+- To get the version anyway, enable mDNS forwarding (an mDNS reflector or repeater) between the VLANs in your router or firewall.
+
+---
+
+## Official core integration
+
+Since 2026.4, Home Assistant also ships an official Qube integration, [Qube heat pump (`hr_energy_qube`)](https://www.home-assistant.io/integrations/hr_energy_qube/), which needs no HACS. Both are maintained by the same author and use the same [`python-qube-heatpump`](https://pypi.org/project/python-qube-heatpump/) library.
+
+The core integration has a smaller feature set that meets Home Assistant's code quality requirements: the main sensors, binary sensors, switches, an SG Ready select and a water heater entity for hot water. From Home Assistant 2026.11 it also discovers the heat pump automatically. This custom integration adds, among others, the virtual thermostat, the DHW schedule, the computed energy and SCOP sensors, `number` entities for setpoints and the `write_register` service.
+
+Choose one integration per heat pump. Running both against the same heat pump has not been tested, and it doubles the Modbus traffic and the entities in Home Assistant.
 
 ---
 
@@ -610,6 +648,7 @@ All communication is local:
    ```
 3. **Verify heat pump has Modbus enabled** - Check heat pump controller settings
 4. **Check firewall rules** - Ensure Home Assistant can reach port 502
+5. **Using `qube.local`?** - The name only resolves when Home Assistant and the heat pump are on the same network. In a separate VLAN, use the IP address instead (see [Network & mDNS](#network--mdns))
 
 #### Entities Show "Unknown" or "Unavailable"
 
@@ -712,7 +751,8 @@ logger:
 2. Click the three-dot menu → **Download diagnostics**
 3. The JSON file includes:
    - The config entry data and options (host, port and IP redacted)
-   - The heat pump firmware version
+   - The heat pump software version (`firmware_version`)
+   - The heat pump's mDNS announcement (`mdns`): software version, controller firmware, project name and controller identifier. `null` means Home Assistant did not receive the announcement, usually because the heat pump is in another VLAN (see [Network & mDNS](#network--mdns))
    - Hub information: label, multi-device flag, connect and read error counters
    - The full entity list (name, unique_id, platform, register address)
    - The current coordinator data (the last values read from every register)
