@@ -6,7 +6,8 @@
         },
         "error": {
             "cannot_connect": "Kan niet verbinden. Controleer host en poort.",
-            "duplicate_ip": "Een Qube warmtepomp met dit IP-adres bestaat al. Kies een andere host."
+            "duplicate_ip": "Een Qube warmtepomp met dit IP-adres bestaat al. Kies een andere host.",
+            "not_qube_device": "Het apparaat reageert, maar niet als een Qube warmtepomp. Controleer host en poort."
         },
         "step": {
             "user": {
@@ -41,7 +42,8 @@
         "error": {
             "duplicate_ip": "Een andere Qube warmtepomp gebruikt dit IP-adres al.",
             "cannot_connect": "Kan niet verbinden met Qube. Controleer het IP-adres.",
-            "invalid_host": "Voer een geldig host- of IP-adres in."
+            "invalid_host": "Voer een geldig host- of IP-adres in.",
+            "not_qube_device": "Het apparaat reageert, maar niet als een Qube warmtepomp. Controleer het IP-adres."
         },
         "step": {
             "init": {

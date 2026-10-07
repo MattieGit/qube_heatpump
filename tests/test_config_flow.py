@@ -17,8 +17,9 @@ from homeassistant.config_entries import ConfigEntryState, UnknownEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
+from . import patch_validation_client
+
 RESOLVE_HOST = "custom_components.qube_heatpump.config_flow.async_resolve_host"
-OPEN_CONNECTION = "custom_components.qube_heatpump.config_flow.asyncio.open_connection"
 
 
 @pytest.fixture
@@ -32,11 +33,6 @@ def mock_config_entry() -> MockConfigEntry:
     )
 
 
-def _tcp_ok():
-    writer = MagicMock(wait_closed=AsyncMock())
-    return patch(OPEN_CONNECTION, return_value=(AsyncMock(), writer))
-
-
 async def test_form(hass: HomeAssistant, mock_setup_entry: MagicMock) -> None:
     """Test we get the form."""
     result = await hass.config_entries.flow.async_init(
@@ -46,7 +42,7 @@ async def test_form(hass: HomeAssistant, mock_setup_entry: MagicMock) -> None:
     assert result["step_id"] == "user"
     assert not result["errors"]
 
-    with _tcp_ok():
+    with patch_validation_client():
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "1.2.3.4", CONF_NAME: "qube 1"},
@@ -75,7 +71,7 @@ async def test_form_cannot_connect(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    with patch(OPEN_CONNECTION, side_effect=side_effect):
+    with patch_validation_client(connect_side_effect=side_effect):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "1.1.1.1"},
@@ -85,6 +81,31 @@ async def test_form_cannot_connect(
     assert result2["errors"] == {CONF_HOST: "cannot_connect"}
 
 
+@pytest.mark.parametrize(
+    ("connect", "verified", "error"),
+    [
+        pytest.param(False, True, "cannot_connect", id="modbus_not_connected"),
+        pytest.param(True, False, "not_qube_device", id="not_a_qube"),
+    ],
+)
+async def test_form_modbus_check(
+    hass: HomeAssistant, connect: bool, verified: bool, error: str
+) -> None:
+    """The host must answer Modbus and read the Qube software-version register."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    with patch_validation_client(connect=connect, verified=verified) as client:
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "1.2.3.4"}
+        )
+
+    assert result2["type"] is FlowResultType.FORM
+    assert result2["errors"] == {CONF_HOST: error}
+    client.close.assert_awaited_once()
+
+
 async def test_form_recovers_after_cannot_connect(
     hass: HomeAssistant, mock_setup_entry: MagicMock
 ) -> None:
@@ -92,13 +113,13 @@ async def test_form_recovers_after_cannot_connect(
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    with patch(OPEN_CONNECTION, side_effect=OSError):
+    with patch_validation_client(connect_side_effect=OSError):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_HOST: "1.2.3.4"}
         )
     assert result["errors"] == {CONF_HOST: "cannot_connect"}
 
-    with _tcp_ok():
+    with patch_validation_client():
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_HOST: "1.2.3.4"}
         )
@@ -123,7 +144,7 @@ async def test_form_duplicate_ip(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    with _tcp_ok(), patch(RESOLVE_HOST, return_value="1.2.3.4"):
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value="1.2.3.4"):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_HOST: host}
         )
@@ -192,7 +213,7 @@ async def test_reconfigure_confirm(
     await hass.async_block_till_done()
 
     result = await _start_reconfigure(hass, mock_config_entry)
-    with _tcp_ok(), patch(RESOLVE_HOST, return_value="5.6.7.8"):
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value="5.6.7.8"):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "5.6.7.8", CONF_PORT: 503, CONF_NAME: "garage"},
@@ -259,7 +280,7 @@ async def test_reconfigure_duplicate_ip(
     other_entry.add_to_hass(hass)
 
     result = await _start_reconfigure(hass, mock_config_entry)
-    with _tcp_ok(), patch(RESOLVE_HOST, return_value="5.6.7.8"):
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value="5.6.7.8"):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "qube-new.local", CONF_PORT: 502},
@@ -278,7 +299,7 @@ async def test_reconfigure_cannot_connect(
     mock_config_entry.add_to_hass(hass)
 
     result = await _start_reconfigure(hass, mock_config_entry)
-    with patch(OPEN_CONNECTION, side_effect=OSError):
+    with patch_validation_client(connect_side_effect=OSError):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "5.6.7.8", CONF_PORT: 502},
@@ -300,7 +321,10 @@ async def test_form_stores_the_host_name_not_the_resolved_ip(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    with _tcp_ok(), patch(RESOLVE_HOST, return_value="192.168.1.50") as resolve:
+    with (
+        patch_validation_client(),
+        patch(RESOLVE_HOST, return_value="192.168.1.50") as resolve,
+    ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_HOST: "qube.local"}
         )

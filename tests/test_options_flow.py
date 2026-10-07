@@ -20,19 +20,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
 
-from . import setup_integration
+from . import patch_validation_client, setup_integration
 
 RESOLVE_HOST = "custom_components.qube_heatpump.config_flow.async_resolve_host"
-OPEN_CONNECTION = "custom_components.qube_heatpump.config_flow.asyncio.open_connection"
 
 CLIMATE_ENTITY_ID = "climate.qube_1_thermostat"
 ROOM_SENSOR = "sensor.living_room_temperature"
-
-
-def _tcp_ok() -> Any:
-    """Patch the TCP probe so no test opens a real socket."""
-    writer = MagicMock(wait_closed=AsyncMock())
-    return patch(OPEN_CONNECTION, return_value=(AsyncMock(), writer))
 
 
 async def _start_options_flow(
@@ -98,9 +91,9 @@ async def test_options_flow_rejects_a_bad_host(
 
     result = await _start_options_flow(hass, mock_config_entry)
     tcp = (
-        _tcp_ok()
+        patch_validation_client()
         if connects
-        else patch(OPEN_CONNECTION, side_effect=OSError("Connection refused"))
+        else patch_validation_client(connect_side_effect=OSError("Connection refused"))
     )
     resolve = (
         patch(RESOLVE_HOST, return_value=resolves_to)
@@ -132,7 +125,7 @@ async def test_options_flow_host_change_keeps_the_device(
     assert device is not None
 
     result = await _start_options_flow(hass, mock_config_entry)
-    with _tcp_ok():
+    with patch_validation_client():
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={CONF_HOST: "192.0.2.99", CONF_NAME: "qube 1"},

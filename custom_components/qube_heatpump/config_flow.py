@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
+from python_qube_heatpump import QubeClient
 import voluptuous as vol
 
 from homeassistant.config_entries import (
@@ -22,6 +22,7 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    TextSelector,
     TimeSelector,
 )
 
@@ -88,8 +89,9 @@ async def _async_validate_host(
 ) -> str | None:
     """Validate a host for a new or changed entry.
 
-    Returns an error key (``duplicate_ip`` or ``cannot_connect``) or None when
-    the host is unique among the other entries and accepts a TCP connection.
+    Returns an error key (``duplicate_ip``, ``cannot_connect`` or
+    ``not_qube_device``) or None when the host is unique among the other
+    entries and answers like a Qube controller over Modbus.
     """
     entries = [
         entry
@@ -104,15 +106,18 @@ async def _async_validate_host(
         )
         return "duplicate_ip"
 
+    client = QubeClient(host, port)
     try:
-        _, writer = await asyncio.wait_for(
-            asyncio.open_connection(host, port), timeout=CONNECT_TIMEOUT
-        )
+        async with asyncio.timeout(CONNECT_TIMEOUT):
+            if not await client.connect():
+                return "cannot_connect"
+            # Any readable software-version register counts, including 0
+            if not await client.async_verify_device():
+                return "not_qube_device"
     except (OSError, TimeoutError):
         return "cannot_connect"
-    writer.close()
-    with contextlib.suppress(OSError):
-        await writer.wait_closed()
+    finally:
+        await client.close()
     return None
 
 
@@ -159,7 +164,7 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         schema = vol.Schema(
             {
-                host_field: str,
+                host_field: TextSelector(),
                 vol.Optional(CONF_NAME, default=self._default_name()): str,
             }
         )
@@ -210,7 +215,9 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         schema = vol.Schema(
             {
-                vol.Required(CONF_HOST, default=entry.data.get(CONF_HOST)): str,
+                vol.Required(
+                    CONF_HOST, default=entry.data.get(CONF_HOST)
+                ): TextSelector(),
                 vol.Required(
                     CONF_PORT, default=entry.data.get(CONF_PORT, DEFAULT_PORT)
                 ): int,
@@ -276,7 +283,7 @@ class OptionsFlowHandler(OptionsFlow):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_HOST, default=current_host): str,
+                vol.Required(CONF_HOST, default=current_host): TextSelector(),
                 vol.Required(CONF_NAME, default=current_name): str,
                 vol.Optional(
                     CONF_THERMOSTAT_ENABLED,

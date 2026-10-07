@@ -6,7 +6,8 @@
     },
     "error": {
       "cannot_connect": "Failed to connect. Check host and port.",
-      "duplicate_ip": "A Qube heat pump using this IP address already exists. Choose a different host."
+      "duplicate_ip": "A Qube heat pump using this IP address already exists. Choose a different host.",
+      "not_qube_device": "The device answers, but not like a Qube heat pump. Check the host and port."
     },
     "step": {
       "user": {
@@ -41,7 +42,8 @@
     "error": {
       "duplicate_ip": "Another Qube heat pump already uses this IP address.",
       "cannot_connect": "Can not connect to Qube. Please check the IP address.",
-      "invalid_host": "Enter a valid host or IP address."
+      "invalid_host": "Enter a valid host or IP address.",
+      "not_qube_device": "The device answers, but not like a Qube heat pump. Check the IP address."
     },
     "step": {
       "init": {

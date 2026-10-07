@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.2 — unreleased
+- feat: Adding a heat pump, reconfiguring it or changing its host now checks that the host answers Modbus and reads the Qube software-version register, instead of only checking that port 502 is open. Another device on that port is refused with a new "not a Qube heat pump" error. A register reading 0 (firmware 4.1.00) still counts as a Qube.
+- chore: The host fields in the setup, reconfigure and options dialogs use a text selector.
+- chore: Require python-qube-heatpump 1.17.0.
+
 ## 2026.10.1 — 2026-10-06
 - fix: The device's software version now shows the version on the heat pump panel (for example 4.1.00). It is read from the controller's mDNS advertisement, because the Modbus software version register reads 0.0 on recent firmware. When mDNS is not reachable (for example across VLANs without an mDNS reflector) the register value is used as before; setup waits at most 3 s for the lookup.
 - feat: The diagnostics download includes the controller's mDNS record (`mdns`): panel software version, controller firmware, project name and UUID.
