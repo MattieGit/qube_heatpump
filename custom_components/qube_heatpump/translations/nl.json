@@ -21,7 +21,7 @@
                 },
                 "data_description": {
                     "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
-                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Dit bepaalt entiteit-ID's zoals sensor.qube_1_supply_temp."
+                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Dit bepaalt entiteit-ID's zoals sensor.qube_1_temp_supply."
                 }
             },
             "reconfigure_confirm": {
@@ -45,7 +45,7 @@
                     "name": "Apparaatnaam"
                 },
                 "data_description": {
-                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Deze bepaalt entiteit-ID's zoals sensor.qube_1_supply_temp."
+                    "name": "Naam voor deze warmtepomp (bijv. 'qube 1'). Deze bepaalt entiteit-ID's zoals sensor.qube_1_temp_supply."
                 }
             }
         },
@@ -71,7 +71,7 @@
                 },
                 "data_description": {
                     "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
-                    "name": "Naam voor deze warmtepomp. Wijzigen werkt de entiteit-ID's bij.",
+                    "name": "Naam voor deze warmtepomp. Wijzigen hernoemt het apparaat; bestaande entiteit-ID's houden hun voorvoegsel.",
                     "thermostat_enabled": "Gebruik een externe temperatuursensor om warmte/koelvraag te regelen.",
                     "dhw_schedule_enabled": "Plan dagelijks SWW (warm tapwater) verwarmen op een vast tijdstip."
                 }
@@ -581,7 +581,7 @@
                 },
                 "label": {
                     "name": "Hublabel",
-                    "description": "Optioneel hublabel om een specifiek apparaat te kiezen wanneer er meerdere hubs zijn. Het label wordt afgeleid van de titel van het configuratie-item (bijv. 'Qube Heat Pump (qube.local)' → 'qube_local'). Genegeerd als entry_id is opgegeven."
+                    "description": "Optioneel hublabel om een specifiek apparaat te kiezen wanneer er meerdere hubs zijn. Het label is de apparaatnaam in slug-vorm (bijv. 'qube 1' → 'qube_1'). Genegeerd als entry_id is opgegeven."
                 }
             }
         }

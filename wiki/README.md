@@ -125,7 +125,7 @@ To force an immediate data refresh:
 | Limitation | Description | Workaround |
 |------------|-------------|------------|
 | **Single device per entry** | Each integration entry connects to one heat pump | Add multiple entries for multiple pumps |
-| **No auto-discovery** | Modbus devices cannot be auto-discovered | Manual IP configuration required |
+| **Discovery needs mDNS** | Discovery only works when Home Assistant and the heat pump are on the same network (see [Network & mDNS](#network--mdns)) | Add the heat pump manually with its IP address |
 | **Fixed register map** | Entity list is determined at setup | Reload integration if registers change |
 | **Unencrypted protocol** | Modbus/TCP has no encryption | Keep heat pump on trusted network |
 | **No authentication** | Modbus has no user/password | Rely on network-level access control |
@@ -136,9 +136,9 @@ To force an immediate data refresh:
 |------------|-------------|-------|
 | **Energy counter glitches** | Heat pump occasionally reports invalid energy values | Handled by monotonic clamping (see below) |
 | **Electric power at idle** | Modbus register reports ~55W when pumps are in pre/post-run, while true standby is ~17W | The Qube does not measure standby consumption; 0W is reported when all pumps are off |
-| **Standby excluded from totals** | `sensor.qube_power_electric` ("Total electric power (calculated)") and `sensor.qube_energy_total_electric` only count the compressor, pumps and heaters; the ~17W standby draw of the controller is not included | COP/SCOP values based on these registers are therefore slightly optimistic. Use `sensor.qube_total_energy_incl_standby` for a realistic consumption figure |
+| **Standby excluded from totals** | `sensor.qube_power_electric` ("Current electric power") and `sensor.qube_energy_total_electric` only count the compressor, pumps and heaters; the ~17W standby draw of the controller is not included | COP/SCOP values based on these registers are therefore slightly optimistic. Use `sensor.qube_total_energy_incl_standby` for a realistic consumption figure |
 | **Compressor hold after power-on** | After a cold power-on (mains restored, controller rebooted) the controller holds the compressor off for roughly two hours while the compressor crankcase heater warms the oil; pumps may run and status may show a demand, but the compressor does not start | Normal behaviour, not a fault. Wait it out; the hold is not exposed as a register |
-| **Entity ID changes** | Changing the device name changes entity IDs | Update automations/dashboards after change |
+| **Entity IDs after a rename** | Changing the device name keeps the existing entity IDs | Rename entities under **Settings → Entities** if you want the new prefix |
 | **15-second resolution** | Data is polled every 15 seconds | Shorter changes may be missed |
 
 ### Not Supported
@@ -151,7 +151,7 @@ To force an immediate data refresh:
 
 ## Entity Reference
 
-Entity IDs are `<platform>.<device name>_<key>`, where the device name is slugified: the default device name **"qube 1"** gives `sensor.qube_1_temp_supply`, a device named "basement" gives `sensor.basement_temp_supply`. The key is the vendor's Modbus register key (or the computed sensor name). The device name can be changed via the integration's **Configure** dialog (field **Device name**); doing so renames every entity ID.
+Entity IDs are `<platform>.<device name>_<key>`, where the device name is slugified: the default device name **"qube 1"** gives `sensor.qube_1_temp_supply`, a device named "basement" gives `sensor.basement_temp_supply`. The key is the vendor's Modbus register key (or the computed sensor name). The device name can be changed via the integration's **Configure** dialog (field **Device name**). The name sets the prefix when entities are first created; existing entity IDs keep their prefix after a rename.
 
 **Throughout this wiki `qube` stands for your slugified device name** — with the default name, read `sensor.qube_temp_supply` as `sensor.qube_1_temp_supply`.
 
@@ -161,7 +161,7 @@ The integration exposes all readable Modbus registers as sensors:
 
 | Category | Examples |
 |----------|----------|
-| **Temperatures** | `sensor.qube_temp_outside`, `sensor.qube_temp_supply`, `sensor.qube_temp_return`, `sensor.qube_temp_dhw`, `sensor.qube_temp_room` |
+| **Temperatures** | `sensor.qube_temp_outside`, `sensor.qube_temp_supply`, `sensor.qube_temp_return`, `sensor.qube_temp_dhw`, `sensor.qube_temp_room` (disabled by default) |
 | **Power** | `sensor.qube_power_electric`, `sensor.qube_power_thermic` |
 | **Energy** | `sensor.qube_energy_total_electric`, `sensor.qube_energy_total_thermic` |
 | **Setpoints** | `sensor.qube_heatsetp_1`, `sensor.qube_coolsetp_1`, `sensor.qube_dhw_setp`, `sensor.qube_regsetp` |
@@ -188,7 +188,7 @@ The controller display distinguishes three DHW setpoints (**Min**, **User**, **M
 | Category | Examples |
 |----------|----------|
 | **Alarms** | `binary_sensor.qube_glbal`, `binary_sensor.qube_usralrms`, `binary_sensor.qube_alrm_flw` |
-| **Valve outputs** | `binary_sensor.qube_dout_threewayvlv_val`, `binary_sensor.qube_dout_fourwayvlv_val` |
+| **Valve outputs** | `binary_sensor.qube_dout_threewayvlv_val`, `binary_sensor.qube_dout_fourwayvlv_val` (hidden and disabled by default; `sensor.qube_threeway_valve_status` and `sensor.qube_fourway_valve_status` show the valve positions) |
 | **Pump outputs** | `binary_sensor.qube_dout_srcpmp_val`, `binary_sensor.qube_dout_usrpmp_val` |
 | **Heater outputs** | `binary_sensor.qube_dout_heaterstep1_val`, `binary_sensor.qube_dout_heaterstep2_val` |
 | **Digital inputs** | `binary_sensor.qube_dewpoint`, `binary_sensor.qube_srcflw`, `binary_sensor.qube_id_demand` |
@@ -285,7 +285,7 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 
 | Entity | Values |
 |--------|--------|
-| `sensor.qube_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, anti_legionella |
+| `sensor.qube_status_heatpump` | standby, alarm, keyboard_off, compressor_startup, compressor_shutdown, cooling, heating, start_fail, heating_dhw, anti_legionella, unknown (unrecognised status code) |
 | `sensor.qube_threeway_valve_status` | dhw, ch |
 | `sensor.qube_fourway_valve_status` | heating, cooling |
 
@@ -317,7 +317,22 @@ If you use SG Ready for dynamic tariff optimization (e.g. Tibber) **without LinQ
 
 ## Virtual Thermostat Control
 
-To control the Qube from Home Assistant instead of the built-in Linq thermostat:
+To control the Qube from Home Assistant instead of the built-in Linq thermostat, use the built-in thermostat entity or your own automations.
+
+### Built-in thermostat (climate entity)
+
+1. Disable the Linq thermostat options on the heat pump (see step 1 below).
+2. Go to **Settings → Devices & Services → Qube Heat Pump → Configure**, enable the virtual thermostat and select a room temperature sensor.
+3. The integration adds `climate.qube_thermostat`.
+
+How it works:
+
+- **Modes**: off, heat, cool and heat/cool. Target temperature 15-25 °C in steps of 0.5 °C (default 20.5 °C).
+- **Control**: it switches `switch.qube_modbus_demand` (heat demand) and `switch.qube_bms_summerwinter` (cooling) with a tolerance of ±0.3 °C around the target.
+- **Sensor timeout**: when the room sensor has not reported for 30 minutes (checked every minute), the thermostat turns the demand off and `binary_sensor.qube_thermostat_sensor_timeout` turns on.
+- The mode and target temperature are restored after a restart.
+
+### Manual control with automations
 
 ### Understanding Heat Demand Entities
 
@@ -414,7 +429,7 @@ Each heat pump is a separate integration entry with its own device name, and eve
 1. Go to **Settings → Devices & Services → Integrations**
 2. Find your Qube Heat Pump entry and click **Configure**
 3. Change the **Device name** (e.g., "basement", "main")
-4. The integration reloads and renames all entity IDs to the new prefix; update automations and dashboards afterwards
+4. The integration reloads with the new device and entry name. Existing entity IDs keep their old prefix; rename them under **Settings → Entities** if you want the new prefix, and update automations and dashboards accordingly. Entities created later (for example the thermostat) use the new prefix
 
 ### Example Entity IDs
 
@@ -579,13 +594,14 @@ The integration implements **monotonic clamping** with reset detection (library 
 
 1. For each `total_increasing` sensor the last valid value is cached (in memory and in `.storage/qube_heatpump_monotonic_<entry_id>` so it survives restarts)
 2. A new value slightly below the cached one (less than 1 kWh, or 1 unit for other counters) is treated as float32 jitter or a glitch and the cached value is kept
-3. A value **more than 1 unit below** the cached one is a *counter reset candidate*. It is still clamped until it has been seen on 3 consecutive polls (about 45 s); then it is accepted as the new baseline and a warning `Counter reset detected for <key>` is logged
+3. A value **more than 1 unit below** the cached one is a *counter reset candidate*. It is still clamped until it has been seen on 3 consecutive polls (about 30 s after it first appears); then it is accepted as the new baseline and a warning `Counter reset detected for <key>` is logged
 4. A single glitched zero read therefore never drops a counter, while a real reset on the controller (or a firmware hiccup that lowers the totals) no longer freezes the Home Assistant totals forever
 
-This applies to:
-- All sensors with `state_class: total_increasing`
+This applies to the counters read from the heat pump:
+- Energy totals (`energy_total_electric`, `energy_total_thermic`)
 - Working hours counters (`workinghours_*`)
-- Energy accumulation sensors (`energy_total_electric`, `energy_total_thermic`)
+
+The computed sensors (standby energy, total including standby, daily and monthly sensors) are calculated by the integration and are not clamped.
 
 **Clearing the cache manually**: press `button.qube_clear_monotonic_cache` ("Clear energy counter cache"). The cached maximums are forgotten in memory and on disk and the next poll is accepted as-is. Use it after you deliberately reset counters on the controller, or when a total is stuck at a clamped value.
 
@@ -624,9 +640,9 @@ Modbus/TCP is an **unencrypted protocol** with no authentication. The integratio
 The integration provides two ways to write values:
 
 1. **Entity actions (recommended)** - Use `number.set_value` for setpoints, `switch.turn_on/off` for controls
-2. **write_register service (advanced)** - Raw register writes for debugging or custom automations
+2. **write_register service (advanced)** - Write by register address, for debugging or custom automations
 
-The `write_register` service can write to any Modbus register. Only use it if you understand the register map.
+The `write_register` service only writes to registers and coils the integration knows as writable: the DHW, heating and cooling setpoints (registers 173, 101 and 103) and the control coils. Other addresses are rejected, coils accept only 0 or 1, and setpoints are checked against their allowed range. Only use it if you understand the register map.
 
 ### No External Connections
 
@@ -708,9 +724,8 @@ All communication is local:
 **Symptoms**: After upgrading from an older HACS version (pre-2026.1.5), you see duplicate entities or entities with incorrect names.
 
 **Solutions**:
-1. Try the **Recreate entities** function: click the three-dot menu on the integration → Recreate entities
-2. If that doesn't resolve it: remove the integration completely and re-add it
-3. Note: SCOP and utility meter sensors will start from 0 after a fresh install, as they need to accumulate data first
+1. Remove the integration completely and re-add it
+2. Note: the daily and monthly energy and SCOP sensors start from 0 after a fresh install, as they need to accumulate data first
 
 #### Automations Not Triggering
 
@@ -763,7 +778,9 @@ logger:
    - The heat pump's mDNS announcement (`mdns`): software version, controller firmware, project name and controller identifier. `null` means Home Assistant did not receive the announcement, usually because the heat pump is in another VLAN (see [Network & mDNS](#network--mdns))
    - Hub information: label, multi-device flag, connect and read error counters
    - The full entity list (name, unique_id, platform, register address)
-   - The current coordinator data (the last values read from every register)
+   - `raw_data`: the values as read from the heat pump, before clamping
+   - `coordinator_data`: the values shown in Home Assistant (after clamping)
+   - `monotonic_cache`: the counter maximums held by the clamp, and the `energy_totals_stale` flag
 
 ---
 
