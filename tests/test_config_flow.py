@@ -1,9 +1,11 @@
 """Test the Qube Heat Pump config flow."""
 
+from dataclasses import replace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from python_qube_heatpump import QubeDeviceInfo
 import voluptuous as vol
 
 from custom_components.qube_heatpump.const import (
@@ -17,7 +19,7 @@ from homeassistant.config_entries import ConfigEntryState, UnknownEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-from . import patch_validation_client
+from . import MDNS_INFO, ZEROCONF_DISCOVERY, patch_validation_client
 
 RESOLVE_HOST = "custom_components.qube_heatpump.config_flow.async_resolve_host"
 
@@ -245,19 +247,28 @@ async def test_reconfigure_unknown_entry(hass: HomeAssistant) -> None:
 
 
 async def test_reconfigure_already_configured(
-    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_flow_mdns_info: AsyncMock,
 ) -> None:
-    """Reconfiguring onto another entry's host/port aborts."""
+    """Reconfiguring onto a heat pump another entry holds by uuid aborts."""
     mock_config_entry.add_to_hass(hass)
-    other_entry = MockConfigEntry(
+    MockConfigEntry(
         domain=DOMAIN,
-        data={CONF_HOST: "5.6.7.8", CONF_PORT: 502},
-        unique_id=f"{DOMAIN}-5.6.7.8-502",
-    )
-    other_entry.add_to_hass(hass)
+        data={CONF_HOST: "qube.local", CONF_PORT: 502},
+        unique_id=MDNS_INFO.uuid,
+    ).add_to_hass(hass)
+    mock_flow_mdns_info.return_value = MDNS_INFO
 
     result = await _start_reconfigure(hass, mock_config_entry)
-    with patch(RESOLVE_HOST, return_value="5.6.7.8"):
+    # qube.local does not resolve here (e.g. another VLAN), so no duplicate_ip
+    with (
+        patch_validation_client(),
+        patch(
+            RESOLVE_HOST,
+            side_effect=lambda host: None if host == "qube.local" else host,
+        ),
+    ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "5.6.7.8", CONF_PORT: 502},
@@ -265,6 +276,7 @@ async def test_reconfigure_already_configured(
 
     assert result2["type"] is FlowResultType.ABORT
     assert result2["reason"] == "already_configured"
+    assert mock_config_entry.data[CONF_HOST] == "1.2.3.4"
 
 
 async def test_reconfigure_duplicate_ip(
@@ -334,3 +346,232 @@ async def test_form_stores_the_host_name_not_the_resolved_ip(
     assert result2["type"] is FlowResultType.CREATE_ENTRY
     assert result2["data"][CONF_HOST] == "qube.local"
     assert result2["result"].unique_id == f"{DOMAIN}-qube.local-502"
+
+
+async def test_form_uses_the_controller_uuid(
+    hass: HomeAssistant, mock_setup_entry: MagicMock, mock_flow_mdns_info: AsyncMock
+) -> None:
+    """A heat pump that answers mDNS is keyed on its controller uuid."""
+    mock_flow_mdns_info.return_value = MDNS_INFO
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value="192.168.5.208"):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "qube.local"}
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] is FlowResultType.CREATE_ENTRY
+    assert result2["result"].unique_id == MDNS_INFO.uuid
+
+
+async def test_form_same_controller_under_another_host(
+    hass: HomeAssistant, mock_flow_mdns_info: AsyncMock
+) -> None:
+    """Adding a configured heat pump under another name or address aborts."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.208", CONF_PORT: 502},
+        unique_id=MDNS_INFO.uuid,
+    ).add_to_hass(hass)
+    mock_flow_mdns_info.return_value = MDNS_INFO
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value=None):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "qube.local"}
+        )
+
+    assert result2["type"] is FlowResultType.ABORT
+    assert result2["reason"] == "already_configured"
+
+
+@pytest.mark.parametrize(
+    ("unique_id", "mdns_info", "expected"),
+    [
+        pytest.param(MDNS_INFO.uuid, MDNS_INFO, MDNS_INFO.uuid, id="same_controller"),
+        pytest.param(MDNS_INFO.uuid, None, MDNS_INFO.uuid, id="uuid_kept_without_mdns"),
+        pytest.param(
+            f"{DOMAIN}-1.2.3.4-502", MDNS_INFO, MDNS_INFO.uuid, id="adopts_uuid"
+        ),
+        pytest.param(
+            f"{DOMAIN}-1.2.3.4-502", None, f"{DOMAIN}-5.6.7.8-502", id="host_based"
+        ),
+    ],
+)
+async def test_reconfigure_unique_id(
+    hass: HomeAssistant,
+    mock_setup_entry: MagicMock,
+    mock_flow_mdns_info: AsyncMock,
+    unique_id: str,
+    mdns_info: QubeDeviceInfo | None,
+    expected: str,
+) -> None:
+    """Reconfigure keeps or adopts the controller uuid."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502, CONF_NAME: "qube 1"},
+        unique_id=unique_id,
+        title="qube 1",
+    )
+    entry.add_to_hass(hass)
+    mock_flow_mdns_info.return_value = mdns_info
+
+    result = await _start_reconfigure(hass, entry)
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value="5.6.7.8"):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "5.6.7.8", CONF_PORT: 502}
+        )
+
+    assert result2["type"] is FlowResultType.ABORT
+    assert result2["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_HOST] == "5.6.7.8"
+    assert entry.unique_id == expected
+
+
+async def test_reconfigure_different_heat_pump(
+    hass: HomeAssistant, mock_flow_mdns_info: AsyncMock
+) -> None:
+    """An entry keyed on a uuid refuses a host that is another heat pump."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502},
+        unique_id="0001000000000001",
+    )
+    entry.add_to_hass(hass)
+    mock_flow_mdns_info.return_value = MDNS_INFO
+
+    result = await _start_reconfigure(hass, entry)
+    with patch_validation_client(), patch(RESOLVE_HOST, return_value="5.6.7.8"):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "5.6.7.8", CONF_PORT: 502}
+        )
+
+    assert result2["type"] is FlowResultType.FORM
+    assert result2["errors"] == {CONF_HOST: "different_heat_pump"}
+    assert entry.data[CONF_HOST] == "1.2.3.4"
+
+
+async def test_zeroconf_flow(
+    hass: HomeAssistant, mock_setup_entry: MagicMock, mock_flow_mdns_info: AsyncMock
+) -> None:
+    """A discovered heat pump is confirmed with a device name."""
+    mock_flow_mdns_info.return_value = MDNS_INFO
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=ZEROCONF_DISCOVERY,
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "zeroconf_confirm"
+    assert result["description_placeholders"] == {"host": "192.168.5.208"}
+
+    with patch_validation_client():
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_NAME: "qube 1"}
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] is FlowResultType.CREATE_ENTRY
+    assert result2["title"] == "qube 1"
+    assert result2["data"] == {
+        CONF_HOST: "192.168.5.208",
+        CONF_PORT: 502,
+        CONF_NAME: "qube 1",
+    }
+    assert result2["result"].unique_id == MDNS_INFO.uuid
+
+
+async def test_zeroconf_confirm_error(
+    hass: HomeAssistant, mock_setup_entry: MagicMock
+) -> None:
+    """The confirm step shows a Modbus error and can be retried."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=ZEROCONF_DISCOVERY,
+    )
+
+    with patch_validation_client(verified=False):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_NAME: "qube 1"}
+        )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "not_qube_device"}
+
+    with patch_validation_client():
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_NAME: "qube 1"}
+        )
+        await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_zeroconf_not_a_qube(hass: HomeAssistant) -> None:
+    """An advertisement without the Carel vendor or uuid is ignored."""
+    discovery = replace(
+        ZEROCONF_DISCOVERY,
+        properties={**ZEROCONF_DISCOVERY.properties, "Vendor": "123456"},
+    )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_ZEROCONF}, data=discovery
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "not_qube_device"
+
+
+@pytest.mark.parametrize(
+    ("configured_host", "expected_host"),
+    [
+        pytest.param("192.168.5.100", "192.168.5.208", id="ip_follows_dhcp"),
+        pytest.param("qube.local", "qube.local", id="host_name_kept"),
+    ],
+)
+async def test_zeroconf_configured_heat_pump(
+    hass: HomeAssistant, configured_host: str, expected_host: str
+) -> None:
+    """Rediscovery aborts and moves an IP-based entry to the new address."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: configured_host, CONF_PORT: 502},
+        unique_id=MDNS_INFO.uuid,
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=ZEROCONF_DISCOVERY,
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_HOST] == expected_host
+
+
+async def test_zeroconf_entry_without_uuid(hass: HomeAssistant) -> None:
+    """An entry that has not seen mDNS yet is matched on its address."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "qube.local", CONF_PORT: 502},
+        unique_id=f"{DOMAIN}-qube.local-502",
+    )
+    entry.add_to_hass(hass)
+
+    with patch(
+        RESOLVE_HOST, side_effect=lambda host: "192.168.5.208" if host else None
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_ZEROCONF},
+            data=ZEROCONF_DISCOVERY,
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.unique_id == f"{DOMAIN}-qube.local-502"

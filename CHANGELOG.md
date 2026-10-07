@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.3 — unreleased
+- feat: Zeroconf discovery. A Qube heat pump on the same network appears under **Settings → Devices & services**; confirm it and choose a device name. The matcher requires the Carel vendor id and the Qube's project name in the mDNS record, like the core integration.
+- feat: Entries are keyed on the controller's mDNS uuid instead of `host-port` when the heat pump answers mDNS. Existing entries switch on their next start; without mDNS (another VLAN) they keep the host-based id. The same heat pump can no longer be added twice under different addresses.
+- feat: Rediscovery updates the host of an entry that uses an IP address; a host name such as `qube.local` is kept.
+- feat: Reconfigure and the options host field refuse a host that is a different Qube heat pump (new `different_heat_pump` error) when the entry knows its controller uuid.
+
 ## 2026.10.2 — unreleased
 - feat: Adding a heat pump, reconfiguring it or changing its host now checks that the host answers Modbus and reads the Qube software-version register, instead of only checking that port 502 is open. Another device on that port is refused with a new "not a Qube heat pump" error. A register reading 0 (firmware 4.1.00) still counts as a Qube.
 - chore: The host fields in the setup, reconfigure and options dialogs use a text selector.

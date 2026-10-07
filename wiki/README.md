@@ -65,13 +65,21 @@ The Qube announces itself on the local network with mDNS (multicast DNS):
 - The hostname `qube.local`, which you can use instead of an IP address when Home Assistant is on the same network.
 - A service announcement (`_workstation._tcp`) with the software version, the controller firmware and a fixed identifier of the controller.
 
-The integration uses this announcement for the software version on the device page. Polling the heat pump itself always goes over Modbus/TCP (port 502) and does not depend on mDNS.
+The integration uses this announcement for:
+
+- **Automatic discovery** (since 2026.10.3): Home Assistant shows a discovered Qube heat pump under **Settings → Devices & services**. Select **Add**, choose a device name and the integration is set up.
+- **Recognising the heat pump**: the entry is keyed on the controller's identifier, so the same heat pump cannot be added twice under different addresses, and reconfiguring to a different Qube is refused. Entries set up earlier switch to the identifier on their next start.
+- **Following a new IP address**: when an entry uses an IP address and the heat pump gets a new one, the next announcement updates the entry. An entry that uses a host name such as `qube.local` keeps that name.
+- **The software version** on the device page.
+
+Polling the heat pump itself always goes over Modbus/TCP (port 502) and does not depend on mDNS. If you also have the core integration installed, the heat pump is discovered by both; add it to one and ignore the other.
 
 mDNS does not cross network boundaries. If the heat pump is in a separate VLAN or subnet from Home Assistant:
 
 - `qube.local` does not resolve, so set up the integration with the heat pump's IP address. Give the heat pump a fixed IP address (DHCP reservation) in your router.
+- The heat pump is not discovered, and its entry does not follow IP address changes.
 - The software version shows as *unknown* and the `mdns` section of the diagnostics is `null`. Everything else works as normal.
-- To get the version anyway, enable mDNS forwarding (an mDNS reflector or repeater) between the VLANs in your router or firewall.
+- To get discovery and the version anyway, enable mDNS forwarding (an mDNS reflector or repeater) between the VLANs in your router or firewall.
 
 ---
 
@@ -761,7 +769,7 @@ logger:
 
 ## Changing the host or IP
 
-Use **Reconfigure** (or the host field in the options dialog). Since 2026.9.4 the device and its entities are keyed on the config entry rather than on the host, so a host change keeps the device, its area, custom names, disabled entities and long-term statistics. Installs from before 2026.9.4 are migrated automatically on first start; entity ids do not change. Downgrading to an older release afterwards is not supported.
+Use **Reconfigure** (or the host field in the options dialog). An entry that uses an IP address is also updated automatically when the heat pump announces a new address over mDNS (see [Network & mDNS](#network--mdns)). When the entry knows the controller's identifier, a host that turns out to be a different Qube is refused. Since 2026.9.4 the device and its entities are keyed on the config entry rather than on the host, so a host change keeps the device, its area, custom names, disabled entities and long-term statistics. Installs from before 2026.9.4 are migrated automatically on first start; entity ids do not change. Downgrading to an older release afterwards is not supported.
 
 ## Removing the Integration
 

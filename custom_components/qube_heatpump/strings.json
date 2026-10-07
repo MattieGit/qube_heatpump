@@ -2,12 +2,14 @@
   "config": {
     "abort": {
       "already_configured": "Device is already configured.",
-      "reconfigure_successful": "Re-configuration was successful."
+      "reconfigure_successful": "Re-configuration was successful.",
+      "not_qube_device": "The discovered device is not a Qube heat pump."
     },
     "error": {
       "cannot_connect": "Failed to connect. Check host and port.",
       "duplicate_ip": "A Qube heat pump using this IP address already exists. Choose a different host.",
-      "not_qube_device": "The device answers, but not like a Qube heat pump. Check the host and port."
+      "not_qube_device": "The device answers, but not like a Qube heat pump. Check the host and port.",
+      "different_heat_pump": "This host is a different Qube heat pump. Enter the address of the heat pump that was set up before."
     },
     "step": {
       "user": {
@@ -35,15 +37,27 @@
           "port": "Modbus TCP port (default: 502).",
           "name": "Name for this heat pump."
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Qube heat pump found",
+        "description": "A Qube heat pump was found at {host}. Choose a device name to add it.",
+        "data": {
+          "name": "Device name"
+        },
+        "data_description": {
+          "name": "Name for this heat pump (e.g. 'qube 1'). This determines entity IDs like sensor.qube_1_supply_temp."
+        }
       }
-    }
+    },
+    "flow_title": "Qube heat pump ({host})"
   },
   "options": {
     "error": {
       "duplicate_ip": "Another Qube heat pump already uses this IP address.",
       "cannot_connect": "Can not connect to Qube. Please check the IP address.",
       "invalid_host": "Enter a valid host or IP address.",
-      "not_qube_device": "The device answers, but not like a Qube heat pump. Check the IP address."
+      "not_qube_device": "The device answers, but not like a Qube heat pump. Check the IP address.",
+      "different_heat_pump": "This host is a different Qube heat pump than the one set up before."
     },
     "step": {
       "init": {

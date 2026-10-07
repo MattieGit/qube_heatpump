@@ -13,12 +13,12 @@ from custom_components.qube_heatpump import _alarm_group_object_id, _resolve_ent
 from custom_components.qube_heatpump.const import CONF_HOST, CONF_NAME, DOMAIN
 from custom_components.qube_heatpump.coordinator import STORAGE_KEY_PREFIX
 from custom_components.qube_heatpump.hub import MDNS_LOOKUP_TIMEOUT
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
-from . import async_poll, setup_integration
+from . import MDNS_INFO, async_poll, setup_integration
 
 ALARM_GROUP = "group.qube_alarms_qube_1"
 
@@ -82,14 +82,6 @@ async def test_setup_retries_when_device_unreachable(
 
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
     assert not hass.states.async_all()
-
-
-MDNS_INFO = QubeDeviceInfo(
-    uuid="000100000007B5EA",
-    software_version="4.1.00",
-    controller_firmware="v5.1.007",
-    project_name="DEQSIHPB000CR",
-)
 
 
 @pytest.mark.parametrize(
@@ -288,3 +280,52 @@ async def test_remove_entry_deletes_monotonic_store(
     await hass.async_block_till_done()
 
     assert key not in hass_storage
+
+
+async def test_entry_adopts_the_controller_uuid(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """A host-based entry is keyed on the controller uuid once mDNS answers."""
+    mock_mdns_info.return_value = MDNS_INFO
+
+    await setup_integration(hass, mock_config_entry)
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert mock_config_entry.unique_id == MDNS_INFO.uuid
+
+
+async def test_entry_keeps_its_id_when_the_uuid_is_taken(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Two entries for one controller: the second keeps its host-based id."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "qube.local"},
+        unique_id=MDNS_INFO.uuid,
+        title="qube via name",
+        disabled_by=ConfigEntryDisabler.USER,
+    ).add_to_hass(hass)
+    mock_mdns_info.return_value = MDNS_INFO
+
+    await setup_integration(hass, mock_config_entry)
+
+    assert mock_config_entry.unique_id == f"{DOMAIN}-1.2.3.4-502"
+    assert "also configured as qube via name" in caplog.text
+
+
+async def test_entry_without_mdns_keeps_its_id(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Without an mDNS answer the host-based id stays."""
+    await setup_integration(hass, mock_config_entry)
+
+    assert mock_config_entry.unique_id == f"{DOMAIN}-1.2.3.4-502"

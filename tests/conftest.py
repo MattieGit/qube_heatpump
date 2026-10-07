@@ -45,6 +45,16 @@ def mock_mdns_info() -> Generator[AsyncMock]:
 
 
 @pytest.fixture(autouse=True)
+def mock_flow_mdns_info() -> Generator[AsyncMock]:
+    """The config and options flows' mDNS lookup; finds nothing by default."""
+    with patch(
+        "custom_components.qube_heatpump.config_flow.async_get_device_info",
+        AsyncMock(return_value=None),
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
 def stable_integration_version(request: pytest.FixtureRequest) -> Generator[None]:
     """Pin the version the info sensor reports.
 

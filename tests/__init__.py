@@ -3,6 +3,7 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import timedelta
+from ipaddress import ip_address
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from freezegun.api import FrozenDateTimeFactory
@@ -10,9 +11,39 @@ from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
 )
+from python_qube_heatpump import QubeDeviceInfo
 
 from custom_components.qube_heatpump.const import DEFAULT_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+
+MDNS_INFO = QubeDeviceInfo(
+    uuid="000100000007B5EA",
+    software_version="4.1.00",
+    controller_firmware="v5.1.007",
+    project_name="DEQSIHPB000CR",
+)
+
+# The advertisement captured from a Qube on firmware 4.1.00
+ZEROCONF_DISCOVERY = ZeroconfServiceInfo(
+    ip_address=ip_address("192.168.5.208"),
+    ip_addresses=[ip_address("192.168.5.208")],
+    hostname="Qube.local.",
+    name="Qube._workstation._tcp.local.",
+    port=9,
+    type="_workstation._tcp.local.",
+    properties={
+        "Vendor": "000A5C",
+        "MachineType": "312",
+        "HWCode": "344",
+        "InterfaceType": "11",
+        "Uuid": "000100000007B5EA",
+        "FWRelease": "v5.1.007",
+        "ToolRelease": "5.1.9",
+        "ProjectRelease": "4.1.00",
+        "ProjectName": "DEQSIHPB000CR",
+    },
+)
 
 
 async def setup_integration(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:

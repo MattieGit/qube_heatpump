@@ -13,6 +13,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigEntryState,
 )
+from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import (
     config_validation as cv,
@@ -292,6 +293,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # ConfigEntryNotReady when the device is unreachable.
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data.version = coordinator.sw_version or "unknown"
+    _async_adopt_controller_uuid(hass, entry, coordinator)
 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
@@ -329,6 +331,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     )
 
     return True
+
+
+@callback
+def _async_adopt_controller_uuid(
+    hass: HomeAssistant, entry: QubeConfigEntry, coordinator: QubeCoordinator
+) -> None:
+    """Key the entry on the controller's mDNS uuid once it has been seen.
+
+    Entries start with a host-based unique id when mDNS is unavailable during
+    setup. The uuid survives address changes and lets discovery recognise the
+    heat pump. Runs before the update listener is registered, so it does not
+    trigger a reload.
+    """
+    if (info := coordinator.mdns_info) is None or entry.unique_id == info.uuid:
+        return
+    if (
+        other := hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, info.uuid)
+    ) is not None:
+        _LOGGER.warning(
+            "Heat pump at %s is also configured as %s; keeping the host-based id",
+            entry.data.get(CONF_HOST),
+            other.title,
+        )
+        return
+    hass.config_entries.async_update_entry(entry, unique_id=info.uuid)
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:

@@ -20,7 +20,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
 
-from . import patch_validation_client, setup_integration
+from . import MDNS_INFO, patch_validation_client, setup_integration
 
 RESOLVE_HOST = "custom_components.qube_heatpump.config_flow.async_resolve_host"
 
@@ -287,3 +287,47 @@ async def test_options_flow_disabling_feature_drops_its_settings(
         "unit_id": 1,  # legacy value is left alone
     }
     mock_reload.assert_awaited_once_with(mock_config_entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    ("unique_id", "expected_unique_id", "expected_error"),
+    [
+        pytest.param(f"{DOMAIN}-1.2.3.4-502", MDNS_INFO.uuid, None, id="adopts_uuid"),
+        pytest.param("0001000000000001", None, "different_heat_pump", id="other_qube"),
+    ],
+)
+async def test_options_flow_host_change_checks_the_controller(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_flow_mdns_info: AsyncMock,
+    unique_id: str,
+    expected_unique_id: str | None,
+    expected_error: str | None,
+) -> None:
+    """A host change adopts the controller uuid or refuses another heat pump."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4", CONF_NAME: "qube 1"},
+        unique_id=unique_id,
+        title="qube 1",
+    )
+    await setup_integration(hass, entry)
+    mock_flow_mdns_info.return_value = MDNS_INFO
+
+    result = await _start_options_flow(hass, entry)
+    with patch_validation_client():
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={CONF_HOST: "192.0.2.99", CONF_NAME: "qube 1"},
+        )
+    await hass.async_block_till_done()
+
+    if expected_error:
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {CONF_HOST: expected_error}
+        assert entry.data[CONF_HOST] == "1.2.3.4"
+        assert entry.unique_id == unique_id
+    else:
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert entry.data[CONF_HOST] == "192.0.2.99"
+        assert entry.unique_id == expected_unique_id
