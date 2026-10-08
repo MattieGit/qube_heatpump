@@ -306,12 +306,12 @@ The two underlying Modbus coils (`bms_sgready_a`, `bms_sgready_b`) are not expos
 
 ### Important: LinQ Dependency
 
-SG Ready **Plus** and **Max** modes have limited effect without a LinQ thermostat:
+The integration only switches the two SG Ready coils; what Plus and Max do is decided by the Qube controller. The points below come from user reports and the vendor's Modbus register list, not from tests by this project:
 
-- **Room setpoint +1°C**: Only applies when a LinQ thermostat is connected. Without LinQ, the room setpoint increase has no effect.
-- **DHW day mode**: Sets DHW to day setpoint (e.g. 52°C). If your DHW temperature is already above 47°C, the Qube will not start DHW heating.
+- **Room setpoint +1 K**: users report that this only takes effect with a LinQ thermostat. The vendor register list fits this: it describes the "+1 K room setpoint" signal (coil 64, `Surplus_PV`) as an instruction *to the LinQ*. Whether Plus and Max raise the setpoint of the controller's internal room thermostat (used with a room sensor and no LinQ) is not confirmed.
+- **DHW day mode**: users report that this sets DHW to the day setpoint (e.g. 52 °C), and that the Qube does not start DHW heating when the water is already above about 47 °C.
 
-If you use SG Ready for dynamic tariff optimization (e.g. Tibber) **without LinQ**, the Plus mode may not cause the Qube to start. Consider using `switch.qube_modbus_demand` or `switch.qube_tapw_timeprogram_bms_forced` directly for more explicit control.
+If you use SG Ready for dynamic tariff optimization (e.g. Tibber) **without LinQ**, the Plus mode may therefore not cause the Qube to start. Consider using `switch.qube_modbus_demand` or `switch.qube_tapw_timeprogram_bms_forced` directly for more explicit control. If you can confirm or correct this behaviour on your heat pump, please open an issue.
 
 ---
 
