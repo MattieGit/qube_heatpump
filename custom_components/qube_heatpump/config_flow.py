@@ -115,6 +115,9 @@ async def _async_uuid_owned_elsewhere(
     owner = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, uuid)
     if owner is None or (entry is not None and owner.entry_id == entry.entry_id):
         return False
+    # A disabled entry steps aside so two swapped entries can be pointed back
+    if owner.disabled_by is not None:
+        return True
     host_ip = await async_resolve_host(host)
     owner_ip = await async_resolve_host(owner.data.get(CONF_HOST, ""))
     if host_ip is None or owner_ip is None or host_ip == owner_ip:
@@ -135,12 +138,13 @@ async def _async_validate_host(
 
     Returns an error key (``duplicate_ip``, ``cannot_connect`` or
     ``not_qube_device``) or None when the host is unique among the other
-    entries and answers like a Qube controller over Modbus.
+    entries and answers like a Qube controller over Modbus. A disabled entry
+    polls nothing, so its address is free.
     """
     entries = [
         entry
         for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.entry_id != skip_entry_id
+        if entry.entry_id != skip_entry_id and entry.disabled_by is None
     ]
     if conflict := await _async_find_conflicting_entry(entries, host):
         _LOGGER.debug(
@@ -149,7 +153,11 @@ async def _async_validate_host(
             conflict.entry_id,
         )
         return "duplicate_ip"
+    return await _async_check_modbus(host, port)
 
+
+async def _async_check_modbus(host: str, port: int) -> str | None:
+    """Return ``cannot_connect`` or ``not_qube_device``, or None for a Qube."""
     client = QubeClient(host, port)
     try:
         async with asyncio.timeout(CONNECT_TIMEOUT):
@@ -268,6 +276,7 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
             if entry is not None
             and _is_ip_address(entry.data.get(CONF_HOST, ""))
             and not await self._async_host_used_by_other_entry(host, entry)
+            and not await self._async_still_answers(entry, host)
             else None
         )
         # The entry's update listener reloads it after a data change
@@ -306,6 +315,26 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
             entry.title,
             host,
             conflict.title,
+        )
+        return True
+
+    async def _async_still_answers(self, entry: ConfigEntry, host: str) -> bool:
+        """Return True when the entry's current address still answers as a Qube.
+
+        Two Qubes can announce the same uuid, so an announcement from a new
+        address only means the heat pump moved when the old one went quiet.
+        """
+        current = entry.data[CONF_HOST]
+        if current == host:
+            return False
+        port = entry.data.get(CONF_PORT, DEFAULT_PORT)
+        if await _async_check_modbus(current, port) is not None:
+            return False
+        _LOGGER.debug(
+            "Not moving %s to %s: the heat pump still answers at %s",
+            entry.title,
+            host,
+            current,
         )
         return True
 
