@@ -69,7 +69,7 @@ The integration uses this announcement for:
 
 - **Automatic discovery** (since 2026.10.3): Home Assistant shows a discovered Qube heat pump under **Settings → Devices & services**. Select **Add**, choose a device name and the integration is set up.
 - **Recognising the heat pump**: the entry is keyed on the controller's identifier, so the same heat pump cannot be added twice under different addresses, and reconfiguring to a different Qube is refused. Entries set up earlier switch to the identifier on their next start.
-- **Following a new IP address**: when an entry uses an IP address and the heat pump gets a new one, the next announcement updates the entry. An entry that uses a host name such as `qube.local` keeps that name, and an entry never moves to an address another entry already uses (see [Two or more heat pumps on one network](#two-or-more-heat-pumps-on-one-network)).
+- **Following a new IP address**: when an entry uses an IP address and the heat pump gets a new one, the next announcement updates the entry. An entry that uses a host name such as `qube.local` keeps that name, an entry only moves when the heat pump no longer answers at its old address (since 2026.10.5), and an entry never moves to an address another entry already uses (see [Two or more heat pumps on one network](#two-or-more-heat-pumps-on-one-network)).
 - **The software version** on the device page.
 
 Polling the heat pump itself always goes over Modbus/TCP (port 502) and does not depend on mDNS. If you also have the core integration installed, the heat pump is discovered by both; add it to one and ignore the other.
@@ -431,6 +431,15 @@ Every Qube announces itself under the same mDNS name (`Qube`, host name `qube.lo
 - Set up each heat pump with its own IP address, not `qube.local`, and give each a fixed IP address (DHCP reservation) in your router.
 - An entry never follows an announcement to an address that another entry already uses (since 2026.10.4). In 2026.10.3 this could move the second entry to the first heat pump's address, so both entries showed the same heat pump. After updating, check the **IP address** sensor of each heat pump and, if needed, [reconfigure](#changing-the-host-or-ip) the wrong one with its own address.
 - An identifier that another entry at a different address already uses is not trusted, so it never blocks setting up or reconfiguring the other heat pump.
+- Two heat pumps can report the same identifier. In 2026.10.4 an announcement from one could then move the other entry to its address, so the two entries swapped heat pumps. Since 2026.10.5 an entry only follows an announcement when its own heat pump no longer answers at the old address.
+
+**Swapped entries**: if each entry shows the other heat pump, reconfiguring fails with "Another Qube heat pump already uses this IP address", because each entry holds the address the other one needs. A disabled entry does not hold its address (since 2026.10.5), so:
+
+1. Disable the first entry (**⋮ → Disable**).
+2. [Reconfigure](#changing-the-host-or-ip) the second entry with its own IP address.
+3. Enable the first entry and reconfigure it with its own IP address.
+
+The history recorded while the entries were swapped belongs to the other heat pump.
 
 ### Changing the Device Name
 

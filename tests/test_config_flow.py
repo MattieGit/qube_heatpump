@@ -15,7 +15,11 @@ from custom_components.qube_heatpump.const import (
     DOMAIN,
 )
 from homeassistant import config_entries
-from homeassistant.config_entries import ConfigEntryState, UnknownEntry
+from homeassistant.config_entries import (
+    ConfigEntryDisabler,
+    ConfigEntryState,
+    UnknownEntry,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -543,15 +547,46 @@ async def test_zeroconf_configured_heat_pump(
     )
     entry.add_to_hass(hass)
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": config_entries.SOURCE_ZEROCONF},
-        data=ZEROCONF_DISCOVERY,
-    )
+    # The old address no longer answers
+    with patch_validation_client(connect=False):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_ZEROCONF},
+            data=ZEROCONF_DISCOVERY,
+        )
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert entry.data[CONF_HOST] == expected_host
+
+
+async def test_zeroconf_keeps_an_address_that_still_answers(
+    hass: HomeAssistant,
+) -> None:
+    """Two Qubes: an announcement with the uuid moves nothing while the
+    entry's own heat pump still answers.
+
+    Both heat pumps can report the same uuid, so the announcement may come
+    from the other one at an address no entry uses yet.
+    """
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.100", CONF_PORT: 502},
+        unique_id=MDNS_INFO.uuid,
+    )
+    entry.add_to_hass(hass)
+
+    with patch_validation_client() as client:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_ZEROCONF},
+            data=ZEROCONF_DISCOVERY,
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_HOST] == "192.168.5.100"
+    client.async_verify_device.assert_awaited_once()
 
 
 async def test_zeroconf_does_not_move_to_another_entrys_address(
@@ -687,3 +722,56 @@ async def test_zeroconf_entry_without_uuid(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert entry.unique_id == f"{DOMAIN}-qube.local-502"
+
+
+async def test_swapped_entries_can_be_pointed_back(
+    hass: HomeAssistant,
+    mock_setup_entry: MagicMock,
+    mock_flow_mdns_info: AsyncMock,
+) -> None:
+    """Two Qubes whose entries swapped addresses: disabling one frees its address.
+
+    Each entry polls the address the other one needs, so neither can be
+    reconfigured while both are enabled.
+    """
+    first = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.209", CONF_PORT: 502, CONF_NAME: "qube 1"},
+        unique_id=MDNS_INFO.uuid,
+        title="qube 1",
+    )
+    second = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.208", CONF_PORT: 502, CONF_NAME: "qube 2"},
+        unique_id=f"{DOMAIN}-192.168.5.208-502",
+        title="qube 2",
+    )
+    first.add_to_hass(hass)
+    second.add_to_hass(hass)
+    # Both heat pumps report the same uuid
+    mock_flow_mdns_info.return_value = MDNS_INFO
+
+    async def reconfigure(entry: MockConfigEntry, host: str) -> dict:
+        result = await _start_reconfigure(hass, entry)
+        with patch_validation_client():
+            return await hass.config_entries.flow.async_configure(
+                result["flow_id"], {CONF_HOST: host, CONF_PORT: 502}
+            )
+
+    result = await reconfigure(second, "192.168.5.209")
+    assert result["errors"] == {CONF_HOST: "duplicate_ip"}
+
+    await hass.config_entries.async_set_disabled_by(
+        first.entry_id, ConfigEntryDisabler.USER
+    )
+    result = await reconfigure(second, "192.168.5.209")
+    assert result["reason"] == "reconfigure_successful"
+    assert second.unique_id == f"{DOMAIN}-192.168.5.209-502"
+
+    await hass.config_entries.async_set_disabled_by(first.entry_id, None)
+    result = await reconfigure(first, "192.168.5.208")
+    assert result["reason"] == "reconfigure_successful"
+
+    assert first.data[CONF_HOST] == "192.168.5.208"
+    assert first.unique_id == MDNS_INFO.uuid
+    assert second.data[CONF_HOST] == "192.168.5.209"

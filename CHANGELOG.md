@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.5 — 2026-10-12
+- fix: With two Qube heat pumps that report the same mDNS identifier, rediscovery could still swap the two entries in 2026.10.4: an announcement from the second heat pump moved the first entry to the second heat pump's free address (#47). Rediscovery now only moves an entry to a new address when the heat pump no longer answers Modbus at the old one.
+- fix: A disabled entry no longer blocks its address, so two swapped entries can be pointed back: disable one, reconfigure the other with its own address, then enable the first and reconfigure it as well. See "Two or more heat pumps on one network" in the documentation.
+
 ## 2026.10.4 — 2026-10-12
 - fix: With two Qube heat pumps on one network, rediscovery could move one entry to the other heat pump's IP address, so both entries polled the same heat pump (#47). Both heat pumps announce the same mDNS name, so an announcement can pair one heat pump's address with the identifier the other entry is keyed on. Rediscovery now never moves an entry to an address another entry already uses. If you have two heat pumps and updated to 2026.10.3, check the IP address sensor of each and reconfigure the wrong entry with its own address.
 - fix: Setup, reconfigure and the options host field no longer trust an mDNS identifier that another entry at a different address already uses, so pointing an entry back at its own heat pump is not refused as a "different heat pump", and a second heat pump that reports the same identifier can be added.
