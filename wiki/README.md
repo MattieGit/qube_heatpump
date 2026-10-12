@@ -266,7 +266,7 @@ All day/month/SCOP sensors are derived from the two totalisers (registers 69 and
 | `sensor.qube_thermic_yield_ch_day` | Daily CH thermal yield |
 | `sensor.qube_thermic_yield_dhw_day` | Daily DHW thermal yield |
 
-Daily sensors reset at midnight (local time). Use these for daily statistics and energy dashboards.
+Daily sensors reset at midnight (local time), also when the heat pump is idle, so a day without hot-water use shows 0 for the DHW sensors (see [Daily Values Drop to 0](#daily-values-drop-to-0)). Use these for daily statistics and energy dashboards.
 
 ### SCOP Calculations
 
@@ -707,11 +707,27 @@ All communication is local:
 2. If a total is stuck at an old (clamped) value, press `button.qube_clear_monotonic_cache`
 3. If values are genuinely wrong, use Home Assistant's statistics adjustment tool
 
+#### Daily Values Drop to 0
+
+**Symptoms**: Daily energy sensors (electric consumption and thermic yield, total/CH/DHW) and the daily SCOP go back to 0 or *unknown*, and stay there until the heat pump runs again
+
+**Explanation**: Since 2026.9.3 the daily and monthly sensors reset at local midnight, also when the heat pump is idle. A daily value shows only today's energy; a day without hot-water use keeps the DHW sensors at 0. Before 2026.9.3 the reset only happened at the next consumption (and at 00:00 UTC), so an idle day kept showing the previous day's value, sometimes for several days. History from before mid-September 2026 therefore looks different.
+
+**Solutions**: None needed. If the values stay at 0 while the heat pump *is* running, see [Energy Totals Not Advancing](#energy-totals-not-advancing).
+
+#### SCOP History Starts in September 2026
+
+**Symptoms**: The history graph of a SCOP sensor shows nothing before mid-September 2026
+
+**Explanation**: In 2026.9.3 the SCOP sensors changed from a *total* to a *measurement* state class, which is the correct type for a ratio, and they report *unknown* instead of 0 before 0.1 kWh has been used in the cycle. Home Assistant then keeps long-term statistics for these sensors as a measurement (mean, min and max). The history graph only draws that kind of statistic, so it starts at the update; the older statistics were recorded as totals and are not shown.
+
+**Solutions**: None needed. Developer Tools → Statistics lists any statistics issue Home Assistant detected for these sensors.
+
 #### Energy Totals Not Advancing
 
-**Symptoms**: `binary_sensor.qube_energy_totals_stale` is **on**; daily/monthly energy and SCOP sensors stop changing although the heat pump is running
+**Symptoms**: `binary_sensor.qube_energy_totals_stale` is **on**; daily/monthly energy and SCOP sensors stay at the same value (often 0 after midnight) although the heat pump is running. Restarting Home Assistant does not help
 
-**Explanation**: The coordinator flags this when neither `sensor.qube_energy_total_electric` (register 69) nor `sensor.qube_energy_total_thermic` (register 71) has changed for 15 minutes while `sensor.qube_power_electric` stays above 300 W. All derived day/month/SCOP sensors depend on those two totals, so they are stale as well. Seen in the field after a controller firmware hiccup.
+**Explanation**: The coordinator flags this when neither `sensor.qube_energy_total_electric` (register 69) nor `sensor.qube_energy_total_thermic` (register 71) has changed for 15 minutes while `sensor.qube_power_electric` stays above 300 W. All derived day/month/SCOP sensors depend on those two totals, so they are stale as well. Seen in the field after a controller firmware hiccup, and reported by several users in September and October 2026; each time a power cycle of the heat pump fixed it. The cause is not known yet. If it happens to you, download the diagnostics *before* the power cycle, check whether the counters on the controller display are stuck too, and share both in an issue.
 
 **Solutions**:
 1. Download the diagnostics (device page → ⋮ → Download diagnostics) and compare `raw_data`, `coordinator_data` and `monotonic_cache` for `energy_total_electric` / `energy_total_thermic`. Raw advancing while `coordinator_data` sits at the `monotonic_cache` value means the controller stepped back slightly and the clamp is holding the old maximum: press `button.qube_clear_monotonic_cache`. Raw frozen while `power_electric` shows real draw means the controller's own counter has stalled (`binary_sensor.qube_energy_totals_stale` turns on): power-cycle the heat pump.
