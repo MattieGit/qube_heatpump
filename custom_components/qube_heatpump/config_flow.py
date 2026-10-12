@@ -103,6 +103,31 @@ async def _async_find_conflicting_entry(
     return None
 
 
+async def _async_uuid_owned_elsewhere(
+    hass: HomeAssistant, uuid: str, host: str, entry: ConfigEntry | None
+) -> bool:
+    """Return True when another entry at a different address owns ``uuid``.
+
+    Every Qube advertises the same mDNS name, so with two heat pumps on one
+    network a lookup can return the other controller's record (or both
+    report the same uuid). The uuid then identifies neither heat pump.
+    """
+    owner = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, uuid)
+    if owner is None or (entry is not None and owner.entry_id == entry.entry_id):
+        return False
+    host_ip = await async_resolve_host(host)
+    owner_ip = await async_resolve_host(owner.data.get(CONF_HOST, ""))
+    if host_ip is None or owner_ip is None or host_ip == owner_ip:
+        return False
+    _LOGGER.warning(
+        "Heat pump at %s reports the mDNS uuid of %s at another address; "
+        "not using it to identify the heat pump",
+        host,
+        owner.title,
+    )
+    return True
+
+
 async def _async_validate_host(
     hass: HomeAssistant, host: str, port: int, *, skip_entry_id: str | None = None
 ) -> str | None:
@@ -156,6 +181,10 @@ async def _async_check_host(
 
     aiozc = await zeroconf.async_get_async_instance(hass)
     device = await async_get_device_info(host, aiozc, timeout=MDNS_LOOKUP_TIMEOUT)
+    if device is not None and await _async_uuid_owned_elsewhere(
+        hass, device.uuid, host, entry
+    ):
+        device = None
     current = entry.unique_id if entry else None
     if _is_controller_uuid(current):
         if device is not None and device.uuid != current:
@@ -236,7 +265,9 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         updates = (
             {CONF_HOST: host}
-            if entry is not None and _is_ip_address(entry.data.get(CONF_HOST, ""))
+            if entry is not None
+            and _is_ip_address(entry.data.get(CONF_HOST, ""))
+            and not await self._async_host_used_by_other_entry(host, entry)
             else None
         )
         # The entry's update listener reloads it after a data change
@@ -252,6 +283,31 @@ class QubeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered_host = host
         self.context["title_placeholders"] = {"host": host}
         return await self.async_step_zeroconf_confirm()
+
+    async def _async_host_used_by_other_entry(
+        self, host: str, entry: ConfigEntry
+    ) -> bool:
+        """Return True when another entry already polls ``host``.
+
+        Two Qubes advertise the same mDNS name, so an announcement can pair one
+        heat pump's address with the other's uuid. Following it would point
+        both entries at the same heat pump.
+        """
+        others = [
+            other
+            for other in self._async_current_entries(include_ignore=False)
+            if other.entry_id != entry.entry_id
+        ]
+        if (conflict := await _async_find_conflicting_entry(others, host)) is None:
+            return False
+        # Debug only: both heat pumps keep announcing themselves
+        _LOGGER.debug(
+            "Not moving %s to %s: that address belongs to %s",
+            entry.title,
+            host,
+            conflict.title,
+        )
+        return True
 
     async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None

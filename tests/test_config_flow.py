@@ -554,6 +554,118 @@ async def test_zeroconf_configured_heat_pump(
     assert entry.data[CONF_HOST] == expected_host
 
 
+async def test_zeroconf_does_not_move_to_another_entrys_address(
+    hass: HomeAssistant,
+) -> None:
+    """Two Qubes: an announcement never moves an entry onto the other's address.
+
+    Both heat pumps advertise the same mDNS name, so an announcement from the
+    first one can carry the uuid the second entry is keyed on.
+    """
+    first = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.208", CONF_PORT: 502},
+        unique_id=f"{DOMAIN}-192.168.5.208-502",
+        title="qube 1",
+    )
+    second = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.209", CONF_PORT: 502},
+        unique_id=MDNS_INFO.uuid,
+        title="qube 2",
+    )
+    first.add_to_hass(hass)
+    second.add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=ZEROCONF_DISCOVERY,
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert first.data[CONF_HOST] == "192.168.5.208"
+    assert second.data[CONF_HOST] == "192.168.5.209"
+
+
+@pytest.mark.parametrize(
+    ("unique_id", "expected"),
+    [
+        pytest.param("0001000000000002", "0001000000000002", id="own_uuid_kept"),
+        pytest.param(
+            f"{DOMAIN}-192.168.5.208-502",
+            f"{DOMAIN}-192.168.5.209-502",
+            id="host_based",
+        ),
+    ],
+)
+async def test_reconfigure_ignores_the_other_heat_pumps_uuid(
+    hass: HomeAssistant,
+    mock_setup_entry: MagicMock,
+    mock_flow_mdns_info: AsyncMock,
+    unique_id: str,
+    expected: str,
+) -> None:
+    """Two Qubes: an entry moved onto the wrong address can be pointed back.
+
+    The lookup at the second heat pump returns the uuid the first entry owns,
+    so it identifies neither heat pump and must not block the change.
+    """
+    first = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.208", CONF_PORT: 502, CONF_NAME: "qube 1"},
+        unique_id=MDNS_INFO.uuid,
+        title="qube 1",
+    )
+    second = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.208", CONF_PORT: 502, CONF_NAME: "qube 2"},
+        unique_id=unique_id,
+        title="qube 2",
+    )
+    first.add_to_hass(hass)
+    second.add_to_hass(hass)
+    mock_flow_mdns_info.return_value = MDNS_INFO
+
+    result = await _start_reconfigure(hass, second)
+    with patch_validation_client():
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.168.5.209", CONF_PORT: 502}
+        )
+
+    assert result2["type"] is FlowResultType.ABORT
+    assert result2["reason"] == "reconfigure_successful"
+    assert second.data[CONF_HOST] == "192.168.5.209"
+    assert second.unique_id == expected
+    assert first.unique_id == MDNS_INFO.uuid
+
+
+async def test_form_second_heat_pump_with_the_same_uuid(
+    hass: HomeAssistant, mock_setup_entry: MagicMock, mock_flow_mdns_info: AsyncMock
+) -> None:
+    """Two Qubes: a second heat pump reporting a known uuid gets a host-based id."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.5.208", CONF_PORT: 502, CONF_NAME: "qube 1"},
+        unique_id=MDNS_INFO.uuid,
+        title="qube 1",
+    ).add_to_hass(hass)
+    mock_flow_mdns_info.return_value = MDNS_INFO
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    with patch_validation_client():
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.168.5.209", CONF_NAME: "qube 2"}
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] is FlowResultType.CREATE_ENTRY
+    assert result2["result"].unique_id == f"{DOMAIN}-192.168.5.209-502"
+
+
 async def test_zeroconf_entry_without_uuid(hass: HomeAssistant) -> None:
     """An entry that has not seen mDNS yet is matched on its address."""
     entry = MockConfigEntry(
