@@ -34,7 +34,7 @@ from .const import (
 )
 from .coordinator import QubeCoordinator, connection_issue_id, monotonic_store
 from .dhw_scheduler import DhwScheduleState, async_setup_dhw_schedule
-from .helpers import is_alarm_entity
+from .helpers import async_resolve_host, is_alarm_entity
 from .hub import QubeHub
 
 if TYPE_CHECKING:
@@ -293,7 +293,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     # ConfigEntryNotReady when the device is unreachable.
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data.version = coordinator.sw_version or "unknown"
-    _async_adopt_controller_uuid(hass, entry, coordinator)
+    await _async_adopt_controller_uuid(hass, entry, coordinator)
 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
@@ -342,7 +342,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
 
 
 @callback
-def _async_adopt_controller_uuid(
+async def _async_adopt_controller_uuid(
     hass: HomeAssistant, entry: QubeConfigEntry, coordinator: QubeCoordinator
 ) -> None:
     """Key the entry on the controller's mDNS uuid once it has been seen.
@@ -357,7 +357,16 @@ def _async_adopt_controller_uuid(
     if (
         other := hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, info.uuid)
     ) is not None:
-        _LOGGER.warning(
+        # Two Qubes can report the same uuid; only the same address is a
+        # heat pump configured twice
+        other_ip = await async_resolve_host(other.data.get(CONF_HOST, ""))
+        own_ip = coordinator.hub.resolved_ip
+        log = (
+            _LOGGER.debug
+            if own_ip and other_ip and own_ip != other_ip
+            else _LOGGER.warning
+        )
+        log(
             "Heat pump at %s is also configured as %s; keeping the host-based id",
             entry.data.get(CONF_HOST),
             other.title,

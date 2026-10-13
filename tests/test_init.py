@@ -1,6 +1,7 @@
 """Tests for the Qube Heat Pump integration setup and unloading."""
 
 from dataclasses import replace
+import logging
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -355,14 +356,28 @@ async def test_entry_adopts_the_controller_uuid(
     assert mock_config_entry.unique_id == MDNS_INFO.uuid
 
 
+@pytest.mark.parametrize(
+    ("other_ip", "level"),
+    [
+        pytest.param("1.2.3.4", logging.WARNING, id="same_heat_pump_twice"),
+        pytest.param(None, logging.WARNING, id="other_unresolved"),
+        pytest.param("1.2.3.5", logging.DEBUG, id="two_heat_pumps_one_uuid"),
+    ],
+)
 async def test_entry_keeps_its_id_when_the_uuid_is_taken(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
     mock_mdns_info: AsyncMock,
     mock_config_entry: MockConfigEntry,
     caplog: pytest.LogCaptureFixture,
+    other_ip: str | None,
+    level: int,
 ) -> None:
-    """Two entries for one controller: the second keeps its host-based id."""
+    """The uuid is taken: the entry keeps its host-based id.
+
+    Only the same address is a heat pump configured twice and worth a warning;
+    two Qubes reporting the same uuid is expected.
+    """
     MockConfigEntry(
         domain=DOMAIN,
         data={CONF_HOST: "qube.local"},
@@ -371,11 +386,21 @@ async def test_entry_keeps_its_id_when_the_uuid_is_taken(
         disabled_by=ConfigEntryDisabler.USER,
     ).add_to_hass(hass)
     mock_mdns_info.return_value = MDNS_INFO
+    caplog.set_level(logging.DEBUG, logger="custom_components.qube_heatpump")
 
-    await setup_integration(hass, mock_config_entry)
+    with patch(
+        "custom_components.qube_heatpump.async_resolve_host",
+        AsyncMock(return_value=other_ip),
+    ):
+        await setup_integration(hass, mock_config_entry)
 
     assert mock_config_entry.unique_id == f"{DOMAIN}-1.2.3.4-502"
-    assert "also configured as qube via name" in caplog.text
+    [record] = [
+        record
+        for record in caplog.records
+        if "also configured as qube via name" in record.getMessage()
+    ]
+    assert record.levelno == level
 
 
 async def test_entry_without_mdns_keeps_its_id(
