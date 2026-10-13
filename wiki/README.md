@@ -430,7 +430,7 @@ Every Qube announces itself under the same mDNS name (`Qube`, host name `qube.lo
 
 - Set up each heat pump with its own IP address, not `qube.local`, and give each a fixed IP address (DHCP reservation) in your router.
 - An entry never follows an announcement to an address that another entry already uses (since 2026.10.4). In 2026.10.3 this could move the second entry to the first heat pump's address, so both entries showed the same heat pump. After updating, check the **IP address** sensor of each heat pump and, if needed, [reconfigure](#changing-the-host-or-ip) the wrong one with its own address.
-- An identifier that another entry at a different address already uses is not trusted, so it never blocks setting up or reconfiguring the other heat pump.
+- An identifier that another entry at a different address already uses is not trusted, so it never blocks setting up or reconfiguring the other heat pump. Only one entry can use the identifier; the other keeps an address-based one. Since 2026.10.7 this is logged at debug level; a warning "is also configured as" means both entries point to the same IP address, so the same heat pump is added twice.
 - Two heat pumps can report the same identifier. In 2026.10.4 an announcement from one could then move the other entry to its address, so the two entries swapped heat pumps. Since 2026.10.5 an entry only follows an announcement when its own heat pump no longer answers at the old address.
 
 **Swapped entries**: if each entry shows the other heat pump, reconfiguring fails with "Another Qube heat pump already uses this IP address", because each entry holds the address the other one needs. A disabled entry does not hold its address (since 2026.10.5), so:
