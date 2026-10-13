@@ -429,6 +429,7 @@ Each heat pump is a separate integration entry with its own device name, and eve
 Every Qube announces itself under the same mDNS name (`Qube`, host name `qube.local`), so with more than one heat pump the announcements cannot always be told apart:
 
 - Set up each heat pump with its own IP address, not `qube.local`, and give each a fixed IP address (DHCP reservation) in your router.
+- To see which address a device uses, open it under **Settings → Devices & services**: the **Visit** link goes to that heat pump's web page (`http://<IP address>`), and the **IP address** diagnostic sensor shows the address.
 - An entry never follows an announcement to an address that another entry already uses (since 2026.10.4). In 2026.10.3 this could move the second entry to the first heat pump's address, so both entries showed the same heat pump. After updating, check the **IP address** sensor of each heat pump and, if needed, [reconfigure](#changing-the-host-or-ip) the wrong one with its own address.
 - An identifier that another entry at a different address already uses is not trusted, so it never blocks setting up or reconfiguring the other heat pump.
 - Two heat pumps can report the same identifier. In 2026.10.4 an announcement from one could then move the other entry to its address, so the two entries swapped heat pumps. Since 2026.10.5 an entry only follows an announcement when its own heat pump no longer answers at the old address.

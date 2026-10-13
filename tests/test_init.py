@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from freezegun.api import FrozenDateTimeFactory
 import pytest
@@ -128,6 +128,40 @@ async def test_software_version_read_during_setup(
     )
     assert device is not None
     assert device.sw_version == expected
+
+
+@pytest.mark.parametrize(
+    ("host", "resolved", "url"),
+    [
+        pytest.param("1.2.3.4", "1.2.3.4", "http://1.2.3.4", id="ip"),
+        pytest.param("qube.local", "192.168.5.208", "http://192.168.5.208", id="name"),
+        pytest.param("qube.local", None, "http://qube.local", id="unresolved"),
+        pytest.param("fd00::208", "fd00::208", "http://[fd00::208]", id="ipv6"),
+    ],
+)
+async def test_device_info(
+    hass: HomeAssistant,
+    device_registry: dr.DeviceRegistry,
+    mock_qube_client: MagicMock,
+    host: str,
+    resolved: str | None,
+    url: str,
+) -> None:
+    """The device is a Qube by HR-energy and links to the controller's web page."""
+    entry = _entry(host)
+    with patch(
+        "custom_components.qube_heatpump.hub.async_resolve_host",
+        AsyncMock(return_value=resolved),
+    ):
+        await setup_integration(hass, entry)
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    assert device is not None
+    assert device.manufacturer == "HR-energy"
+    assert device.model == "Qube"
+    assert device.configuration_url == url
 
 
 async def test_second_entry_is_flagged_as_multi_device(
