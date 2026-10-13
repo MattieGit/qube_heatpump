@@ -30,12 +30,17 @@ class QubeEntity(CoordinatorEntity[QubeCoordinator]):
         self._version = str(version) if version else "unknown"
         self._label = hub.label
         self._entry_id = coordinator.config_entry.entry_id
+        # The controller's web page; the resolved IP tells two Qubes apart
+        web_host = hub.resolved_ip or hub.host
+        if ":" in web_host:
+            web_host = f"[{web_host}]"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._entry_id)},
             name=hub.device_name,
-            manufacturer="Qube",
-            model="Heat Pump",
+            manufacturer="HR-energy",
+            model="Qube",
             sw_version=self._version,
+            configuration_url=f"http://{web_host}",
         )
 
     def _scoped_uid(self, base: str) -> str:

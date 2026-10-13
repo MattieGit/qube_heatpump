@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file. This project us
 ## 2026.10.7 — 2026-10-13
 - fix: With two Qube heat pumps that report the same mDNS identifier, every Home Assistant start logged the warning "Heat pump at … is also configured as …; keeping the host-based id". That is expected with two heat pumps, so it is now a debug message. It stays a warning when both entries point to the same IP address (the same heat pump added twice) or the other entry's address cannot be resolved.
 
+## 2026.10.6 — 2026-10-13
+- fix: The device shows Qube by HR-energy as model and manufacturer, instead of Heat Pump by Qube.
+- feat: The device page has a **Visit** link to the heat pump's web page (`http://<IP address>`). It uses the resolved IP address, so with two heat pumps each link shows which address belongs to which device.
+
 ## 2026.10.5 — 2026-10-12
 - fix: With two Qube heat pumps that report the same mDNS identifier, rediscovery could still swap the two entries in 2026.10.4: an announcement from the second heat pump moved the first entry to the second heat pump's free address (#47). Rediscovery now only moves an entry to a new address when the heat pump no longer answers Modbus at the old one.
 - fix: A disabled entry no longer blocks its address, so two swapped entries can be pointed back: disable one, reconfigure the other with its own address, then enable the first and reconfigure it as well. See "Two or more heat pumps on one network" in the documentation.
