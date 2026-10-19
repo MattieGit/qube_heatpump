@@ -15,12 +15,13 @@ This folder contains ready-to-use Lovelace YAML snippets that showcase the Qube 
 
 ## Adjusting entity IDs
 
-Entity IDs are `<platform>.<device name>_<key>`; the device name is slugified and used as **prefix**. The example uses `qube` as prefix, so with the default device name "qube 1" you must replace `qube_` with `qube_1_` (e.g. `sensor.qube_temp_supply` → `sensor.qube_1_temp_supply`). A search-and-replace of `.qube_` with `.qube_1_` (or your own device-name slug) in the YAML does this in one step.
+Entity IDs are `<platform>.<device name>_<key>`; the device name is slugified and used as **prefix**. The example uses `qube_1`, the prefix for the default device name "qube 1". With another device name, search and replace `.qube_1_` with `.<your device-name slug>_` in the YAML.
 
 - Run multiple heat pumps: each entry has its own device name, so use that name's slug as prefix for the entities of that heat pump.
 - Renamed entities manually: update the YAML to match your preferred IDs.
-- The SG Ready controls use `select.qube_sg_ready_mode`. The two underlying Modbus coils are not exposed as switch entities; the select writes both.
+- The room temperature label shows `sensor.qube_1_modbus_roomtemp`, the value a LinQ sends to the heat pump. Without a LinQ it stays at 0; if a room sensor is connected to the heat pump itself, enable `sensor.qube_1_temp_room` (disabled by default) and use that in the YAML instead.
+- The SG Ready controls use `select.qube_1_sg_ready_mode`. The two underlying Modbus coils are not exposed as switch entities; the select writes both.
 
-Once saved, the dashboard shows a System snapshot picture card (with state labels overlaying the included photo), followed by Controls and the grouped sensor sections (alarms, operating hours, temperature/setpoints, power/energy, performance metrics, binary inputs, and diagnostics).
+Once saved, the dashboard shows a System snapshot picture card (with state labels overlaying the included photo; their positions are percentages of the picture, so they stay in place at any card width), followed by Controls and the grouped sensor sections (alarms, operating hours, temperature/setpoints, power/energy, performance metrics, binary inputs, and diagnostics).
 
-The integration also exposes `binary_sensor.qube_alarm_sensors_active`, which is on while any alarm binary sensor is active; the example dashboard uses it for conditional visibility of the alarm section.
+The integration also exposes `binary_sensor.qube_1_alarm_sensors_active`, which is on while any alarm binary sensor is active; the example dashboard uses it for conditional visibility of the alarm section.
