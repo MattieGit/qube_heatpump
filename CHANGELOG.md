@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.8 — 2026-10-19
+- feat: When a room sensor is connected to the heat pump (`binary_sensor.<label>_roomprb_en` is on), the **Room temperature** sensor (`sensor.<label>_temp_room`) is enabled. It used to be disabled by default, so the room temperature only showed on the LinQ sensor, which stays at 0 without a LinQ (#53). Existing installations enable it on their next start, unless you disabled it yourself.
+
 ## 2026.10.7 — 2026-10-13
 - fix: With two Qube heat pumps that report the same mDNS identifier, every Home Assistant start logged the warning "Heat pump at … is also configured as …; keeping the host-based id". That is expected with two heat pumps, so it is now a debug message. It stays a warning when both entries point to the same IP address (the same heat pump added twice) or the other entry's address cannot be resolved.
 

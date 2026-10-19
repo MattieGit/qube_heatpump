@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower
+from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import IntegrationNotFound, async_get_integration
 from homeassistant.util import dt as dt_util
 
@@ -57,7 +58,8 @@ ALIAS_KEYS = frozenset(
         "setpoint_dhw",  # tapw_timeprogram_dhwsetp_nolinq (173)
     }
 )
-# temp_room: most users use the LinQ thermostat instead.
+# temp_room: most users use the LinQ thermostat instead; it is enabled when the
+# heat pump reports an active room sensor (roomprb_en).
 # cop_calc: the daily/monthly SCOP averages are more useful than real-time COP.
 DISABLED_BY_DEFAULT_KEYS = ALIAS_KEYS | {"temp_room"} | COP_THROTTLE_KEYS
 
@@ -105,6 +107,31 @@ def _find_entity(hub: QubeHub, vendor_id: str) -> EntityDef | None:
     return next((ent for ent in hub.entities if ent.vendor_id == vendor_id), None)
 
 
+def _async_enable_room_temperature(
+    hass: HomeAssistant, hub: QubeHub, entry: QubeConfigEntry
+) -> None:
+    """Enable a room temperature sensor that the integration disabled by default.
+
+    With a room sensor on the heat pump, temp_room is the room temperature.
+    Entries created before this was detected registered it disabled; a sensor
+    the user disabled stays disabled.
+    """
+    if (ent := _find_entity(hub, "temp_room")) is None:
+        return
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.entry_id}_{ent.unique_id}"
+    )
+    if entity_id is None:
+        return
+    reg_entry = ent_reg.async_get(entity_id)
+    if (
+        reg_entry is not None
+        and reg_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    ):
+        ent_reg.async_update_entity(entity_id, disabled_by=None)
+
+
 # Writes go through the shared hub; no per-platform throttling needed.
 PARALLEL_UPDATES = 0
 
@@ -130,8 +157,17 @@ async def async_setup_entry(
         QubeStandbyPowerSensor(coordinator, hub, version),
     ]
 
+    room_sensor = _find_entity(hub, "roomprb_en")
+    room_sensor_active = (
+        room_sensor is not None and initial_data.get(_entity_key(room_sensor)) is True
+    )
+    if room_sensor_active:
+        _async_enable_room_temperature(hass, hub, entry)
+
     entities.extend(
-        QubeSensor(coordinator, hub, version, ent)
+        QubeSensor(
+            coordinator, hub, version, ent, room_sensor_active=room_sensor_active
+        )
         for ent in hub.entities
         if ent.platform == "sensor"
     )
@@ -262,7 +298,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-def _sensor_description(ent: EntityDef) -> SensorEntityDescription:
+def _sensor_description(
+    ent: EntityDef, *, room_sensor_active: bool = False
+) -> SensorEntityDescription:
     """Build the entity description for a library-backed register sensor.
 
     ``device_class``/``state_class`` on the definition may be plain strings or
@@ -275,7 +313,10 @@ def _sensor_description(ent: EntityDef) -> SensorEntityDescription:
         device_class=SensorDeviceClass(ent.device_class) if ent.device_class else None,
         state_class=SensorStateClass(ent.state_class) if ent.state_class else None,
         suggested_display_precision=ent.precision,
-        entity_registry_enabled_default=ent.vendor_id not in DISABLED_BY_DEFAULT_KEYS,
+        entity_registry_enabled_default=(
+            ent.vendor_id not in DISABLED_BY_DEFAULT_KEYS
+            or (ent.vendor_id == "temp_room" and room_sensor_active)
+        ),
     )
 
 
@@ -288,12 +329,16 @@ class QubeSensor(QubeEntity, SensorEntity):
         hub: QubeHub,
         version: str,
         ent: EntityDef,
+        *,
+        room_sensor_active: bool = False,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, hub, version)
         self._ent = ent
         self._key = ent.vendor_id
-        self.entity_description = _sensor_description(ent)
+        self.entity_description = _sensor_description(
+            ent, room_sensor_active=room_sensor_active
+        )
         # vendor_id gives stable, predictable entity IDs (see CLAUDE.md);
         # unique_id is scoped per device for multi-device stability.
         self.entity_id = f"sensor.{self._label}_{ent.vendor_id}"
