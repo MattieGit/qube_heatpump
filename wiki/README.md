@@ -161,7 +161,7 @@ The integration exposes all readable Modbus registers as sensors:
 
 | Category | Examples |
 |----------|----------|
-| **Temperatures** | `sensor.qube_temp_outside`, `sensor.qube_temp_supply`, `sensor.qube_temp_return`, `sensor.qube_temp_dhw`, `sensor.qube_temp_room` (disabled by default) |
+| **Temperatures** | `sensor.qube_temp_outside`, `sensor.qube_temp_supply`, `sensor.qube_temp_return`, `sensor.qube_temp_dhw`, `sensor.qube_temp_room` (disabled by default, enabled when a room sensor is connected to the heat pump) |
 | **Power** | `sensor.qube_power_electric`, `sensor.qube_power_thermic` |
 | **Energy** | `sensor.qube_energy_total_electric`, `sensor.qube_energy_total_thermic` |
 | **Setpoints** | `sensor.qube_heatsetp_1`, `sensor.qube_coolsetp_1`, `sensor.qube_dhw_setp`, `sensor.qube_regsetp` |
@@ -182,6 +182,8 @@ The controller display distinguishes three DHW setpoints (**Min**, **User**, **M
 #### Room temperature via Modbus
 
 `sensor.qube_modbus_roomtemp` ("Linq room temperature", register 75) is the room temperature the controller received over Modbus/LinQ. **The controller ignores this value when LinQ room control is disabled**, which is the recommended setting when Home Assistant controls heat demand (see [Virtual Thermostat Control](#virtual-thermostat-control)). In that configuration the sensor is informational only.
+
+Without a LinQ, nothing writes register 75 and the sensor stays at 0. A room sensor connected to the heat pump itself shows on `sensor.qube_temp_room` ("Room temperature", register 28) instead. That sensor is disabled by default and enabled automatically when `binary_sensor.qube_roomprb_en` ("Room sensor activated") is on.
 
 ### Binary Sensors
 

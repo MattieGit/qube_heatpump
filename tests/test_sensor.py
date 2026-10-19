@@ -136,6 +136,60 @@ async def test_rarely_used_sensors_registered_but_disabled(
     assert registry_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
 
 
+@pytest.mark.parametrize("client_values", [{"roomprb_en": True}])
+async def test_room_temperature_enabled_with_room_sensor(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """With a room sensor on the heat pump, the room temperature starts enabled."""
+    await setup_integration(hass, mock_config_entry)
+
+    registry_entry = entity_registry.async_get("sensor.qube_1_temp_room")
+    assert registry_entry is not None
+    assert registry_entry.disabled_by is None
+    assert hass.states.get("sensor.qube_1_temp_room") is not None
+
+
+@pytest.mark.parametrize("client_values", [{"roomprb_en": True}])
+@pytest.mark.parametrize(
+    ("disabled_by", "expected"),
+    [
+        (er.RegistryEntryDisabler.INTEGRATION, None),
+        (er.RegistryEntryDisabler.USER, er.RegistryEntryDisabler.USER),
+    ],
+)
+async def test_room_temperature_enabled_for_existing_entry(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    disabled_by: er.RegistryEntryDisabler,
+    expected: er.RegistryEntryDisabler | None,
+) -> None:
+    """An existing entry enables the room temperature the integration disabled.
+
+    A room temperature sensor the user disabled stays disabled.
+    """
+    mock_config_entry.add_to_hass(hass)
+    entity_registry.async_get_or_create(
+        "sensor",
+        "qube_heatpump",
+        f"{mock_config_entry.entry_id}_temp_room",
+        suggested_object_id="qube_1_temp_room",
+        config_entry=mock_config_entry,
+        disabled_by=disabled_by,
+    )
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry_entry = entity_registry.async_get("sensor.qube_1_temp_room")
+    assert registry_entry is not None
+    assert registry_entry.disabled_by is expected
+
+
 @pytest.mark.parametrize(
     ("entity_id", "client_values", "options", "expected_state"),
     [
