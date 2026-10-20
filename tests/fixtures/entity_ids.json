@@ -649,6 +649,11 @@
       "entity_id": "switch.qube_1_tapw_timeprogram_bms_forced",
       "platform": "switch",
       "unique_id": "01JQUBESTABLE0000000000001_tapw_timeprogram_bms_forced"
+    },
+    {
+      "entity_id": "water_heater.qube_1_dhw",
+      "platform": "water_heater",
+      "unique_id": "01JQUBESTABLE0000000000001_dhw"
     }
   ],
   "thermostat_enabled": [
@@ -1311,6 +1316,11 @@
       "entity_id": "switch.qube_1_tapw_timeprogram_bms_forced",
       "platform": "switch",
       "unique_id": "01JQUBESTABLE0000000000002_tapw_timeprogram_bms_forced"
+    },
+    {
+      "entity_id": "water_heater.qube_1_dhw",
+      "platform": "water_heater",
+      "unique_id": "01JQUBESTABLE0000000000002_dhw"
     }
   ]
 }

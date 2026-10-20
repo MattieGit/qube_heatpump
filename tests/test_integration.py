@@ -47,6 +47,7 @@ async def test_full_lifecycle(
         "select",
         "sensor",
         "switch",
+        "water_heater",
     }
     assert hass.states.get("sensor.qube_1_temp_supply").state == "45.0"
     # The alarm group lists the alarm binary sensors that were created

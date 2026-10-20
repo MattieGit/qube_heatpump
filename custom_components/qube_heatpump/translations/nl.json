@@ -507,6 +507,11 @@
                 "name": "Thermostaat"
             }
         },
+        "water_heater": {
+            "dhw": {
+                "name": "Warm tapwater"
+            }
+        },
         "switch": {
             "dhw_schedule_enabled": {
                 "name": "SWW-schema ingeschakeld"
