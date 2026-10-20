@@ -80,7 +80,7 @@ Beyond raw Modbus values, the integration provides:
 
 ## Official core integration
 
-Since 2026.4, Home Assistant also ships an official [Qube heat pump integration](https://www.home-assistant.io/integrations/hr_energy_qube/) (`hr_energy_qube`) with a smaller feature set. This custom integration adds, among others, the virtual thermostat, the DHW schedule and the computed energy and SCOP sensors. Choose one integration per heat pump; see the [wiki](./wiki/README.md#official-core-integration) for the differences.
+Since 2026.4, Home Assistant also ships an official [Qube heat pump integration](https://www.home-assistant.io/integrations/hr_energy_qube/) (`hr_energy_qube`) with a smaller feature set. This custom integration adds, among others, the virtual thermostat, the DHW schedule and the computed energy and SCOP sensors. Choose one integration per heat pump; see the [wiki](./wiki/README.md#official-core-integration) for the differences. From Home Assistant 2026.11 the core integration also discovers the heat pump: if you keep this integration, select **Ignore** on the discovered card. To move to the core integration and keep your history, follow [Switching to the core integration](./wiki/README.md#switching-to-the-core-integration).
 
 ## Is my DHW schedule active?
 
