@@ -598,6 +598,15 @@
     }
   },
   "exceptions": {
+    "cannot_connect": {
+      "message": "Unable to connect to the Qube heat pump at {host}: {error}."
+    },
+    "read_failed": {
+      "message": "Reading from the Qube heat pump at {host} failed: {error}."
+    },
+    "no_data": {
+      "message": "No data received from the Qube heat pump at {host}."
+    },
     "connection_failed": {
       "message": "Failed to connect to the Qube heat pump at {host}."
     },

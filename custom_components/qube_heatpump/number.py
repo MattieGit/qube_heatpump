@@ -23,7 +23,8 @@ if TYPE_CHECKING:
     from .entity_defs import EntityDef
     from .hub import QubeHub
 
-PARALLEL_UPDATES = 0
+# Writes share one Modbus connection; send them one at a time
+PARALLEL_UPDATES = 1
 
 # Allowed (min, max) per writable setpoint register, in °C
 SETPOINT_RANGES: dict[str, tuple[float, float]] = {

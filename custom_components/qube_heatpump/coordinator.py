@@ -110,7 +110,9 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             await self.hub.async_connect()
         except ConnectionError as err:
             raise UpdateFailed(
-                f"Unable to connect to Qube heat pump at {self.hub.host}: {err}"
+                translation_domain=DOMAIN,
+                translation_key="cannot_connect",
+                translation_placeholders={"host": self.hub.host, "error": str(err)},
             ) from err
         # The library returns None (and logs) when the register is unreadable
         self.sw_version = await self.hub.async_get_software_version()
@@ -133,7 +135,9 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             self._save_scheduled = False
             await self._store.async_save(dict(self.hub.client.monotonic_cache))
 
-    def _record_failure(self, reason: str) -> UpdateFailed:
+    def _record_failure(
+        self, translation_key: str, error: Exception | None = None
+    ) -> UpdateFailed:
         """Count a failed poll and raise a repair issue after enough of them."""
         self._consecutive_failures += 1
         if self._consecutive_failures == CONSECUTIVE_FAILURES_THRESHOLD:
@@ -147,7 +151,14 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
                 translation_key="connection_failed",
                 translation_placeholders={"host": self.hub.host},
             )
-        return UpdateFailed(reason)
+        placeholders = {"host": self.hub.host}
+        if error is not None:
+            placeholders["error"] = str(error)
+        return UpdateFailed(
+            translation_domain=DOMAIN,
+            translation_key=translation_key,
+            translation_placeholders=placeholders,
+        )
 
     def _record_success(self) -> None:
         """Reset the failure counter and clear any connection issue.
@@ -281,9 +292,7 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
         try:
             await self.hub.async_connect()
         except ConnectionError as exc:
-            raise self._record_failure(
-                f"Connection to {self.hub.host} failed: {exc}"
-            ) from exc
+            raise self._record_failure("cannot_connect", exc) from exc
 
         # Fetch all values in a handful of batched block reads instead of
         # one Modbus transaction per entity (library >=1.12.0).
@@ -291,15 +300,13 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             bulk = await self.hub.async_get_all_entities()
         except OSError as exc:
             self.hub.inc_read_error()
-            raise self._record_failure(
-                f"Reading from {self.hub.host} failed: {exc}"
-            ) from exc
+            raise self._record_failure("read_failed", exc) from exc
 
         # The library swallows per-register errors and returns None; when
         # every register is None the device did not answer at all.
         if all(bulk.get(ent.vendor_id or "") is None for ent in self.hub.entities):
             self.hub.inc_read_error()
-            raise self._record_failure(f"No data received from {self.hub.host}")
+            raise self._record_failure("no_data")
 
         self._record_success()
 

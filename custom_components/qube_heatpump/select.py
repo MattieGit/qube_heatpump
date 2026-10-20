@@ -21,7 +21,8 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-PARALLEL_UPDATES = 0
+# Writes share one Modbus connection; send them one at a time
+PARALLEL_UPDATES = 1
 
 # Option strings are part of the public state; automations depend on them.
 SGREADY_OPTIONS = ["Off", "Block", "Plus", "Max"]

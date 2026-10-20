@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.10 — 2026-10-20
+- fix: Connection and read errors during setup and polling are translated (English and Dutch), like the core integration. They still name the heat pump's address and the underlying error.
+- change: Switches, numbers, the SG Ready select, the thermostat and the water heater send their writes to the heat pump one at a time (`PARALLEL_UPDATES = 1`), so a script that changes several entities at once no longer sends overlapping writes over the one Modbus connection.
+- chore: Removed `quality_scale.yaml` and the manifest's `quality_scale` key. Home Assistant and hassfest ignore both for custom integrations; the quality scale is tracked in the core integration, which is platinum.
+
 ## 2026.10.9 — 2026-10-20
 - feat: Water heater entity for domestic hot water (`water_heater.<label>_dhw`), like the core integration. It shows the DHW temperature and setpoint, sets the setpoint (40-65 °C), and starts or stops the forced DHW run with the `performance` and `heat_pump` operation modes. The existing DHW setpoint number and forced DHW switch stay.
 
