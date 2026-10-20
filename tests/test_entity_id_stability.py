@@ -122,6 +122,7 @@ async def test_entity_id_snapshot_standard(
         "select",
         "sensor",
         "switch",
+        "water_heater",
     ):
         assert expected in platforms, f"No {expected} entities were created"
 

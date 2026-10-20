@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.9 — 2026-10-20
+- feat: Water heater entity for domestic hot water (`water_heater.<label>_dhw`), like the core integration. It shows the DHW temperature and setpoint, sets the setpoint (40-65 °C), and starts or stops the forced DHW run with the `performance` and `heat_pump` operation modes. The existing DHW setpoint number and forced DHW switch stay.
+
 ## 2026.10.8 — 2026-10-19
 - feat: When a room sensor is connected to the heat pump (`binary_sensor.<label>_roomprb_en` is on), the **Room temperature** sensor (`sensor.<label>_temp_room`) is enabled. It used to be disabled by default, so the room temperature only showed on the LinQ sensor, which stays at 0 without a LinQ (#53). Existing installations enable it on their next start, unless you disabled it yourself.
 

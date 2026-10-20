@@ -18,6 +18,7 @@ PLATFORMS = [
     Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
+    Platform.WATER_HEATER,
 ]
 
 TARIFF_OPTIONS = ("CH", "DHW")

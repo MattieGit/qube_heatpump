@@ -3,7 +3,7 @@
 [![HACS Integration](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 [![GitHub Release](https://img.shields.io/github/v/release/mattiegit/qube_heatpump)](https://github.com/mattiegit/qube_heatpump/releases)
 
-This Home Assistant integration connects to your Qube heat pump via Modbus/TCP and exposes the full set of registers as native entities (sensors, binary sensors, switches, numbers, select, buttons). It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library for standardized protocol-level entity definitions.
+This Home Assistant integration connects to your Qube heat pump via Modbus/TCP and exposes the full set of registers as native entities (sensors, binary sensors, switches, numbers, select, buttons, water heater). It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library for standardized protocol-level entity definitions.
 
 ## Entity Naming
 
@@ -55,6 +55,7 @@ The optional virtual thermostat and DHW schedule are enabled in the **Configure*
 - **Switches** - Summer mode, DHW boost, anti-legionella, heating curve, heat demand, DHW schedule
 - **Number entities** - DHW setpoint (Modbus, register 173), heating setpoint without curve (register 101), cooling setpoint without curve (register 103)
 - **Select entity** - SG Ready mode selector
+- **Water heater** - Domestic hot water: DHW temperature, setpoint and the forced DHW run in one entity
 - **Buttons** - Integration reload, clear energy counter cache
 - **Climate** - Optional virtual thermostat driven by an external temperature sensor
 

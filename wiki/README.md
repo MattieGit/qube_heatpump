@@ -219,6 +219,17 @@ Number entities are created for the writable temperature registers:
 
 Each number entity has a read-only sensor twin with the same key (e.g. `sensor.qube_usr_pid_heatsetp`).
 
+### Water Heater
+
+`water_heater.qube_dhw` (*Domestic hot water*) puts domestic hot water on one card: the DHW temperature (register 30), the DHW setpoint (register 173, 40-65 °C) and the forced DHW run.
+
+| Operation mode | Meaning |
+|----------------|---------|
+| `heat_pump` | Normal operation: the controller heats DHW on its own program |
+| `performance` | Forced DHW run (`switch.qube_tapw_timeprogram_bms_forced` on) |
+
+It writes the same registers as `number.qube_tapw_timeprogram_dhwsetp_nolinq` and `switch.qube_tapw_timeprogram_bms_forced`, which stay available. Switching back to `heat_pump` while the controller still has a DHW request pending keeps the mode at `performance` until the run completes (see the `pending_request` attribute of the switch).
+
 ### Select Entity
 
 | Entity | Options |
@@ -386,14 +397,14 @@ automation:
 
 ### 3. Control DHW Setpoint
 
-Use the native number entity:
+Use the water heater (or the number entity `number.qube_tapw_timeprogram_dhwsetp_nolinq`):
 
 ```yaml
-service: number.set_value
+service: water_heater.set_temperature
 target:
-  entity_id: number.qube_tapw_timeprogram_dhwsetp_nolinq
+  entity_id: water_heater.qube_dhw
 data:
-  value: 52
+  temperature: 52
 ```
 
 ---
@@ -407,6 +418,8 @@ The options flow (Settings → Devices & Services → Qube Heat Pump → Configu
 | Start time / End time | 13:00 / 15:00 | When `switch.qube_tapw_timeprogram_bms_forced` is switched on and off. |
 | Use the controller's Modbus setpoint | **on** | Only the forced coil is toggled. The Modbus DHW setpoint (register 173) stays as set on the controller or via `number.qube_tapw_timeprogram_dhwsetp_nolinq`. |
 | DHW setpoint | 50°C | Only used when the option above is **off**: the schedule writes this value to register 173 right before switching the forced coil on. |
+
+The water heater (`water_heater.qube_dhw`) follows the schedule: its mode shows `performance` while the scheduled run is on. With a fixed schedule setpoint, a target set on the water heater is overwritten at the next scheduled start.
 
 Before version 2026.9.1 the schedule always wrote its setpoint, silently overriding whatever was configured on the controller. Existing installations keep their stored setpoint value, but it is no longer written unless you turn the controller-setpoint option off.
 

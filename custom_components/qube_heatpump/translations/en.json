@@ -507,6 +507,11 @@
         "name": "Thermostat"
       }
     },
+    "water_heater": {
+      "dhw": {
+        "name": "Domestic hot water"
+      }
+    },
     "switch": {
       "dhw_schedule_enabled": {
         "name": "DHW schedule enabled"
