@@ -9,9 +9,8 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/MattieGit/qube_heatpump/issues",
   "loggers": ["python_qube_heatpump"],
-  "quality_scale": "bronze",
   "requirements": ["python-qube-heatpump>=1.17.0"],
-  "version": "2026.10.9",
+  "version": "2026.10.10",
   "zeroconf": [
     {
       "type": "_workstation._tcp.local.",
