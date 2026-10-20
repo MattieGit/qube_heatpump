@@ -598,6 +598,15 @@
         }
     },
     "exceptions": {
+        "cannot_connect": {
+            "message": "Kan geen verbinding maken met de Qube warmtepomp op {host}: {error}."
+        },
+        "read_failed": {
+            "message": "Lezen van de Qube warmtepomp op {host} is mislukt: {error}."
+        },
+        "no_data": {
+            "message": "Geen gegevens ontvangen van de Qube warmtepomp op {host}."
+        },
         "connection_failed": {
             "message": "Kan geen verbinding maken met de Qube warmtepomp op {host}."
         },

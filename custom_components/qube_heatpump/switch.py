@@ -23,7 +23,8 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-PARALLEL_UPDATES = 0
+# Writes share one Modbus connection; send them one at a time
+PARALLEL_UPDATES = 1
 
 # The SG Ready coils are exposed through the select entity instead
 SGREADY_VENDOR_IDS = frozenset({"bms_sgready_a", "bms_sgready_b"})

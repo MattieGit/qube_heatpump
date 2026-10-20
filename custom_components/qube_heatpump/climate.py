@@ -48,8 +48,8 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-# Writes go through the shared hub; no per-platform throttling needed.
-PARALLEL_UPDATES = 0
+# Writes share one Modbus connection; send them one at a time
+PARALLEL_UPDATES = 1
 
 _TIMEOUT_CHECK_INTERVAL = 60  # seconds
 

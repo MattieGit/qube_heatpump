@@ -247,6 +247,69 @@ async def test_entities_go_unavailable_on_failed_poll_and_recover(
     assert hass.states.get(DEMAND_SWITCH).state == "off"
 
 
+@pytest.mark.parametrize(
+    ("break_device", "translation_key", "message"),
+    [
+        (
+            _break_connect,
+            "cannot_connect",
+            "Unable to connect to the Qube heat pump at 1.2.3.4: Failed to connect "
+            "to Modbus TCP server",
+        ),
+        (
+            _break_read,
+            "read_failed",
+            "Reading from the Qube heat pump at 1.2.3.4 failed: network down",
+        ),
+        (
+            _break_device,
+            "no_data",
+            "No data received from the Qube heat pump at 1.2.3.4",
+        ),
+    ],
+    ids=["connect_refused", "read_error", "no_data"],
+)
+async def test_failed_poll_raises_a_translated_error(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+    client_values: dict[str, Any],
+    freezer: FrozenDateTimeFactory,
+    break_device: Callable[[MagicMock, dict[str, Any]], Callable[[], None]],
+    translation_key: str,
+    message: str,
+) -> None:
+    """A failed poll carries a translated reason naming the host."""
+    await setup_integration(hass, mock_config_entry)
+    coordinator = mock_config_entry.runtime_data.coordinator
+
+    break_device(mock_qube_client, client_values)
+    await async_poll(hass, freezer)
+
+    err = coordinator.last_exception
+    assert err.translation_domain == DOMAIN
+    assert err.translation_key == translation_key
+    assert err.translation_placeholders["host"] == "1.2.3.4"
+    assert str(err) == message
+
+
+async def test_setup_retries_with_a_translated_reason(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """An unreachable heat pump at startup retries setup with a translated reason."""
+    mock_qube_client.is_connected = False
+    mock_qube_client.connect = AsyncMock(side_effect=OSError("down"))
+
+    await setup_integration(hass, mock_config_entry)
+
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert mock_config_entry.reason == (
+        "Unable to connect to the Qube heat pump at 1.2.3.4: Failed to connect: down"
+    )
+
+
 async def test_partially_missing_bulk_read_keeps_entry_available(
     hass: HomeAssistant,
     mock_qube_client: MagicMock,
