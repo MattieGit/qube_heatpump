@@ -91,6 +91,95 @@ The core integration has a smaller feature set that meets Home Assistant's code 
 
 Choose one integration per heat pump. Running both against the same heat pump has not been tested, and it doubles the Modbus traffic and the entities in Home Assistant.
 
+### Discovered by the core integration
+
+From Home Assistant 2026.11 the core integration discovers the Qube on the network. It does not know about this custom integration, so with this integration set up you still get a **Discovered: Qube heat pump** card under **Settings → Devices & services**. If you keep using this integration, select **Ignore** on that card. You can still add the core integration later: **Add integration → Qube heat pump** replaces the ignored entry.
+
+### Switching to the core integration
+
+The two integrations use different entity IDs, so dashboards, automations and history don't carry over by themselves. To switch:
+
+1. Note which Qube entities your dashboards, automations, scripts and the energy dashboard use. **Settings → Devices & services → Entities**, filtered on this integration, lists them.
+2. Delete this integration's entry (**Settings → Devices & services → Qube heat pump → ⋮ → Delete**), remove the integration in HACS and restart Home Assistant. The recorded history and statistics stay in the database. If **Developer tools → Statistics** offers to fix the statistics of the removed entities, don't delete them yet.
+3. Add the core integration: accept the discovered heat pump, or use **Add integration → Qube heat pump** and enter the IP address.
+4. To keep the history of an entity, give the new core entity its old entity ID: open the entity, select the settings icon and change **Entity ID** to the old one (for example `sensor.qube_1_energy_total_electric`). Home Assistant logs a warning that it cannot migrate history because the entity ID is already in use; that is expected. The core entity then continues recording under the old ID, so its earlier history and long-term statistics stay attached, and the energy dashboard keeps working without changes. This works best for the energy totals and other sensors with the same unit; do it right after adding the core integration.
+5. Update automations and dashboards that use entities you didn't rename (see the table below). The SG Ready select uses lowercase options in core (`off`, `block`, `plus`, `max` instead of `Off`, `Block`, `Plus`, `Max`), so automations that set or compare it need updating either way.
+
+The core integration has no virtual thermostat, DHW schedule, setpoint `number` entities, computed daily/monthly energy, tariff or SCOP sensors, alarm group, reload or clear-cache buttons, and no `write_register` action. Those entities disappear when you switch. Their history stays in the database until the recorder purges it.
+
+<details>
+<summary>Entity IDs in this integration and in core</summary>
+
+The left column assumes the default device name "qube 1". The right column is what the core integration creates with its default name "Qube heat pump" on an English Home Assistant. Home Assistant generates core entity IDs from the entity names in your Home Assistant language, so with another language, or another device name, they can differ; the entity name column is what the core integration shows.
+
+| This integration | Core entity name | Core entity ID (English) |
+|------------------|------------------|--------------------------|
+| `sensor.qube_1_temp_supply` | Supply temperature CH | `sensor.qube_heat_pump_supply_temperature_ch` |
+| `sensor.qube_1_temp_return` | Return temperature | `sensor.qube_heat_pump_return_temperature` |
+| `sensor.qube_1_temp_source_in` | Source temperature in | `sensor.qube_heat_pump_source_temperature_in` |
+| `sensor.qube_1_temp_source_out` | Source temperature out | `sensor.qube_heat_pump_source_temperature_out` |
+| `sensor.qube_1_temp_room` | Room temperature | `sensor.qube_heat_pump_room_temperature` |
+| `sensor.qube_1_temp_dhw` | DHW temperature | `sensor.qube_heat_pump_dhw_temperature` |
+| `sensor.qube_1_temp_outside` | Outside temperature | `sensor.qube_heat_pump_outside_temperature` |
+| `sensor.qube_1_power_thermic` | Thermal power | `sensor.qube_heat_pump_thermal_power` |
+| `sensor.qube_1_power_electric` | Electric power | `sensor.qube_heat_pump_electric_power` |
+| `sensor.qube_1_energy_total_electric` | Total electric consumption | `sensor.qube_heat_pump_total_electric_consumption` |
+| `sensor.qube_1_energy_total_thermic` | Total thermal yield | `sensor.qube_heat_pump_total_thermal_yield` |
+| `sensor.qube_1_cop_calc` | COP | `sensor.qube_heat_pump_cop` |
+| `sensor.qube_1_compressor_speed` | Compressor speed | `sensor.qube_heat_pump_compressor_speed` |
+| `sensor.qube_1_flow_rate` | Measured PVT flow | `sensor.qube_heat_pump_measured_pvt_flow` |
+| `sensor.qube_1_setpoint_room_heat_day` | Room setpoint heating (day) | `sensor.qube_heat_pump_room_setpoint_heating_day` |
+| `sensor.qube_1_setpoint_room_heat_night` | Room setpoint heating (night) | `sensor.qube_heat_pump_room_setpoint_heating_night` |
+| `sensor.qube_1_setpoint_room_cool_day` | Room setpoint cooling (day) | `sensor.qube_heat_pump_room_setpoint_cooling_day` |
+| `sensor.qube_1_setpoint_room_cool_night` | Room setpoint cooling (night) | `sensor.qube_heat_pump_room_setpoint_cooling_night` |
+| `sensor.qube_1_status_heatpump` | Heat pump status | `sensor.qube_heat_pump_heat_pump_status` |
+| `binary_sensor.qube_1_dout_srcpmp_val` | Source pump | `binary_sensor.qube_heat_pump_source_pump` |
+| `binary_sensor.qube_1_dout_usrpmp_val` | User pump | `binary_sensor.qube_heat_pump_user_pump` |
+| `binary_sensor.qube_1_dout_fourwayvlv_val` | Four-way valve | `binary_sensor.qube_heat_pump_four_way_valve` |
+| `binary_sensor.qube_1_dout_cooling_val` | Cooling output | `binary_sensor.qube_heat_pump_cooling_output` |
+| `binary_sensor.qube_1_dout_threewayvlv_val` | Three-way valve | `binary_sensor.qube_heat_pump_three_way_valve` |
+| `binary_sensor.qube_1_dout_bufferpmp_val` | Buffer pump | `binary_sensor.qube_heat_pump_buffer_pump` |
+| `binary_sensor.qube_1_dout_heaterstep1_val` | Heater step 1 | `binary_sensor.qube_heat_pump_heater_step_1` |
+| `binary_sensor.qube_1_dout_heaterstep2_val` | Heater step 2 | `binary_sensor.qube_heat_pump_heater_step_2` |
+| `binary_sensor.qube_1_dout_heaterstep3_val` | Heater step 3 | `binary_sensor.qube_heat_pump_heater_step_3` |
+| `binary_sensor.qube_1_keybonoff` | Keypad | `binary_sensor.qube_heat_pump_keypad` |
+| `binary_sensor.qube_1_daynightmode` | Day mode | `binary_sensor.qube_heat_pump_day_mode` |
+| `binary_sensor.qube_1_al_maxtime_antileg_active` | Anti-legionella timeout alarm | `binary_sensor.qube_heat_pump_anti_legionella_timeout_alarm` |
+| `binary_sensor.qube_1_al_maxtime_dhw_active` | DHW timeout alarm | `binary_sensor.qube_heat_pump_dhw_timeout_alarm` |
+| `binary_sensor.qube_1_al_dewpoint_active` | Dewpoint alarm | `binary_sensor.qube_heat_pump_dewpoint_alarm` |
+| `binary_sensor.qube_1_al_underfloorsafety_active` | Supply too hot alarm | `binary_sensor.qube_heat_pump_supply_too_hot_alarm` |
+| `binary_sensor.qube_1_alrm_flw` | Flow alarm | `binary_sensor.qube_heat_pump_flow_alarm` |
+| `binary_sensor.qube_1_usralrms` | Central heating alarm | `binary_sensor.qube_heat_pump_central_heating_alarm` |
+| `binary_sensor.qube_1_coolingalrms` | Cooling alarm | `binary_sensor.qube_heat_pump_cooling_alarm` |
+| `binary_sensor.qube_1_heatingalrms` | Heating alarm | `binary_sensor.qube_heat_pump_heating_alarm` |
+| `binary_sensor.qube_1_alarmmng_al_workinghour` | Working hours alarm | `binary_sensor.qube_heat_pump_working_hours_alarm` |
+| `binary_sensor.qube_1_srsalrm` | Source alarm | `binary_sensor.qube_heat_pump_source_alarm` |
+| `binary_sensor.qube_1_glbal` | Global alarm | `binary_sensor.qube_heat_pump_global_alarm` |
+| `binary_sensor.qube_1_alarmmng_al_pwrplus` | Compressor alarm | `binary_sensor.qube_heat_pump_compressor_alarm` |
+| `binary_sensor.qube_1_roomprb_en` | Room sensor enabled | `binary_sensor.qube_heat_pump_room_sensor_enabled` |
+| `binary_sensor.qube_1_plantprb_en` | Plant sensor enabled | `binary_sensor.qube_heat_pump_plant_sensor_enabled` |
+| `binary_sensor.qube_1_bufferprb_en` | Buffer sensor enabled | `binary_sensor.qube_heat_pump_buffer_sensor_enabled` |
+| `binary_sensor.qube_1_en_dhwpid` | DHW controller enabled | `binary_sensor.qube_heat_pump_dhw_controller_enabled` |
+| `binary_sensor.qube_1_plantdemand` | Plant demand | `binary_sensor.qube_heat_pump_plant_demand` |
+| `binary_sensor.qube_1_id_demand` | External demand | `binary_sensor.qube_heat_pump_external_demand` |
+| `binary_sensor.qube_1_thermostatdemand` | Thermostat demand | `binary_sensor.qube_heat_pump_thermostat_demand` |
+| `binary_sensor.qube_1_id_summerwinter` | Summer mode | `binary_sensor.qube_heat_pump_summer_mode` |
+| `binary_sensor.qube_1_dewpoint` | Dewpoint | `binary_sensor.qube_heat_pump_dewpoint` |
+| `binary_sensor.qube_1_boostersecurity` | Booster security | `binary_sensor.qube_heat_pump_booster_security` |
+| `binary_sensor.qube_1_srcflw` | Source flow | `binary_sensor.qube_heat_pump_source_flow` |
+| `binary_sensor.qube_1_req_antileg_1` | Anti-legionella | `binary_sensor.qube_heat_pump_anti_legionella` |
+| `binary_sensor.qube_1_surplus_pv` | PV surplus | `binary_sensor.qube_heat_pump_pv_surplus` |
+| `switch.qube_1_bms_summerwinter` | Summer mode | `switch.qube_heat_pump_summer_mode` |
+| `switch.qube_1_antilegionella_frcstart_ant` | Anti-legionella cycle | `switch.qube_heat_pump_anti_legionella_cycle` |
+| `switch.qube_1_en_plantsetp_compens` | Heating curve | `switch.qube_heat_pump_heating_curve` |
+| `switch.qube_1_modbus_demand` | Heating demand | `switch.qube_heat_pump_heating_demand` |
+| `select.qube_1_sg_ready_mode` | Smart grid ready mode | `select.qube_heat_pump_smart_grid_ready_mode` |
+| `water_heater.qube_1_dhw` | Domestic hot water | `water_heater.qube_heat_pump_domestic_hot_water` |
+
+Entities of this integration not in the table have no core counterpart.
+
+</details>
+
 ---
 
 ## Data Updates
