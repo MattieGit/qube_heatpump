@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.10.11 — 2026-10-21
+- chore: The manifest lists the integration's categories (heat pumps & air conditioning, thermostats & heating, water heaters), so Home Assistant can show it under those categories, like the core integration.
+
 ## 2026.10.10 — 2026-10-20
 - fix: Connection and read errors during setup and polling are translated (English and Dutch), like the core integration. They still name the heat pump's address and the underlying error.
 - change: Switches, numbers, the SG Ready select, the thermostat and the water heater send their writes to the heat pump one at a time (`PARALLEL_UPDATES = 1`), so a script that changes several entities at once no longer sends overlapping writes over the one Modbus connection.

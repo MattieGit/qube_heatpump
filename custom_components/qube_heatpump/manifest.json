@@ -1,6 +1,11 @@
 {
   "domain": "qube_heatpump",
   "name": "Qube heat pump",
+  "categories": [
+    "climate.heat_pumps_air_conditioning",
+    "climate.thermostats_heating",
+    "climate.water_heaters"
+  ],
   "codeowners": ["@MattieGit"],
   "config_flow": true,
   "dependencies": ["group", "zeroconf"],
@@ -10,7 +15,7 @@
   "issue_tracker": "https://github.com/MattieGit/qube_heatpump/issues",
   "loggers": ["python_qube_heatpump"],
   "requirements": ["python-qube-heatpump>=1.17.0"],
-  "version": "2026.10.10",
+  "version": "2026.10.11",
   "zeroconf": [
     {
       "type": "_workstation._tcp.local.",
