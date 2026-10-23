@@ -3,21 +3,23 @@
 [![HACS Integration](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 [![GitHub Release](https://img.shields.io/github/v/release/mattiegit/qube_heatpump)](https://github.com/mattiegit/qube_heatpump/releases)
 
-This Home Assistant integration connects to your Qube heat pump via Modbus/TCP and exposes the full set of registers as native entities (sensors, binary sensors, switches, numbers, select, buttons, water heater). It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library for standardized protocol-level entity definitions.
+This Home Assistant integration connects to your Qube heat pump (HR-energy) over Modbus/TCP and exposes its registers as native entities: sensors, binary sensors, switches, numbers, a select, buttons, a water heater and an optional thermostat. It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library, the same library as the official core integration.
 
-## Entity Naming
+## Which integration should I use?
 
-Entity IDs are `<platform>.<device name>_<key>`. The device name you enter during setup is slugified and used as prefix; the default name "qube 1" gives:
+Home Assistant also ships an official [Qube heat pump integration](https://www.home-assistant.io/integrations/hr_energy_qube/) (`hr_energy_qube`). The same author maintains both, and both are maintained for the long term. Use one of them per heat pump.
 
-```
-sensor.qube_1_temp_supply
-sensor.qube_1_temp_return
-sensor.qube_1_energy_total_electric
-switch.qube_1_bms_summerwinter
-select.qube_1_sg_ready_mode
-```
+- **Most new users: the core integration** (Home Assistant 2026.11 or later). It covers monitoring, the energy dashboard and the everyday controls: summer mode, heating demand, the heating curve, SG Ready and hot water through the water heater. It needs no HACS, it is reviewed by Home Assistant and updates with Home Assistant, it is rated platinum on the integration quality scale, and its entity names are translated into your Home Assistant language.
+- **This custom integration** if you need any of:
+  - Home Assistant as the room thermostat instead of a LinQ (virtual thermostat)
+  - A daily hot-water schedule without writing automations
+  - Daily and monthly energy split into heating and hot water, standby consumption and SCOP
+  - Heating and cooling setpoints without the heating curve (`number` entities)
+  - The full register set (operating hours, all DHW setpoints, valve status) and the `write_register` action
+  - New features first: they are tried here before they move to core
+- **Already using this integration?** Keep it if you use any of the above. If you only use entities that core also has, you can switch: [Switching to the core integration](./wiki/README.md#switching-to-the-core-integration) keeps your history.
 
-The key is the vendor's Modbus register key, so an entity ID can be looked up directly in the Modbus documentation. The device name sets the prefix when the entities are first created. Changing the device name later (in the **Configure** dialog) renames the device and the entry, but existing entity IDs keep their prefix; rename them under **Settings → Entities** if you want the new prefix. Entities created after the change (for example the thermostat, when enabled later) get the new prefix. In the wiki and examples, `qube` stands for your slugified device name.
+The wiki has a [side-by-side comparison](./wiki/README.md#which-integration-should-i-use).
 
 ## Installation
 
@@ -29,6 +31,8 @@ The key is the vendor's Modbus register key, so an entity ID can be looked up di
 4. Search for **Qube heat pump** and click **Download**
 5. Restart Home Assistant
 
+Requires Home Assistant 2025.3 or later.
+
 ### Manual Installation
 
 1. Download the latest release from GitHub
@@ -37,14 +41,16 @@ The key is the vendor's Modbus register key, so an entity ID can be looked up di
 
 ## Configuration
 
-On the same network as Home Assistant the heat pump is discovered automatically: select **Add** on the discovered Qube heat pump under **Settings → Devices & Services** and choose a device name. To add it manually:
+On the same network as Home Assistant the heat pump is discovered automatically: select **Add** on the discovered Qube heat pump under **Settings → Devices & services** and choose a device name. To add it manually:
 
-1. Go to **Settings → Devices & Services → Integrations**
+1. Go to **Settings → Devices & services → Integrations**
 2. Click **Add Integration** and search for **Qube heat pump**
 3. Enter the IP address or hostname of your heat pump and a device name. `qube.local` works when Home Assistant and the heat pump are on the same network; in a separate VLAN, use the IP address
 4. The integration creates all Modbus entities
 
 The optional virtual thermostat and DHW schedule are enabled in the **Configure** dialog of the entry.
+
+From Home Assistant 2026.11 the core integration discovers the heat pump as well. If you use this integration, select **Ignore** on that second discovered card.
 
 ## Features
 
@@ -75,40 +81,34 @@ Beyond raw Modbus values, the integration provides:
 - **Error counters** - Connection and read error tracking
 - **IP address sensor** - Resolved IP for hostname setups
 - **Energy totals not advancing** - Problem binary sensor raised when the energy totalisers stop advancing while the heat pump draws power
-- **Download diagnostics** - Entry data and options (host/IP redacted), software version, the heat pump's mDNS announcement, hub info, entity list, the values as read (`raw_data`) and as shown in Home Assistant (`coordinator_data`), the energy counter cache and the stale-energy flag
+- **Download diagnostics** - Entry data and options (host/IP redacted), the heat pump's mDNS announcement, the values as read and as shown in Home Assistant, and the energy counter cache
 - **Software version** - Read from the heat pump's mDNS announcement (the version on the display). It shows as *unknown* when the heat pump is in another VLAN; see [Network & mDNS](./wiki/README.md#network--mdns)
 
-## Official core integration
+### Data integrity
 
-Since 2026.4, Home Assistant also ships an official [Qube heat pump integration](https://www.home-assistant.io/integrations/hr_energy_qube/) (`hr_energy_qube`) with a smaller feature set. This custom integration adds, among others, the virtual thermostat, the DHW schedule and the computed energy and SCOP sensors. Choose one integration per heat pump; see the [wiki](./wiki/README.md#official-core-integration) for the differences. From Home Assistant 2026.11 the core integration also discovers the heat pump: if you keep this integration, select **Ignore** on the discovered card. To move to the core integration and keep your history, follow [Switching to the core integration](./wiki/README.md#switching-to-the-core-integration).
+The heat pump occasionally reports an energy total slightly lower than before. The integration holds the previous value so the energy statistics are not corrupted, and accepts a drop of more than 1 kWh that lasts three polls as a genuine counter reset. See [Data Integrity](./wiki/README.md#data-integrity--monotonic-clamping).
 
-## Is my DHW schedule active?
+## Entity IDs
 
-Two diagnostic entities on the device page reflect the DHW schedule configured in the integration options: `binary_sensor.<label>_dhw_schedule` is **on** while the schedule option is enabled and lists the start and end time, the setpoint source (controller Modbus setpoint or a fixed value), whether the daily window is currently active and when it last started and ended; `sensor.<label>_dhw_schedule_next_start` shows the next scheduled start as a timestamp and is *unknown* while the schedule is off. At startup the log also states `DHW schedule enabled 13:00-15:00, setpoint source: controller Modbus setpoint` or `DHW schedule disabled`.
+Entity IDs are `<platform>.<device name>_<key>`, for example `sensor.qube_1_temp_supply` with the default device name "qube 1". The key is the vendor's Modbus register key, so the IDs do not depend on your Home Assistant language and can be looked up in the Modbus documentation. See [Entity Reference](./wiki/README.md#entity-reference).
 
-## Data Integrity
+## Security
 
-The integration implements **monotonic clamping** for `total_increasing` sensors. When the heat pump occasionally reports glitched values lower than the accumulated total (a known hardware quirk), the integration preserves the previous valid value to prevent energy statistics from being corrupted. A drop of more than 1 kWh that persists for three consecutive polls is treated as a genuine counter reset and accepted as the new baseline (logged as a warning). The cache can be cleared manually with the "Clear energy counter cache" button.
-
-## Security Considerations
-
-- **Network**: Modbus/TCP is an unencrypted protocol. The integration assumes a trusted local network
-- **Write access**: The `write_register` service writes by address, but only to the registers and coils the integration knows as writable (the setpoints and control coils); other addresses are rejected. Normal setpoint control should use the `number` entity actions
-- **No external connections**: All communication stays within your local network
+Modbus/TCP is unencrypted and has no authentication, so keep the heat pump on a trusted local network. The integration only talks to the heat pump; nothing leaves your network. The `write_register` action only writes the registers and coils the integration knows as writable. See [Security Considerations](./wiki/README.md#security-considerations).
 
 ## Removing the Integration
 
-Delete the entry via **Settings → Devices & Services → Qube heat pump → ⋮ → Delete**. Home Assistant removes the device and its entities, the `group.qube_alarms_<device name>` helper group is removed when the entry unloads, and the monotonic-clamping cache file `.storage/qube_heatpump_monotonic_<entry_id>` is deleted with the entry. Nothing is left behind. See the [wiki](./wiki/README.md#removing-the-integration) for details.
+Delete the entry via **Settings → Devices & services → Qube heat pump → ⋮ → Delete**. Home Assistant removes the device and its entities, and the integration removes its alarm group and energy counter cache. See the [wiki](./wiki/README.md#removing-the-integration).
 
 ## Documentation
 
-See the [project wiki](./wiki/README.md) for detailed documentation on:
+The [project wiki](./wiki/README.md) covers:
 
+- Choosing between this and the core integration, and switching
 - Supported firmware, network and mDNS
 - Entity reference and computed sensors
-- SG Ready signal configuration
-- Virtual thermostat setup and DHW schedule
-- Dashboard examples
+- Hot water control, SG Ready, the virtual thermostat and the DHW schedule
+- Automation and dashboard examples
 - Troubleshooting and diagnostics
 
 ## Contributions
