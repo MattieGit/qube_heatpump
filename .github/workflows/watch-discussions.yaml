@@ -1,0 +1,49 @@
+name: Watch feature requests
+
+# Opens an issue here for each new discussion in home-assistant/feature-requests
+# that mentions the Qube, so it shows up in the repo's notifications.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  watch:
+    runs-on: "ubuntu-latest"
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      LABEL: "upstream-discussion"
+      QUERY: 'repo:home-assistant/feature-requests qube OR "hr-energy" OR "hr energy" OR hr_energy_qube'
+    steps:
+      - name: Open issues for new discussions
+        run: |
+          gh label create "$LABEL" --color c5def5 \
+            --description "Discussion in home-assistant/feature-requests" 2>/dev/null || true
+
+          known=$(gh issue list --label "$LABEL" --state all --limit 1000 --json body --jq '.[].body')
+
+          gh api graphql -f q="$QUERY" -f query='
+            query($q: String!) {
+              search(type: DISCUSSION, query: $q, first: 50) {
+                nodes { ... on Discussion { url title author { login } category { name } createdAt } }
+              }
+            }' --jq '.data.search.nodes[] | @base64' |
+          while read -r node; do
+            field() { echo "$node" | base64 -d | jq -r "$1"; }
+            url=$(field .url)
+            if grep -qF "$url" <<< "$known"; then
+              continue
+            fi
+            title=$(field .title)
+            # Code span and bare login: no backlink on the discussion, no ping to its author
+            body=$(printf '`%s`\n\nCategory: %s\nAuthor: %s\nOpened: %s\n' \
+              "$url" "$(field .category.name)" "$(field .author.login)" "$(field .createdAt)")
+            gh issue create --label "$LABEL" --title "Feature request: $title" --body "$body"
+            echo "Opened issue for $url"
+          done
