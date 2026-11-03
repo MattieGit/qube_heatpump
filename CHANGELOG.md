@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.11.1 — 2026-11-03
+- change: Requires python-qube-heatpump 1.18.0, which talks to the heat pump through [modbus-connection](https://github.com/home-assistant-libs/modbus-connection) on tmodbus instead of pymodbus. This is the Modbus layer Home Assistant core now shares between integrations. Nothing changes in the integration's entities or settings.
+- change: A block read whose response from the heat pump went missing is tried once more before the poll fails. Writes are never repeated.
+- chore: The manifest names the `modbus_connection` and `tmodbus` loggers, so their debug logs can be enabled from the integration page.
+- Includes 2026.10.11, which was not released on its own.
+
 ## 2026.10.11 — 2026-10-21
 - chore: The manifest lists the integration's categories (heat pumps & air conditioning, thermostats & heating, water heaters), so Home Assistant can show it under those categories, like the core integration.
 
