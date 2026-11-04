@@ -3,7 +3,7 @@
 [![HACS Integration](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 [![GitHub Release](https://img.shields.io/github/v/release/mattiegit/qube_heatpump)](https://github.com/mattiegit/qube_heatpump/releases)
 
-This Home Assistant integration connects to your Qube heat pump (HR-energy) over Modbus/TCP and exposes its registers as native entities: sensors, binary sensors, switches, numbers, a select, buttons, a water heater and an optional thermostat. It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library, the same library as the official core integration.
+Monitor and control your HR-energy Qube heat pump from Home Assistant. The integration talks to the heat pump directly over Modbus/TCP on your local network, with no cloud account. It shows temperatures, power, energy and alarms, controls heating, cooling and hot water, and can turn Home Assistant into the room thermostat. It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library, the same library as the core integration.
 
 ## Which integration should I use?
 
@@ -23,21 +23,10 @@ The wiki has a [side-by-side comparison](./wiki/README.md#which-integration-shou
 
 ## Installation
 
-### HACS (Recommended)
-
-1. Open HACS in Home Assistant
-2. Click the three dots menu → **Custom repositories**
-3. Add `https://github.com/mattiegit/qube_heatpump` as an **Integration**
-4. Search for **Qube heat pump** and click **Download**
-5. Restart Home Assistant
-
 Requires Home Assistant 2025.3 or later.
 
-### Manual Installation
-
-1. Download the latest release from GitHub
-2. Copy the `custom_components/qube_heatpump` folder to your `config/custom_components/` directory
-3. Restart Home Assistant
+- **In HACS:** select **Download**, then restart Home Assistant. If the integration does not appear in HACS, add `https://github.com/mattiegit/qube_heatpump` under **⋮ → Custom repositories** as an **Integration** first.
+- **Manually:** copy `custom_components/qube_heatpump` from the [latest release](https://github.com/mattiegit/qube_heatpump/releases/latest) to `config/custom_components/`, then restart Home Assistant.
 
 ## Configuration
 
