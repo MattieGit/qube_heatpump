@@ -1,6 +1,6 @@
 # Qube Heat Pump (Custom Integration)
 
-[![HACS Integration](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/github/v/release/mattiegit/qube_heatpump)](https://github.com/mattiegit/qube_heatpump/releases)
 
 Monitor and control your HR-energy Qube heat pump from Home Assistant. The integration talks to the heat pump directly over Modbus/TCP on your local network, with no cloud account. It shows temperatures, power, energy and alarms, controls heating, cooling and hot water, and can turn Home Assistant into the room thermostat. It uses the [python-qube-heatpump](https://pypi.org/project/python-qube-heatpump/) library, the same library as the core integration.
@@ -9,7 +9,7 @@ Monitor and control your HR-energy Qube heat pump from Home Assistant. The integ
 
 Home Assistant also ships an official [Qube heat pump integration](https://www.home-assistant.io/integrations/hr_energy_qube/) (`hr_energy_qube`). The same author maintains both, and both are maintained for the long term. Use one of them per heat pump.
 
-- **Most new users: the core integration** (Home Assistant 2026.11 or later). It covers monitoring, the energy dashboard and the everyday controls: summer mode, heating demand, the heating curve, SG Ready and hot water through the water heater. It needs no HACS, it is reviewed by Home Assistant and updates with Home Assistant, it is rated platinum on the integration quality scale, and its entity names are translated into your Home Assistant language.
+- **Most new users: the core integration** (Home Assistant 2026.11 or later). It covers monitoring, the energy dashboard and the everyday controls: summer mode, heating demand, the heating curve, SG Ready and hot water through the water heater. It needs no separate download, it is reviewed by Home Assistant and updates with Home Assistant, it is rated platinum on the integration quality scale, and its entity names are translated into your Home Assistant language.
 - **This custom integration** if you need any of:
   - Home Assistant as the room thermostat instead of a LinQ (virtual thermostat)
   - A daily hot-water schedule without writing automations
@@ -25,7 +25,8 @@ The wiki has a [side-by-side comparison](./wiki/README.md#which-integration-shou
 
 Requires Home Assistant 2025.3 or later.
 
-- **In HACS:** select **Download**, then restart Home Assistant. If the integration does not appear in HACS, add `https://github.com/mattiegit/qube_heatpump` under **⋮ → Custom repositories** as an **Integration** first.
+- **Home Assistant 2026.11 or later:** open **Settings → Marketplace**, search for **Qube heat pump** and install it. It is in the default catalog, so there is no repository to add.
+- **Older versions, in HACS:** search for **Qube heat pump**, select **Download**, then restart Home Assistant.
 - **Manually:** copy `custom_components/qube_heatpump` from the [latest release](https://github.com/mattiegit/qube_heatpump/releases/latest) to `config/custom_components/`, then restart Home Assistant.
 
 ## Configuration
