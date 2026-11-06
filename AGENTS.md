@@ -4,6 +4,7 @@ Guidelines for coding agents and contributors working on this HACS integration. 
 
 ## Layout
 - `custom_components/qube_heatpump/` — the HACS integration (the only shipped code).
+- `custom_components/qube_heatpump/brand/` — the integration icon (`icon.png` 256 px, `icon@2x.png` 512 px); Home Assistant 2026.3+ serves it locally and the Marketplace catalog takes it from the latest release.
 - `tests/` — pytest suite (`pytest-homeassistant-custom-component`); `tests/fixtures/entity_ids.json` pins entity and unique IDs; `tests/snapshots/` holds the syrupy entity snapshots.
 - `wiki/README.md` — user documentation; `manifest.json` `documentation` and the config flow's `DOCS_URL` link to this file in the repository (there is no separate GitHub wiki).
 - `examples/` — sample Lovelace dashboard; `assets/` — images referenced by the wiki and dashboard.

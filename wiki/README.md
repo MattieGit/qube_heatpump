@@ -31,7 +31,7 @@
 
 <a id="official-core-integration"></a>
 
-Home Assistant also ships an official Qube integration, [Qube heat pump (`hr_energy_qube`)](https://www.home-assistant.io/integrations/hr_energy_qube/), which needs no HACS. The same author maintains both, both use the [`python-qube-heatpump`](https://pypi.org/project/python-qube-heatpump/) library, and both are maintained for the long term. New features are usually tried in this custom integration first and move to core once they have proven themselves.
+Home Assistant also ships an official Qube integration, [Qube heat pump (`hr_energy_qube`)](https://www.home-assistant.io/integrations/hr_energy_qube/), which is built in. The same author maintains both, both use the [`python-qube-heatpump`](https://pypi.org/project/python-qube-heatpump/) library, and both are maintained for the long term. New features are usually tried in this custom integration first and move to core once they have proven themselves.
 
 ### Recommendation
 
@@ -50,7 +50,7 @@ Use one integration per heat pump. Running both against the same heat pump has n
 
 | | Core (`hr_energy_qube`) | This integration (`qube_heatpump`) |
 |-|-------------------------|-------------------------------------|
-| Installation | Built in, updates with Home Assistant | HACS, updated separately |
+| Installation | Built in, updates with Home Assistant | Marketplace (HACS before 2026.11), updated separately |
 | Review | Reviewed by Home Assistant, platinum on the quality scale (2026.11) | Maintained and tested by the author |
 | Entity names | Translated by the Home Assistant community | English and Dutch |
 | Entity IDs | Generated from the entity names in your Home Assistant language (`sensor.qube_heat_pump_supply_temperature_ch`) | Fixed, from the Modbus register key (`sensor.qube_1_temp_supply`) |
@@ -78,7 +78,7 @@ From Home Assistant 2026.11 the core integration discovers the Qube on the netwo
 The two integrations use different entity IDs, so dashboards, automations and history don't carry over by themselves. To switch:
 
 1. Note which Qube entities your dashboards, automations, scripts and the energy dashboard use. **Settings → Devices & services → Entities**, filtered on this integration, lists them.
-2. Delete this integration's entry (**Settings → Devices & services → Qube heat pump → ⋮ → Delete**), remove the integration in HACS and restart Home Assistant. The recorded history and statistics stay in the database. If **Developer tools → Statistics** offers to fix the statistics of the removed entities, don't delete them yet.
+2. Delete this integration's entry (**Settings → Devices & services → Qube heat pump → ⋮ → Delete**), remove the integration in the Marketplace (HACS before 2026.11) and restart Home Assistant. The recorded history and statistics stay in the database. If **Developer tools → Statistics** offers to fix the statistics of the removed entities, don't delete them yet.
 3. Add the core integration: accept the discovered heat pump, or use **Add integration → Qube heat pump** and enter the IP address.
 4. To keep the history of an entity, give the new core entity its old entity ID: open the entity, select the settings icon and change **Entity ID** to the old one (for example `sensor.qube_1_energy_total_electric`). Home Assistant logs a warning that it cannot migrate history because the entity ID is already in use; that is expected. The core entity then continues recording under the old ID, so its earlier history and long-term statistics stay attached, and the energy dashboard keeps working without changes. This works best for the energy totals and other sensors with the same unit; do it right after adding the core integration.
 5. Update automations and dashboards that use entities you didn't rename (see the table below). The SG Ready select uses lowercase options in core (`off`, `block`, `plus`, `max` instead of `Off`, `Block`, `Plus`, `Max`), so automations that set or compare it need updating either way.
