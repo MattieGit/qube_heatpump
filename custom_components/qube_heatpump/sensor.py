@@ -37,8 +37,8 @@ if TYPE_CHECKING:
 # Sensors that should clamp values to minimum 0 (percentages, flow rates)
 CLAMP_TO_ZERO_KEYS = frozenset({"dhw_regreq", "flow", "flow_rate"})
 
-# Value indicating room sensor is not installed (-999)
-ROOM_SENSOR_NOT_INSTALLED = -999
+# The heat pump reports -999.9 as the room temperature without a room sensor
+ROOM_SENSOR_NOT_INSTALLED = -999.0
 
 # COP sensor throttling - reduce update frequency since daily/monthly SCOP is more useful
 COP_THROTTLE_KEYS = frozenset({"cop_calc"})
@@ -361,8 +361,8 @@ class QubeSensor(QubeEntity, SensorEntity):
         if value is None:
             return None
 
-        # Handle temp_room showing -999 when sensor not installed
-        if self._key == "temp_room" and value == ROOM_SENSOR_NOT_INSTALLED:
+        # temp_room reads -999.9 when no room sensor is connected
+        if self._key == "temp_room" and value <= ROOM_SENSOR_NOT_INSTALLED:
             return None
 
         # Clamp values that should never be negative (percentages, flow rates).

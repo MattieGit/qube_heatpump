@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.11.2 — 2026-11-06
+- fix: The room temperature shows as unknown instead of -999.9 °C when no room sensor is connected. The heat pump reports -999.9 for a missing sensor, and the check only caught exactly -999. The sensor stays disabled by default unless the heat pump reports a room sensor.
+
 ## 2026.11.1 — 2026-11-03
 - change: Requires python-qube-heatpump 1.18.0, which talks to the heat pump through [modbus-connection](https://github.com/home-assistant-libs/modbus-connection) on tmodbus instead of pymodbus. This is the Modbus layer Home Assistant core now shares between integrations. Nothing changes in the integration's entities or settings.
 - change: A block read whose response from the heat pump went missing is tried once more before the poll fails. Writes are never repeated.

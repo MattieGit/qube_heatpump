@@ -432,7 +432,7 @@ class TestQubeSensorDescription:
         assert self._make(ent).entity_registry_enabled_default is False
 
     def test_temp_room_not_installed_is_unknown(self) -> None:
-        """-999 means no room sensor is connected."""
+        """-999.9 means no room sensor is connected."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
 
         ent = EntityDef(
@@ -443,6 +443,7 @@ class TestQubeSensorDescription:
             unique_id="temp_room",
             translation_key="temp_room",
         )
+        assert self._make(ent, {"temp_room": -999.9}).native_value is None
         assert self._make(ent, {"temp_room": -999}).native_value is None
         assert self._make(ent, {"temp_room": 20.5}).native_value == 20.5
 
