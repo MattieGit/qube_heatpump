@@ -1,16 +1,24 @@
 """Tests for the Qube Heat Pump integration setup and unloading."""
 
 from dataclasses import replace
+from datetime import timedelta
 import logging
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from freezegun.api import FrozenDateTimeFactory
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 from python_qube_heatpump import QubeDeviceInfo
 
-from custom_components.qube_heatpump import _alarm_group_object_id, _resolve_entry
+from custom_components.qube_heatpump import (
+    MDNS_RETRY_DELAYS,
+    _alarm_group_object_id,
+    _resolve_entry,
+)
 from custom_components.qube_heatpump.const import CONF_HOST, CONF_NAME, DOMAIN
 from custom_components.qube_heatpump.coordinator import STORAGE_KEY_PREFIX
 from custom_components.qube_heatpump.hub import MDNS_LOOKUP_TIMEOUT
@@ -129,6 +137,113 @@ async def test_software_version_read_during_setup(
     )
     assert device is not None
     assert device.sw_version == expected
+
+
+async def _async_advance(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
+) -> None:
+    """Advance time and run what became due."""
+    freezer.tick(timedelta(seconds=seconds))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
+@pytest.mark.parametrize(
+    "unique_id",
+    [MDNS_INFO.uuid, f"{DOMAIN}-1.2.3.4-502"],
+    ids=["uuid_known", "uuid_adopted"],
+)
+async def test_mdns_lookup_retried_after_start(
+    hass: HomeAssistant,
+    device_registry: dr.DeviceRegistry,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    freezer: FrozenDateTimeFactory,
+    unique_id: str,
+) -> None:
+    """A record missed during setup is picked up by a later lookup."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "1.2.3.4"},
+        unique_id=unique_id,
+        title="Qube Heat Pump",
+        version=2,
+    )
+    mock_qube_client.async_get_software_version = AsyncMock(return_value=None)
+
+    await setup_integration(hass, entry)
+    assert entry.runtime_data.version == "unknown"
+
+    await _async_advance(hass, freezer, MDNS_RETRY_DELAYS[0])
+    assert mock_mdns_info.await_count == 2
+    assert entry.runtime_data.version == "unknown"
+
+    mock_mdns_info.return_value = MDNS_INFO
+    await _async_advance(hass, freezer, MDNS_RETRY_DELAYS[1])
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.unique_id == MDNS_INFO.uuid
+    assert entry.runtime_data.version == "4.1.00"
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    assert device is not None
+    assert device.sw_version == "4.1.00"
+    # The info sensor shows it from its next state write
+    await async_poll(hass, freezer)
+    info = hass.states.get("sensor.qube_1_info")
+    assert info is not None
+    assert info.attributes["firmware_version"] == "4.1.00"
+
+
+async def test_mdns_lookup_retry_gives_up(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Without a record the lookup is retried a few times, then no more."""
+    await setup_integration(hass, mock_config_entry)
+
+    for delay in MDNS_RETRY_DELAYS:
+        await _async_advance(hass, freezer, delay)
+    assert mock_mdns_info.await_count == 1 + len(MDNS_RETRY_DELAYS)
+
+    await _async_advance(hass, freezer, 3600)
+    assert mock_mdns_info.await_count == 1 + len(MDNS_RETRY_DELAYS)
+    assert mock_config_entry.runtime_data.version == "4.10"
+
+
+async def test_mdns_lookup_not_retried_after_unload(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Unloading the entry stops the retries."""
+    await setup_integration(hass, mock_config_entry)
+    await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    await _async_advance(hass, freezer, sum(MDNS_RETRY_DELAYS))
+    assert mock_mdns_info.await_count == 1
+
+
+async def test_mdns_lookup_not_retried_when_found(
+    hass: HomeAssistant,
+    mock_qube_client: MagicMock,
+    mock_mdns_info: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A record found during setup needs no retry."""
+    mock_mdns_info.return_value = MDNS_INFO
+    await setup_integration(hass, mock_config_entry)
+
+    await _async_advance(hass, freezer, sum(MDNS_RETRY_DELAYS))
+    assert mock_mdns_info.await_count == 1
 
 
 @pytest.mark.parametrize(

@@ -116,12 +116,21 @@ class QubeCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
             ) from err
         # The library returns None (and logs) when the register is unreadable
         self.sw_version = await self.hub.async_get_software_version()
-        # Register 77 reads 0.0 on recent firmware; the version shown on the
-        # panel is only advertised over mDNS, so prefer that when available.
+        await self.async_lookup_mdns()
+
+    async def async_lookup_mdns(self) -> bool:
+        """Look up the controller's mDNS record; return True when found.
+
+        Register 77 reads 0.0 on recent firmware; the version shown on the
+        panel is only advertised over mDNS, so prefer that when available.
+        """
         aiozc = await zeroconf.async_get_async_instance(self.hass)
-        self.mdns_info = await self.hub.async_get_mdns_info(aiozc)
-        if self.mdns_info is not None and self.mdns_info.software_version:
-            self.sw_version = self.mdns_info.software_version
+        if (info := await self.hub.async_get_mdns_info(aiozc)) is None:
+            return False
+        self.mdns_info = info
+        if info.software_version:
+            self.sw_version = info.software_version
+        return True
 
     async def async_shutdown(self) -> None:
         """Stop polling and flush a pending monotonic cache save.
