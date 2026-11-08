@@ -62,6 +62,12 @@ async def async_setup_entry(
     )
 
 
+# Home Assistant 2026.11 renamed the temperature properties to native_* and
+# warns about the old names; older releases (hacs.json allows 2025.3) only know
+# the old names.
+_NATIVE_TEMPERATURES = hasattr(WaterHeaterEntity, "native_current_temperature")
+
+
 class QubeWaterHeater(QubeEntity, WaterHeaterEntity):
     """Domestic hot water: DHW temperature, setpoint and the forced run."""
 
@@ -71,7 +77,10 @@ class QubeWaterHeater(QubeEntity, WaterHeaterEntity):
         | WaterHeaterEntityFeature.OPERATION_MODE
     )
     _attr_target_temperature_step = 0.5
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if _NATIVE_TEMPERATURES:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_translation_key = "dhw"
 
     def __init__(
@@ -96,14 +105,18 @@ class QubeWaterHeater(QubeEntity, WaterHeaterEntity):
         self._attr_unique_id = self._scoped_uid("dhw")
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         """Return the DHW temperature."""
         return self._read_float(self._temperature_key)
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         """Return the DHW setpoint (register 173)."""
         return self._read_float(self._setpoint_key)
+
+    if not _NATIVE_TEMPERATURES:
+        current_temperature = native_current_temperature
+        target_temperature = native_target_temperature
 
     @property
     def current_operation(self) -> str | None:

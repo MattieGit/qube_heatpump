@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.11.3 — 2026-11-08
+- fix: No more deprecation warnings for the thermostat and the water heater on Home Assistant 2026.11 (`_attr_temperature_unit`, `current_temperature` and `target_temperature`, which stop working in 2027.11). On 2026.11 and later they use the new `native_*` temperature properties; older Home Assistant versions keep the old names. Nothing changes in the entities ([#69](https://github.com/MattieGit/qube_heatpump/issues/69)).
+- chore: The integration ships its own icon (`brand/`), which Home Assistant 2026.3 and later show.
+- Includes 2026.11.2, which was released as a pre-release only.
+
 ## 2026.11.2 — 2026-11-06
 - fix: The room temperature shows as unknown instead of -999.9 °C when no room sensor is connected. The heat pump reports -999.9 for a missing sensor, and the check only caught exactly -999. The sensor stays disabled by default unless the heat pump reports a room sensor.
 

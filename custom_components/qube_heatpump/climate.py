@@ -104,6 +104,12 @@ async def async_setup_entry(
     )
 
 
+# Home Assistant 2026.11 renamed the temperature properties to native_* and
+# warns about the old names; older releases (hacs.json allows 2025.3) only know
+# the old names.
+_NATIVE_TEMPERATURES = hasattr(ClimateEntity, "native_current_temperature")
+
+
 class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
     """Virtual thermostat that controls Qube via modbus_demand and bms_summerwinter.
 
@@ -114,7 +120,10 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
     """
 
     _attr_translation_key = "thermostat"
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if _NATIVE_TEMPERATURES:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [  # noqa: RUF012 - HA declares this as an instance attribute
         HVACMode.OFF,
         HVACMode.HEAT,
@@ -179,14 +188,18 @@ class QubeVirtualThermostat(QubeEntity, RestoreEntity, ClimateEntity):
         return True
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         """Return the current temperature."""
         return self._current_temp
 
     @property
-    def target_temperature(self) -> float:
+    def native_target_temperature(self) -> float:
         """Return the target temperature."""
         return self._target_temp
+
+    if not _NATIVE_TEMPERATURES:
+        current_temperature = native_current_temperature
+        target_temperature = native_target_temperature
 
     @property
     def hvac_mode(self) -> HVACMode:
