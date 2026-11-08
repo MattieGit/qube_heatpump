@@ -28,6 +28,9 @@ Guidelines for coding agents and contributors working on this HACS integration. 
   image with `--platform linux/amd64` on Apple Silicon.
 - hassfest in CI also checks the requirement against the pin in the newest core release; it fails while
   this repo requires a newer library than core pins, until core catches up.
+- Never require a newer library than core pins in the current Home Assistant release. Core's zeroconf
+  discovery makes Home Assistant install core's `==` pin (also for an ignored discovery), so a higher
+  `>=` here makes every restart reinstall the library (seen on 2026.11: 1.18.0 vs core's 1.17.0).
 
 ## Translations
 - `strings.json` is the source; `translations/en.json` and `translations/nl.json` must have the
