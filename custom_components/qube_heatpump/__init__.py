@@ -13,7 +13,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigEntryState,
 )
-from homeassistant.core import callback
+from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import (
     config_validation as cv,
@@ -21,6 +21,8 @@ from homeassistant.helpers import (
     entity_registry as er,
     issue_registry as ir,
 )
+from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.start import async_at_started
 from homeassistant.util import slugify
 
 from .const import (
@@ -38,6 +40,8 @@ from .helpers import async_resolve_host, is_alarm_entity
 from .hub import QubeHub
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from homeassistant.core import HomeAssistant, ServiceCall
     from homeassistant.helpers.typing import ConfigType
 
@@ -57,6 +61,11 @@ class QubeData:
 
 
 type QubeConfigEntry = ConfigEntry[QubeData]
+
+# Seconds after Home Assistant has started to look for the mDNS record again
+# when setup did not find it: during startup the shared zeroconf instance often
+# has nothing yet, while the same lookup succeeds shortly after.
+MDNS_RETRY_DELAYS = (30, 120, 600)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -294,6 +303,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data.version = coordinator.sw_version or "unknown"
     await _async_adopt_controller_uuid(hass, entry, coordinator)
+    if coordinator.mdns_info is None:
+        _async_retry_mdns_lookup(hass, entry, coordinator)
 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
@@ -339,6 +350,51 @@ async def async_setup_entry(hass: HomeAssistant, entry: QubeConfigEntry) -> bool
     )
 
     return True
+
+
+@callback
+def _async_retry_mdns_lookup(
+    hass: HomeAssistant, entry: QubeConfigEntry, coordinator: QubeCoordinator
+) -> None:
+    """Look for the mDNS record again after Home Assistant has started.
+
+    On success the device gets the panel version and the entry the controller
+    uuid, as if setup had found the record. Stops on unload.
+    """
+    delays = iter(MDNS_RETRY_DELAYS)
+    cancel_timer: CALLBACK_TYPE | None = None
+
+    @callback
+    def _async_schedule(_hass: HomeAssistant | None = None) -> None:
+        nonlocal cancel_timer
+        cancel_timer = None
+        if (delay := next(delays, None)) is not None:
+            cancel_timer = async_call_later(hass, delay, _async_retry)
+
+    async def _async_retry(_now: datetime) -> None:
+        if not await coordinator.async_lookup_mdns():
+            _async_schedule()
+            return
+        _LOGGER.debug("Found the mDNS record of %s", entry.data.get(CONF_HOST))
+        entry.runtime_data.version = coordinator.sw_version or "unknown"
+        dev_reg = dr.async_get(hass)
+        for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+            if (DOMAIN, entry.entry_id) in device.identifiers:
+                dev_reg.async_update_device(
+                    device.id, sw_version=entry.runtime_data.version
+                )
+        # A new unique id fires the update listener, which reloads the entry once
+        await _async_adopt_controller_uuid(hass, entry, coordinator)
+
+    cancel_started = async_at_started(hass, _async_schedule)
+
+    @callback
+    def _async_cancel() -> None:
+        cancel_started()
+        if cancel_timer is not None:
+            cancel_timer()
+
+    entry.async_on_unload(_async_cancel)
 
 
 @callback

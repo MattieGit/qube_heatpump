@@ -442,7 +442,8 @@ class QubeInfoSensor(QubeEntity, SensorEntity):
         """Return attributes."""
         hub = self._hub
         return {
-            "firmware_version": self._version,
+            # Read live: the version can arrive after setup (mDNS retry)
+            "firmware_version": self.coordinator.config_entry.runtime_data.version,
             "integration_version": self._integration_version or "unknown",
             "label": hub.label,
             "host": hub.host,

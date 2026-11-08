@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.11.4 — 2026-11-08
+- fix: The firmware version no longer stays *unknown* after a Home Assistant restart. The heat pump's mDNS record often cannot be found yet while Home Assistant starts, and the integration looked only once. It now looks again 30 seconds, 2 minutes and 10 minutes after Home Assistant has started, and fills in the firmware version (and the controller uuid) when it finds the record. A reload was the workaround.
+
 ## 2026.11.3 — 2026-11-08
 - fix: No more deprecation warnings for the thermostat and the water heater on Home Assistant 2026.11 (`_attr_temperature_unit`, `current_temperature` and `target_temperature`, which stop working in 2027.11). On 2026.11 and later they use the new `native_*` temperature properties; older Home Assistant versions keep the old names. Nothing changes in the entities ([#69](https://github.com/MattieGit/qube_heatpump/issues/69)).
 - chore: The integration ships its own icon (`brand/`), which Home Assistant 2026.3 and later show.

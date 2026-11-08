@@ -493,6 +493,7 @@ class TestQubeInfoSensor:
         hub.err_read = 5
         coordinator = MagicMock()
         coordinator.config_entry.entry_id = "entry-1"
+        coordinator.config_entry.runtime_data.version = "4.10"
         sensor = QubeInfoSensor(coordinator=coordinator, hub=hub, version="4.10")
 
         assert sensor.native_value == "ok"
