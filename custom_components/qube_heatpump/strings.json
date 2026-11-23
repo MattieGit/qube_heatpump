@@ -75,7 +75,7 @@
           "name": "Name for this heat pump. Changing it renames the device; existing entity IDs keep their prefix.",
           "thermostat_enabled": "Use an external temperature sensor to control heating/cooling demand.",
           "dhw_schedule_enabled": "Schedule daily DHW (hot water) heating at a fixed time.",
-          "heater_step_power": "Power of one backup heater step in watts, see the type plate or the installer documents (for example 2500). Used to estimate the heater energy for space heating and hot water; leave empty to turn the estimate off."
+          "heater_step_power": "Power of one backup heater step in watts, see the type plate or the installer documents (for example 2500). For steps of different power, enter the average. Used to estimate the heater energy for space heating and hot water; leave empty to turn the estimate off."
         }
       },
       "thermostat": {

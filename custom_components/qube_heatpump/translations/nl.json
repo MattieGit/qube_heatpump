@@ -75,7 +75,7 @@
                     "name": "Naam voor deze warmtepomp. Wijzigen hernoemt het apparaat; bestaande entiteit-ID's houden hun voorvoegsel.",
                     "thermostat_enabled": "Gebruik een externe temperatuursensor om warmte/koelvraag te regelen.",
                     "dhw_schedule_enabled": "Plan dagelijks SWW (warm tapwater) verwarmen op een vast tijdstip.",
-                    "heater_step_power": "Vermogen van één bijverwarmingstrap in watt, zie het typeplaatje of de installatiedocumenten (bijvoorbeeld 2500). Wordt gebruikt om de energie van de bijverwarming voor ruimteverwarming en SWW te schatten; laat leeg om de schatting uit te zetten."
+                    "heater_step_power": "Vermogen van één bijverwarmingstrap in watt, zie het typeplaatje of de installatiedocumenten (bijvoorbeeld 2500). Verschillen de trappen in vermogen, vul dan het gemiddelde in. Wordt gebruikt om de energie van de bijverwarming voor ruimteverwarming en SWW te schatten; laat leeg om de schatting uit te zetten."
                 }
             },
             "thermostat": {
