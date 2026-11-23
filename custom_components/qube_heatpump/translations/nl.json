@@ -248,10 +248,10 @@
                 "name": "SWW-instelpunt (Modbus)"
             },
             "aout_usrpmp_val": {
-                "name": "Sturing gebruikerspomp (CV) %"
+                "name": "Vraag gebruikerspomp (CV) %"
             },
             "aout_srcpmp_val": {
-                "name": "Sturing bronpomp %"
+                "name": "Vraag bronpomp %"
             },
             "aout_srcvalve_val": {
                 "name": "Sturing bronafsluiter %"

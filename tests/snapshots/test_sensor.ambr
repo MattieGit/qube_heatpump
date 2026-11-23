@@ -31,7 +31,7 @@
     }),
     'original_device_class': None,
     'original_icon': None,
-    'original_name': 'Source pump control %',
+    'original_name': 'Source pump demand %',
     'platform': 'qube_heatpump',
     'previous_unique_id': None,
     'suggested_object_id': 'qube_1_aout_srcpmp_val',
@@ -44,7 +44,7 @@
 # name: test_entities[sensor.qube_1_aout_srcpmp_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Source pump control %',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 Source pump demand %',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
       <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '%',
     }),
@@ -53,7 +53,7 @@
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
-    'state': '45.0',
+    'state': '55.0',
   })
 # ---
 # name: test_entities[sensor.qube_1_aout_srcvalve_val-entry]
@@ -145,7 +145,7 @@
     }),
     'original_device_class': None,
     'original_icon': None,
-    'original_name': 'User (CH) pump control %',
+    'original_name': 'User (CH) pump demand %',
     'platform': 'qube_heatpump',
     'previous_unique_id': None,
     'suggested_object_id': 'qube_1_aout_usrpmp_val',
@@ -158,7 +158,7 @@
 # name: test_entities[sensor.qube_1_aout_usrpmp_val-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 User (CH) pump control %',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'qube 1 User (CH) pump demand %',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
       <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '%',
     }),
@@ -167,7 +167,7 @@
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
-    'state': '45.0',
+    'state': '55.0',
   })
 # ---
 # name: test_entities[sensor.qube_1_comppwrreq-entry]

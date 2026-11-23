@@ -143,10 +143,10 @@
         "name": "DHW setpoint (Modbus)"
       },
       "aout_usrpmp_val": {
-        "name": "User (CH) pump control %"
+        "name": "User (CH) pump demand %"
       },
       "aout_srcpmp_val": {
-        "name": "Source pump control %"
+        "name": "Source pump demand %"
       },
       "aout_srcvalve_val": {
         "name": "Source valve control %"

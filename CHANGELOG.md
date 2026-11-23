@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.11.5 — 2026-11-23
+- fix: The CH and source pump sensors no longer read 100 % when the pumps are off. The heat pump drives its Wilo pumps with a PWM signal on which 100 % means stop and a low value means full speed, and the sensors showed that signal. They now show the demand behind it (100 % minus the signal) and are renamed to "User (CH) pump demand %" and "Source pump demand %" (Dutch: "Vraag gebruikerspomp (CV) %" and "Vraag bronpomp %"). Entity IDs stay the same; history recorded before this release reads the other way round ([#72](https://github.com/MattieGit/qube_heatpump/issues/72)).
+
 ## 2026.11.4 — 2026-11-08
 - fix: The firmware version no longer stays *unknown* after a Home Assistant restart. The heat pump's mDNS record often cannot be found yet while Home Assistant starts, and the integration looked only once. It now looks again 30 seconds, 2 minutes and 10 minutes after Home Assistant has started, and fills in the firmware version (and the controller uuid) when it finds the record. A reload was the workaround.
 - fix: Accepts python-qube-heatpump 1.17.0 again (`>=1.17.0`). On Home Assistant 2026.11 the built-in Qube integration pins 1.17.0, and discovering the heat pump makes Home Assistant install that version, even when the discovery is ignored. With `>=1.18.0` every restart installed 1.18.0 and the discovery put 1.17.0 back, and without internet access during startup the integration would not load. The integration works with both versions; 1.18.0 adds the shared Modbus transport and the block retry, which Home Assistant 2026.12 brings along.

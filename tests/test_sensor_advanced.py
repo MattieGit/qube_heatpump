@@ -447,6 +447,27 @@ class TestQubeSensorDescription:
         assert self._make(ent, {"temp_room": -999}).native_value is None
         assert self._make(ent, {"temp_room": 20.5}).native_value == 20.5
 
+    @pytest.mark.parametrize("vendor_id", ["aout_usrpmp_val", "aout_srcpmp_val"])
+    @pytest.mark.parametrize(
+        ("signal", "demand"),
+        [(100.0, 0.0), (0.0, 100.0), (5.0, 95.0), (30.7, 69.3), (-0.0, 100.0)],
+    )
+    def test_pump_demand_inverts_pwm_signal(
+        self, vendor_id: str, signal: float, demand: float
+    ) -> None:
+        """The pump outputs show 100 - PWM signal, so a stopped pump reads 0 %."""
+        from custom_components.qube_heatpump.entity_defs import EntityDef
+
+        ent = EntityDef(
+            platform="sensor",
+            name="Pump",
+            address=4,
+            vendor_id=vendor_id,
+            unique_id=vendor_id,
+            translation_key=vendor_id,
+        )
+        assert self._make(ent, {vendor_id: signal}).native_value == demand
+
     def test_clamped_to_zero(self) -> None:
         """Flow and percentages never go negative (also fixes -0.0)."""
         from custom_components.qube_heatpump.entity_defs import EntityDef
