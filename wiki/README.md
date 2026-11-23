@@ -397,7 +397,16 @@ The Qube has an electric backup heater with up to three steps. These entities sh
 
 The sensors are unavailable while a heater step or the valve has no reading, rather than reporting off.
 
-**Energy estimate.** The heat pump does not meter the heater separately, so the two energy sensors estimate it: the step power times the number of steps that are on, booked to CH or DHW by the valve at each poll. Set **Backup heater step power** in the integration's options (**Configure**) to the power of one heater step in watts, from the type plate or the installer documents; the step power differs per model (for example 3 steps of 2.5 kW, or 0.8 / 1.2 / 2 kW). Leave it empty to turn the estimate off; the two sensors then stay in the entity registry as unavailable until you delete them. Intervals with a missing reading, and gaps longer than 5 minutes (a restart, a lost connection), are not booked. For a model whose steps differ in power, enter the average step power; the estimate is then approximate while only some steps run.
+**Energy estimate.** The heat pump does not meter the heater separately, so the two energy sensors estimate it: the step power times the number of steps that are on, booked to CH or DHW by the valve at each poll. Set **Backup heater step power** in the integration's options (**Configure**) to the power of one heater step in watts, see [Finding the step power](#finding-the-step-power). Leave it empty to turn the estimate off; the two sensors then stay in the entity registry as unavailable until you delete them. Intervals with a missing reading, and gaps longer than 5 minutes (a restart, a lost connection), are not booked.
+
+#### Finding the step power
+
+The step power differs per model and installation (for example 3 steps of 2.5 kW, or 0.8 / 1.2 / 2 kW), so the integration cannot read it from the heat pump. There are two ways to find it.
+
+1. **From the paperwork.** Look on the type plate, in the installer's documents, or on the quote or invoice. They often give the total and the number of steps, for example "back-up heater 7.5 kW, 3 steps of 2.5 kW": enter 2500. If only the total is given and the steps are equal, divide it by the number of steps.
+2. **From the power reading.** Open **History** in Home Assistant with `sensor.qube_power_electric` ("Current electric power") and the step outputs `binary_sensor.qube_dout_heaterstep1_val`, `_heaterstep2_val` and `_heaterstep3_val` ("Heater 1/2/3 output"). Find a moment when one step switches on while the compressor runs steadily: the jump in power is that step's power. On one Qube the power rose from about 1.17 kW to 3.65 kW when step 1 switched on (+2.5 kW), and to 6.25 kW with step 2 (+2.6 kW), so 2500 W. Check a few switch-ons and round to the nearest 100 W. The heater mostly runs on cold nights and during the anti-legionella run. A separate energy meter in the meter cupboard shows the same jump. If the power reading does not jump when a step switches on, use the paperwork instead.
+
+**Steps of different power.** The option takes one value. Enter the average step power, for example (800 + 1200 + 2000) / 3 ≈ 1300 W. The estimate is then right when all steps run together, and approximate when only some steps run (step 1 alone counts as 1.3 kW instead of 0.8 kW).
 
 The heater's power is part of `sensor.qube_power_electric` and the electric totals, so the energy and SCOP sensors already count it; these entities only make the heater's share visible. See [Backup heater use per night](#backup-heater-use-per-night) for an example.
 
