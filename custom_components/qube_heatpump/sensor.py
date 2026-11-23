@@ -37,6 +37,11 @@ if TYPE_CHECKING:
 # Sensors that should clamp values to minimum 0 (percentages, flow rates)
 CLAMP_TO_ZERO_KEYS = frozenset({"dhw_regreq", "flow", "flow_rate"})
 
+# The pump outputs carry the PWM signal for the Wilo pumps, which run at full
+# speed on a low signal and stop on a high one (100 % = off). Show the demand
+# the controller asks for instead (100 - signal), so 0 % is off.
+INVERTED_PWM_KEYS = frozenset({"aout_usrpmp_val", "aout_srcpmp_val"})
+
 # The heat pump reports -999.9 as the room temperature without a room sensor
 ROOM_SENSOR_NOT_INSTALLED = -999.0
 
@@ -364,6 +369,9 @@ class QubeSensor(QubeEntity, SensorEntity):
         # temp_room reads -999.9 when no room sensor is connected
         if self._key == "temp_room" and value <= ROOM_SENSOR_NOT_INSTALLED:
             return None
+
+        if self._key in INVERTED_PWM_KEYS and isinstance(value, (int, float)):
+            return round(min(100.0, max(0.0, 100.0 - float(value))), 1)
 
         # Clamp values that should never be negative (percentages, flow rates).
         # max() also normalises -0.0, which equals 0 but displays as negative.
