@@ -18,9 +18,16 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import IntegrationNotFound, async_get_integration
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, TARIFF_OPTIONS
+from .const import CONF_HEATER_STEP_POWER, DOMAIN, TARIFF_OPTIONS
 from .entity import QubeEntity
-from .helpers import entity_data_key as _entity_key
+from .helpers import (
+    HEATER_MODES,
+    THREEWAY_VALVE_KEY,
+    active_heater_steps,
+    entity_data_key as _entity_key,
+    has_heater_inputs,
+    threeway_valve_mode,
+)
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -71,7 +78,6 @@ DISABLED_BY_DEFAULT_KEYS = ALIAS_KEYS | {"temp_room"} | COP_THROTTLE_KEYS
 # Coordinator data keys (unscoped library keys) read by the derived sensors
 STATUS_CODE_KEY = "status_code"
 ANTILEG_KEY = "req_antileg_1"
-THREEWAY_VALVE_KEY = "dout_threewayvlv_val"
 FOURWAY_VALVE_KEY = "dout_fourwayvlv_val"
 ENERGY_DATA_KEY = "energy_total_electric"
 THERMIC_DATA_KEY = "energy_total_thermic"
@@ -100,6 +106,10 @@ STANDBY_POWER_WATTS = 17.0
 STANDBY_POWER_UNIQUE_BASE = "power_standby"
 STANDBY_ENERGY_UNIQUE_BASE = "energy_standby"
 TOTAL_ENERGY_UNIQUE_BASE = "energy_total_incl_standby"
+
+# Longest interval booked as heater energy; a longer gap between two polls
+# (a restart, failed polls) is skipped rather than guessed.
+HEATER_ENERGY_MAX_INTERVAL_SECONDS = 300
 
 SCOP_MAX_EXPECTED = 10.0
 # Minimum electric consumption in a cycle before a SCOP is reported; a few
@@ -190,6 +200,17 @@ async def async_setup_entry(
                     kind=kind,
                     source=source,
                 )
+            )
+
+    if has_heater_inputs(hub):
+        entities.append(QubeHeaterStepsSensor(coordinator, hub, version))
+        step_power = float(entry.options.get(CONF_HEATER_STEP_POWER) or 0)
+        if step_power > 0:
+            entities.extend(
+                QubeHeaterEnergySensor(
+                    coordinator, hub, version, mode=mode, step_power=step_power
+                )
+                for mode in HEATER_MODES
             )
 
     standby_energy = QubeStandbyEnergySensor(coordinator, hub, version)
@@ -639,6 +660,111 @@ class QubeStandbyEnergySensor(QubeEntity, RestoreSensor):
         """Return the standby energy integrated up to now."""
         self._integrate()
         return self._energy_kwh
+
+
+class QubeHeaterStepsSensor(QubeEntity, SensorEntity):
+    """Number of backup heater steps that are on (0-3), whatever the valve does."""
+
+    _attr_translation_key = "heater_steps_active"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self,
+        coordinator: QubeCoordinator,
+        hub: QubeHub,
+        version: str,
+    ) -> None:
+        """Initialize the heater steps sensor."""
+        super().__init__(coordinator, hub, version)
+        self.entity_id = f"sensor.{self._label}_heater_steps_active"
+        self._attr_unique_id = self._scoped_uid("heater_steps_active")
+
+    @property
+    def available(self) -> bool:
+        """Unavailable when a heater step output has no reading."""
+        return (
+            super().available and active_heater_steps(self.coordinator.data) is not None
+        )
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the number of active heater steps."""
+        return active_heater_steps(self.coordinator.data)
+
+
+class QubeHeaterEnergySensor(QubeEntity, RestoreSensor):
+    """Estimated backup heater energy for space heating or hot water.
+
+    The heat pump has no heater meter, so the power is estimated as the
+    configured step power times the number of active steps, booked to CH or
+    DHW by the three-way valve. It is integrated per poll (left Riemann sum);
+    intervals with a missing reading or longer than
+    ``HEATER_ENERGY_MAX_INTERVAL_SECONDS`` are skipped.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_suggested_display_precision = 2
+
+    def __init__(
+        self,
+        coordinator: QubeCoordinator,
+        hub: QubeHub,
+        version: str,
+        *,
+        mode: str,
+        step_power: float,
+    ) -> None:
+        """Initialize the estimate for mode "ch" or "dhw"."""
+        super().__init__(coordinator, hub, version)
+        self._mode = mode
+        self._step_power = step_power
+        self._energy_kwh = 0.0
+        # (time, estimated heater power in W for this mode) at the last poll
+        self._sample: tuple[datetime, float] | None = None
+        self._attr_translation_key = f"heater_energy_{mode}"
+        self.entity_id = f"sensor.{self._label}_heater_energy_{mode}"
+        self._attr_unique_id = self._scoped_uid(f"heater_energy_{mode}")
+
+    async def async_added_to_hass(self) -> None:
+        """Resume from the stored total; the time while stopped is not booked."""
+        await super().async_added_to_hass()
+        last = await self.async_get_last_sensor_data()
+        if last is not None and isinstance(last.native_value, (int, float)):
+            self._energy_kwh = float(last.native_value)
+        self._sample = self._take_sample()
+
+    def _current_power(self) -> float | None:
+        """Estimated heater power for this mode now, or None if unknown."""
+        if not self.coordinator.last_update_success:
+            return None
+        data = self.coordinator.data
+        steps = active_heater_steps(data)
+        mode = threeway_valve_mode(data)
+        if steps is None or mode is None:
+            return None
+        return self._step_power * steps if mode == self._mode else 0.0
+
+    def _take_sample(self) -> tuple[datetime, float] | None:
+        power = self._current_power()
+        return None if power is None else (dt_util.utcnow(), power)
+
+    def _handle_coordinator_update(self) -> None:
+        """Book the previous interval at the previous poll's power."""
+        sample = self._take_sample()
+        if self._sample is not None and sample is not None:
+            then, power = self._sample
+            elapsed = (sample[0] - then).total_seconds()
+            if 0 < elapsed <= HEATER_ENERGY_MAX_INTERVAL_SECONDS:
+                self._energy_kwh += power * elapsed / 3_600_000
+        self._sample = sample
+        super()._handle_coordinator_update()
+
+    @property
+    def native_value(self) -> float:
+        """Return the estimated energy in kWh."""
+        return round(self._energy_kwh, 3)
 
 
 class QubeTotalEnergyIncludingStandbySensor(QubeEntity, SensorEntity):

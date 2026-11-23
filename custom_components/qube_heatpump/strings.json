@@ -67,13 +67,15 @@
           "host": "Host/IP",
           "name": "Device name",
           "thermostat_enabled": "Enable virtual thermostat",
-          "dhw_schedule_enabled": "Enable DHW schedule"
+          "dhw_schedule_enabled": "Enable DHW schedule",
+          "heater_step_power": "Backup heater step power"
         },
         "data_description": {
           "host": "Enter the IP address or hostname of your Qube heat pump (e.g. 192.168.1.50).",
           "name": "Name for this heat pump. Changing it renames the device; existing entity IDs keep their prefix.",
           "thermostat_enabled": "Use an external temperature sensor to control heating/cooling demand.",
-          "dhw_schedule_enabled": "Schedule daily DHW (hot water) heating at a fixed time."
+          "dhw_schedule_enabled": "Schedule daily DHW (hot water) heating at a fixed time.",
+          "heater_step_power": "Power of one backup heater step in watts, see the type plate or the installer documents (for example 2500). Used to estimate the heater energy for space heating and hot water; leave empty to turn the estimate off."
         }
       },
       "thermostat": {
@@ -106,6 +108,15 @@
   },
   "entity": {
     "sensor": {
+      "heater_steps_active": {
+        "name": "Active heater steps"
+      },
+      "heater_energy_ch": {
+        "name": "Heater energy space heating (estimate)"
+      },
+      "heater_energy_dhw": {
+        "name": "Heater energy hot water (estimate)"
+      },
       "thermostat_heatsetp_day": {
         "name": "LinQ setpoint heating (day)"
       },
@@ -363,6 +374,12 @@
       }
     },
     "binary_sensor": {
+      "backup_heater_ch": {
+        "name": "Backup heater space heating"
+      },
+      "backup_heater_dhw": {
+        "name": "Backup heater hot water"
+      },
       "dout_srcpmp_val": {
         "name": "Source pump power supply"
       },

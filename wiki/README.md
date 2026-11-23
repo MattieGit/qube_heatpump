@@ -383,6 +383,24 @@ SCOP values are calculated by dividing thermal yield by electrical consumption. 
 | `sensor.qube_threeway_valve_status` | dhw, ch |
 | `sensor.qube_fourway_valve_status` | heating, cooling |
 
+### Backup Heaters
+
+The Qube has an electric backup heater with up to three steps. These entities show when and how much the heater runs, split by the three-way valve: with the valve on CH the heater backs up space heating, with the valve on DHW it heats the hot water (the anti-legionella run uses the heater on purpose).
+
+| Entity | Description |
+|--------|-------------|
+| `binary_sensor.qube_backup_heater_ch` | On while any heater step is on and the valve is on CH ("Backup heater space heating") |
+| `binary_sensor.qube_backup_heater_dhw` | On while any heater step is on and the valve is on DHW ("Backup heater hot water") |
+| `sensor.qube_heater_steps_active` | Number of heater steps that are on (0-3), whatever the valve position |
+| `sensor.qube_heater_energy_ch` | Estimated heater energy for space heating (kWh), only with a step power set |
+| `sensor.qube_heater_energy_dhw` | Estimated heater energy for hot water (kWh), only with a step power set |
+
+The sensors are unavailable while a heater step or the valve has no reading, rather than reporting off.
+
+**Energy estimate.** The heat pump does not meter the heater separately, so the two energy sensors estimate it: the step power times the number of steps that are on, booked to CH or DHW by the valve at each poll. Set **Backup heater step power** in the integration's options (**Configure**) to the power of one heater step in watts, from the type plate or the installer documents; the step power differs per model (for example 3 steps of 2.5 kW, or 0.8 / 1.2 / 2 kW). Leave it empty to turn the estimate off; the two sensors then stay in the entity registry as unavailable until you delete them. Intervals with a missing reading, and gaps longer than 5 minutes (a restart, a lost connection), are not booked. For a model whose steps differ in power, enter the average step power; the estimate is then approximate while only some steps run.
+
+The heater's power is part of `sensor.qube_power_electric` and the electric totals, so the energy and SCOP sensors already count it; these entities only make the heater's share visible. See [Backup heater use per night](#backup-heater-use-per-night) for an example.
+
 ---
 
 ## Hot Water (DHW) Control
@@ -693,6 +711,24 @@ template:
             Poor
           {% endif %}
 ```
+
+### Backup heater use per night
+
+Count how long the backup heater ran for space heating each night with a [History stats](https://www.home-assistant.io/integrations/history_stats/) sensor, from 18:00 to 09:00:
+
+```yaml
+sensor:
+  - platform: history_stats
+    name: "Backup heater hours last night"
+    entity_id: binary_sensor.qube_backup_heater_ch
+    state: "on"
+    type: time
+    end: "{{ today_at('09:00') }}"
+    duration:
+      hours: 15
+```
+
+The heater runs more on colder nights, so compare nights only within the same outside-temperature range.
 
 ---
 

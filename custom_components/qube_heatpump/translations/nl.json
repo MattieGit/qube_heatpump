@@ -67,13 +67,15 @@
                     "host": "Host/IP",
                     "name": "Apparaatnaam",
                     "thermostat_enabled": "Virtuele thermostaat inschakelen",
-                    "dhw_schedule_enabled": "SWW-schema inschakelen"
+                    "dhw_schedule_enabled": "SWW-schema inschakelen",
+                    "heater_step_power": "Vermogen per bijverwarmingstrap"
                 },
                 "data_description": {
                     "host": "Voer het IP-adres of de hostnaam van je Qube warmtepomp in (bijv. 192.168.1.50).",
                     "name": "Naam voor deze warmtepomp. Wijzigen hernoemt het apparaat; bestaande entiteit-ID's houden hun voorvoegsel.",
                     "thermostat_enabled": "Gebruik een externe temperatuursensor om warmte/koelvraag te regelen.",
-                    "dhw_schedule_enabled": "Plan dagelijks SWW (warm tapwater) verwarmen op een vast tijdstip."
+                    "dhw_schedule_enabled": "Plan dagelijks SWW (warm tapwater) verwarmen op een vast tijdstip.",
+                    "heater_step_power": "Vermogen van één bijverwarmingstrap in watt, zie het typeplaatje of de installatiedocumenten (bijvoorbeeld 2500). Wordt gebruikt om de energie van de bijverwarming voor ruimteverwarming en SWW te schatten; laat leeg om de schatting uit te zetten."
                 }
             },
             "thermostat": {
@@ -106,6 +108,15 @@
     },
     "entity": {
         "sensor": {
+            "heater_steps_active": {
+                "name": "Actieve bijverwarmingstrappen"
+            },
+            "heater_energy_ch": {
+                "name": "Energie bijverwarming ruimteverwarming (schatting)"
+            },
+            "heater_energy_dhw": {
+                "name": "Energie bijverwarming SWW (schatting)"
+            },
             "status_heatpump": {
                 "name": "Warmtepompstatus",
                 "state": {
@@ -363,6 +374,12 @@
             }
         },
         "binary_sensor": {
+            "backup_heater_ch": {
+                "name": "Bijverwarming ruimteverwarming"
+            },
+            "backup_heater_dhw": {
+                "name": "Bijverwarming SWW"
+            },
             "alarm_sensors_active": {
                 "name": "Alarmsensoren actief"
             },

@@ -41,6 +41,16 @@
       "unique_id": "01JQUBESTABLE0000000000001_alrm_flw"
     },
     {
+      "entity_id": "binary_sensor.qube_1_backup_heater_ch",
+      "platform": "binary_sensor",
+      "unique_id": "01JQUBESTABLE0000000000001_backup_heater_ch"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_backup_heater_dhw",
+      "platform": "binary_sensor",
+      "unique_id": "01JQUBESTABLE0000000000001_backup_heater_dhw"
+    },
+    {
       "entity_id": "binary_sensor.qube_1_bms_demand",
       "platform": "binary_sensor",
       "unique_id": "01JQUBESTABLE0000000000001_bms_demand"
@@ -329,6 +339,11 @@
       "entity_id": "sensor.qube_1_fourway_valve_status",
       "platform": "sensor",
       "unique_id": "01JQUBESTABLE0000000000001_qube_vierwegklep_verwarmen_koelen"
+    },
+    {
+      "entity_id": "sensor.qube_1_heater_steps_active",
+      "platform": "sensor",
+      "unique_id": "01JQUBESTABLE0000000000001_heater_steps_active"
     },
     {
       "entity_id": "sensor.qube_1_heatsetp_1",
@@ -698,6 +713,16 @@
       "unique_id": "01JQUBESTABLE0000000000002_alrm_flw"
     },
     {
+      "entity_id": "binary_sensor.qube_1_backup_heater_ch",
+      "platform": "binary_sensor",
+      "unique_id": "01JQUBESTABLE0000000000002_backup_heater_ch"
+    },
+    {
+      "entity_id": "binary_sensor.qube_1_backup_heater_dhw",
+      "platform": "binary_sensor",
+      "unique_id": "01JQUBESTABLE0000000000002_backup_heater_dhw"
+    },
+    {
       "entity_id": "binary_sensor.qube_1_bms_demand",
       "platform": "binary_sensor",
       "unique_id": "01JQUBESTABLE0000000000002_bms_demand"
@@ -996,6 +1021,21 @@
       "entity_id": "sensor.qube_1_fourway_valve_status",
       "platform": "sensor",
       "unique_id": "01JQUBESTABLE0000000000002_qube_vierwegklep_verwarmen_koelen"
+    },
+    {
+      "entity_id": "sensor.qube_1_heater_energy_ch",
+      "platform": "sensor",
+      "unique_id": "01JQUBESTABLE0000000000002_heater_energy_ch"
+    },
+    {
+      "entity_id": "sensor.qube_1_heater_energy_dhw",
+      "platform": "sensor",
+      "unique_id": "01JQUBESTABLE0000000000002_heater_energy_dhw"
+    },
+    {
+      "entity_id": "sensor.qube_1_heater_steps_active",
+      "platform": "sensor",
+      "unique_id": "01JQUBESTABLE0000000000002_heater_steps_active"
     },
     {
       "entity_id": "sensor.qube_1_heatsetp_1",

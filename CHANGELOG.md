@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. This project uses semantic-style versioning aligned to the year.month.patch used by Home Assistant custom components.
 
+## 2026.11.6 — 2026-11-23
+- feat: Backup heater entities, split by the three-way valve: `binary_sensor.<name>_backup_heater_ch` ("Backup heater space heating") and `binary_sensor.<name>_backup_heater_dhw` ("Backup heater hot water") are on while a heater step runs with the valve on CH or DHW, and `sensor.<name>_heater_steps_active` ("Active heater steps") counts the steps that are on (0-3). They are unavailable while a heater step or the valve has no reading.
+- feat: Optional estimate of the backup heater energy. Set **Backup heater step power** (watts per step, from the type plate or installer documents) in the options to get `sensor.<name>_heater_energy_ch` and `sensor.<name>_heater_energy_dhw` (kWh, "(estimate)" in the name): the step power times the active steps, booked to CH or DHW by the valve at each poll. Gaps longer than 5 minutes and intervals with a missing reading are not booked, and the totals survive restarts. The heater's power is already part of the heat pump's own electric power and energy totals; these sensors only show its share.
+- docs: The wiki describes the backup heater entities and has a History stats example for the heater hours per night.
+
 ## 2026.11.5 — 2026-11-23
 - fix: The CH and source pump sensors no longer read 100 % when the pumps are off. The heat pump drives its Wilo pumps with a PWM signal on which 100 % means stop and a low value means full speed, and the sensors showed that signal. They now show the demand behind it (100 % minus the signal) and are renamed to "User (CH) pump demand %" and "Source pump demand %" (Dutch: "Vraag gebruikerspomp (CV) %" and "Vraag bronpomp %"). Entity IDs stay the same; history recorded before this release reads the other way round ([#72](https://github.com/MattieGit/qube_heatpump/issues/72)).
 

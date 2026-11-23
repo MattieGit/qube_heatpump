@@ -21,6 +21,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.qube_heatpump.const import (
+    CONF_HEATER_STEP_POWER,
     CONF_HOST,
     CONF_THERMOSTAT_ENABLED,
     CONF_THERMOSTAT_SENSOR,
@@ -135,7 +136,8 @@ async def test_entity_id_snapshot_thermostat_enabled(
     """Snapshot entities with the virtual thermostat option enabled.
 
     This covers the climate entity and the thermostat-timeout binary
-    sensor, which only exist when CONF_THERMOSTAT_ENABLED is set.
+    sensor, which only exist when CONF_THERMOSTAT_ENABLED is set, and the
+    heater energy estimates, which only exist with a heater step power.
     """
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -145,6 +147,7 @@ async def test_entity_id_snapshot_thermostat_enabled(
         options={
             CONF_THERMOSTAT_ENABLED: True,
             CONF_THERMOSTAT_SENSOR: "sensor.outdoor_temperature",
+            CONF_HEATER_STEP_POWER: 2500,
         },
         entry_id="01JQUBESTABLE0000000000002",
         version=2,

@@ -1,6 +1,15 @@
 {
   "entity": {
     "sensor": {
+      "heater_steps_active": {
+        "default": "mdi:heating-coil"
+      },
+      "heater_energy_ch": {
+        "default": "mdi:heating-coil"
+      },
+      "heater_energy_dhw": {
+        "default": "mdi:heating-coil"
+      },
       "status_heatpump": {
         "default": "mdi:heat-pump",
         "state": {
@@ -89,6 +98,12 @@
       }
     },
     "binary_sensor": {
+      "backup_heater_ch": {
+        "default": "mdi:heating-coil"
+      },
+      "backup_heater_dhw": {
+        "default": "mdi:heating-coil"
+      },
       "alarm_sensors_active": {
         "default": "mdi:alarm-light"
       },

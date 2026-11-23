@@ -381,6 +381,7 @@ async def _registered_translation_keys(hass) -> set[tuple[str, str]]:
 
     from custom_components.qube_heatpump.const import (
         CONF_DHW_SCHEDULE_ENABLED,
+        CONF_HEATER_STEP_POWER,
         CONF_HOST,
         CONF_THERMOSTAT_ENABLED,
         CONF_THERMOSTAT_SENSOR,
@@ -398,6 +399,7 @@ async def _registered_translation_keys(hass) -> set[tuple[str, str]]:
             CONF_THERMOSTAT_ENABLED: True,
             CONF_THERMOSTAT_SENSOR: "sensor.room_temp",
             CONF_DHW_SCHEDULE_ENABLED: True,
+            CONF_HEATER_STEP_POWER: 2500,
         },
     )
     entry.add_to_hass(hass)
