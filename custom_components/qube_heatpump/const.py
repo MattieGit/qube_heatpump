@@ -51,3 +51,8 @@ DEFAULT_DHW_USE_CONTROLLER_SETPOINT = True
 DEFAULT_DHW_SETPOINT = 50.0
 DEFAULT_DHW_START_TIME = "13:00"
 DEFAULT_DHW_END_TIME = "15:00"
+
+# Backup heaters: estimated energy per heater step (W). 0 or unset turns the
+# estimate off; the step power differs per model (e.g. 3 x 2.5 kW or 0.8/1.2/2 kW).
+CONF_HEATER_STEP_POWER = "heater_step_power"
+HEATER_STEP_POWER_MAX = 5000

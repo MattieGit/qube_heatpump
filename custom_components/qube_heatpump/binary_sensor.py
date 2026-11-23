@@ -12,7 +12,14 @@ from homeassistant.const import EntityCategory
 
 from .const import CONF_THERMOSTAT_ENABLED, CONF_THERMOSTAT_SENSOR
 from .entity import QubeEntity
-from .helpers import entity_data_key, is_alarm_entity
+from .helpers import (
+    HEATER_MODES,
+    active_heater_steps,
+    entity_data_key,
+    has_heater_inputs,
+    is_alarm_entity,
+    threeway_valve_mode,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -123,6 +130,11 @@ async def async_setup_entry(
         )
 
     entities.append(QubeEnergyTotalsStaleSensor(coordinator, hub, version))
+    if has_heater_inputs(hub):
+        entities.extend(
+            QubeBackupHeaterBinarySensor(coordinator, hub, mode, version)
+            for mode in HEATER_MODES
+        )
     entities.append(QubeDhwScheduleBinarySensor(coordinator, hub, entry, version))
 
     # Add the thermostat sensor-timeout binary sensor under the same condition
@@ -216,6 +228,50 @@ class QubeAlarmStatusBinarySensor(QubeEntity, BinarySensorEntity):
             if isinstance(val, bool) and val:
                 return True
         return False
+
+
+class QubeBackupHeaterBinarySensor(QubeEntity, BinarySensorEntity):
+    """On while a backup heater step runs with the three-way valve on this mode.
+
+    With the valve on CH the heaters back up space heating; on DHW they heat
+    the hot water (the weekly anti-legionella run uses them on purpose).
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
+
+    def __init__(
+        self,
+        coordinator: Any,
+        hub: QubeHub,
+        mode: str,
+        version: str = "unknown",
+    ) -> None:
+        """Initialize the backup heater sensor for "ch" or "dhw"."""
+        super().__init__(coordinator, hub, version)
+        self._mode = mode
+        self._attr_translation_key = f"backup_heater_{mode}"
+        self._attr_unique_id = self._scoped_uid(f"backup_heater_{mode}")
+        self.entity_id = f"binary_sensor.{self._label}_backup_heater_{mode}"
+
+    @property
+    def available(self) -> bool:
+        """Unavailable when a heater step or the valve has no reading."""
+        data = self.coordinator.data
+        return (
+            super().available
+            and active_heater_steps(data) is not None
+            and threeway_valve_mode(data) is not None
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if any heater step is on and the valve is on this mode."""
+        data = self.coordinator.data
+        steps = active_heater_steps(data)
+        mode = threeway_valve_mode(data)
+        if steps is None or mode is None:
+            return None
+        return steps > 0 and mode == self._mode
 
 
 class QubeEnergyTotalsStaleSensor(QubeEntity, BinarySensorEntity):

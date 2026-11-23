@@ -34,6 +34,7 @@ from .const import (
     CONF_DHW_SETPOINT,
     CONF_DHW_START_TIME,
     CONF_DHW_USE_CONTROLLER_SETPOINT,
+    CONF_HEATER_STEP_POWER,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
@@ -45,6 +46,7 @@ from .const import (
     DEFAULT_DHW_USE_CONTROLLER_SETPOINT,
     DEFAULT_PORT,
     DOMAIN,
+    HEATER_STEP_POWER_MAX,
 )
 from .helpers import async_resolve_host
 from .hub import MDNS_LOOKUP_TIMEOUT
@@ -462,6 +464,10 @@ class OptionsFlowHandler(OptionsFlow):
                     CONF_DHW_SCHEDULE_ENABLED: bool(
                         user_input.get(CONF_DHW_SCHEDULE_ENABLED, False)
                     ),
+                    # Empty or 0 turns the heater energy estimate off
+                    CONF_HEATER_STEP_POWER: int(
+                        user_input.get(CONF_HEATER_STEP_POWER) or 0
+                    ),
                 }
                 if self._user_input[CONF_THERMOSTAT_ENABLED]:
                     return await self.async_step_thermostat()
@@ -481,6 +487,21 @@ class OptionsFlowHandler(OptionsFlow):
                     CONF_DHW_SCHEDULE_ENABLED,
                     default=bool(entry.options.get(CONF_DHW_SCHEDULE_ENABLED, False)),
                 ): bool,
+                # suggested_value (not default) so the field can be cleared
+                vol.Optional(
+                    CONF_HEATER_STEP_POWER,
+                    description={
+                        "suggested_value": entry.options.get(CONF_HEATER_STEP_POWER)
+                    },
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0,
+                        max=HEATER_STEP_POWER_MAX,
+                        step=100,
+                        unit_of_measurement="W",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
             }
         )
         resolved_ip = await async_resolve_host(current_host)
@@ -595,6 +616,8 @@ class OptionsFlowHandler(OptionsFlow):
         if not collected.get(CONF_DHW_SCHEDULE_ENABLED):
             for key in DHW_KEYS:
                 options.pop(key, None)
+        if not collected.get(CONF_HEATER_STEP_POWER):
+            options.pop(CONF_HEATER_STEP_POWER, None)
 
         update: dict[str, Any] = {"options": options}
         data = dict(entry.data)
